@@ -2,5 +2,8 @@ import Testing
 @testable import EvalSwiftUI
 
 @Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    let source = """
+    Text("Hello, SwiftUI!")
+    """
+    let view = try evalSwiftUI(source)
 }
