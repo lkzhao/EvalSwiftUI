@@ -18,7 +18,7 @@ struct SwiftUIEvaluatorErrorTests {
             guard case .invalidArguments(let message) = error else {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
-            #expect(message.contains("string, numeric, or boolean"))
+            #expect(message.contains("string, numeric, boolean, or optional"))
         }
     }
 
@@ -72,6 +72,26 @@ struct SwiftUIEvaluatorErrorTests {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
             #expect(message.contains("boolean value"))
+        }
+    }
+
+    @Test func ifLetRequiresOptionalValue() throws {
+        let source = """
+        VStack {
+            if let greeting = "Hi" {
+                Text(greeting)
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("optional value"))
         }
     }
 }

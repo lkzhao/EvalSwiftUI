@@ -81,25 +81,71 @@ final class ViewNodeBuilder {
             throw SwiftUIEvaluatorError.invalidArguments("if statements support exactly one condition.")
         }
 
-        guard case .expression(let conditionExpression) = condition.condition else {
-            throw SwiftUIEvaluatorError.invalidArguments("if statements only support boolean expressions.")
+        switch condition.condition {
+        case .expression(let conditionExpression):
+            let value = try expressionResolver.resolveExpression(
+                ExprSyntax(conditionExpression),
+                scope: scope,
+                context: context
+            )
+
+            guard case .bool(let isTrue) = value else {
+                throw SwiftUIEvaluatorError.invalidArguments("if conditions must resolve to a boolean value.")
+            }
+
+            if isTrue {
+                return try buildViewNodes(in: ifExpr.body.statements, scope: scope).nodes
+            }
+
+            return try buildElseBody(ifExpr.elseBody, scope: scope)
+
+        case .optionalBinding(let binding):
+            return try processOptionalBindingCondition(binding, body: ifExpr.body, elseBody: ifExpr.elseBody, scope: scope)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("if statements only support boolean expressions or optional bindings.")
+        }
+    }
+
+    private func processOptionalBindingCondition(
+        _ binding: OptionalBindingConditionSyntax,
+        body: CodeBlockSyntax,
+        elseBody: IfExprSyntax.ElseBody?,
+        scope: ExpressionScope
+    ) throws -> [ViewNode] {
+        guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
+            throw SwiftUIEvaluatorError.invalidArguments("if let requires an identifier pattern.")
         }
 
-        let value = try expressionResolver.resolveExpression(
-            ExprSyntax(conditionExpression),
-            scope: scope,
-            context: context
-        )
-
-        guard case .bool(let isTrue) = value else {
-            throw SwiftUIEvaluatorError.invalidArguments("if conditions must resolve to a boolean value.")
+        let resolvedValue: SwiftValue
+        if let initializer = binding.initializer {
+            resolvedValue = try expressionResolver.resolveExpression(
+                ExprSyntax(initializer.value),
+                scope: scope,
+                context: context
+            )
+        } else if let scopedValue = scope[identifierPattern.identifier.text] {
+            resolvedValue = scopedValue
+        } else if let externalValue = context?.value(for: identifierPattern.identifier.text) {
+            resolvedValue = externalValue
+        } else {
+            throw SwiftUIEvaluatorError.invalidArguments("if let requires an initializer or an existing optional identifier.")
         }
 
-        if isTrue {
-            return try buildViewNodes(in: ifExpr.body.statements, scope: scope).nodes
+        guard case .optional(let wrapped) = resolvedValue else {
+            throw SwiftUIEvaluatorError.invalidArguments("if let requires an optional value.")
         }
 
-        guard let elseBody = ifExpr.elseBody else {
+        guard let unwrapped = wrapped?.unwrappedOptional() else {
+            return try buildElseBody(elseBody, scope: scope)
+        }
+
+        var boundScope = scope
+        boundScope[identifierPattern.identifier.text] = unwrapped
+        return try buildViewNodes(in: body.statements, scope: boundScope).nodes
+    }
+
+    private func buildElseBody(_ elseBody: IfExprSyntax.ElseBody?, scope: ExpressionScope) throws -> [ViewNode] {
+        guard let elseBody else {
             return []
         }
 
@@ -160,13 +206,37 @@ final class ViewNodeBuilder {
                 throw SwiftUIEvaluatorError.unsupportedExpression(decl.description)
             }
 
-            let value = try expressionResolver.resolveExpression(
+            var value = try expressionResolver.resolveExpression(
                 ExprSyntax(initializer.value),
                 scope: updatedScope,
                 context: context
             )
+            if isOptional(binding) && !value.isOptional {
+                value = .optional(value)
+            }
             updatedScope[namePattern.identifier.text] = value
         }
         return updatedScope
+    }
+
+    private func isOptional(_ binding: PatternBindingSyntax) -> Bool {
+        guard let annotation = binding.typeAnnotation?.type else {
+            return false
+        }
+        return annotation.representsOptional
+    }
+}
+
+private extension TypeSyntax {
+    var representsOptional: Bool {
+        if self.is(OptionalTypeSyntax.self) || self.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
+            return true
+        }
+
+        if let attributed = self.as(AttributedTypeSyntax.self) {
+            return attributed.baseType.representsOptional
+        }
+
+        return false
     }
 }

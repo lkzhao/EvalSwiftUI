@@ -35,6 +35,10 @@ public final class ExpressionResolver {
             return .bool(booleanLiteral.literal.text == "true")
         }
 
+        if expression.is(NilLiteralExprSyntax.self) {
+            return .optional(nil)
+        }
+
         if let functionCall = expression.as(FunctionCallExprSyntax.self) {
             return try resolveFunctionCall(functionCall, scope: scope, context: context)
         }
@@ -147,9 +151,14 @@ public final class ExpressionResolver {
                 : String(number)
         case .bool(let flag):
             return String(flag)
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                return "nil"
+            }
+            return try stringValue(from: unwrapped)
         default:
             throw SwiftUIEvaluatorError.invalidArguments(
-                "String interpolation expects string, numeric, or boolean values, received \(value.typeDescription)."
+                "String interpolation expects string, numeric, boolean, or optional values, received \(value.typeDescription)."
             )
         }
     }

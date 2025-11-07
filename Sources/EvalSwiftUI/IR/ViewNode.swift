@@ -31,13 +31,14 @@ public struct ResolvedArgument {
     public let value: SwiftValue
 }
 
-public enum SwiftValue {
+public indirect enum SwiftValue {
     case string(String)
     case memberAccess([String])
     case viewContent(ViewContent)
     case number(Double)
     case functionCall(FunctionCallValue)
     case bool(Bool)
+    case optional(SwiftValue?)
 }
 
 public struct FunctionCallValue {
@@ -62,6 +63,25 @@ extension SwiftValue {
             return "function call"
         case .bool:
             return "bool"
+        case .optional:
+            return "optional"
         }
+    }
+
+    func unwrappedOptional() -> SwiftValue? {
+        switch self {
+        case .optional(let wrapped):
+            guard let wrapped else { return nil }
+            return wrapped.unwrappedOptional()
+        default:
+            return self
+        }
+    }
+
+    var isOptional: Bool {
+        if case .optional = self {
+            return true
+        }
+        return false
     }
 }

@@ -124,6 +124,68 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func rendersOptionalBinding() throws {
+        let source = """
+        VStack {
+            let optionalGreeting: String? = "Hello"
+            if let greeting = optionalGreeting {
+                Text(greeting)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersOptionalBindingElseBranch() throws {
+        let source = """
+        VStack {
+            let optionalGreeting: String? = nil
+            if let greeting = optionalGreeting {
+                Text(greeting)
+            } else {
+                Text("Fallback")
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersOptionalBindingFromContext() throws {
+        let source = """
+        VStack {
+            if let username = username {
+                Text(username)
+            }
+        }
+        """
+        let context = DictionaryContext(values: ["username": .optional(.string("Morgan"))])
+        _ = try evalSwiftUI(source, context: context)
+    }
+
+    @Test func rendersOptionalBindingShorthand() throws {
+        let source = """
+        VStack {
+            let username: String? = "Taylor"
+            if let username {
+                Text(username)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersOptionalBindingShorthandFromContext() throws {
+        let source = """
+        VStack {
+            if let username {
+                Text(username)
+            }
+        }
+        """
+        let context = DictionaryContext(values: ["username": .optional(.string("Morgan"))])
+        _ = try evalSwiftUI(source, context: context)
+    }
+
     @Test func supportsLetBindingsInsideClosures() throws {
         let source = """
         VStack {
