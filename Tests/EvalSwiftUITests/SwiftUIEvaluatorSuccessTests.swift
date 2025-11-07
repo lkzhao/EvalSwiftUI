@@ -50,4 +50,15 @@ struct SwiftUIEvaluatorSuccessTests {
         """
         _ = try evalSwiftUI(source)
     }
+
+    @Test func rendersAdvancedModifiers() throws {
+        let source = """
+        Text("Styled")
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .padding(.horizontal, 8)
+            .padding(4)
+            .foregroundStyle(.red)
+        """
+        _ = try evalSwiftUI(source)
+    }
 }

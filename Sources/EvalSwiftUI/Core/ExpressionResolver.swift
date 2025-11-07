@@ -22,6 +22,10 @@ public final class ExpressionResolver {
             return .number(value)
         }
 
+        if let functionCall = expression.as(FunctionCallExprSyntax.self) {
+            return try resolveFunctionCall(functionCall)
+        }
+
         if let memberAccess = expression.as(MemberAccessExprSyntax.self) {
             return .memberAccess(try memberAccessPath(memberAccess))
         }
@@ -64,5 +68,26 @@ public final class ExpressionResolver {
         }
 
         return result
+    }
+
+    private func resolveFunctionCall(_ call: FunctionCallExprSyntax) throws -> SwiftValue {
+        let name: [String]
+        if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
+            name = try memberAccessPath(memberAccess)
+        } else if let reference = call.calledExpression.as(DeclReferenceExprSyntax.self) {
+            name = [reference.baseName.text]
+        } else {
+            throw SwiftUIEvaluatorError.unsupportedExpression(call.description)
+        }
+
+        let arguments = try resolveCallArguments(call.arguments)
+        return .functionCall(FunctionCallValue(name: name, arguments: arguments))
+    }
+
+    private func resolveCallArguments(_ arguments: LabeledExprListSyntax) throws -> [ResolvedArgument] {
+        try arguments.map { element in
+            let value = try resolveExpression(ExprSyntax(element.expression))
+            return ResolvedArgument(label: element.label?.text, value: value)
+        }
     }
 }

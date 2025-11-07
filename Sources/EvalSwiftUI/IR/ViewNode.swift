@@ -35,4 +35,10 @@ public enum SwiftValue {
     case memberAccess([String])
     case viewContent(ViewContent)
     case number(Double)
+    case functionCall(FunctionCallValue)
+}
+
+public struct FunctionCallValue {
+    public let name: [String]
+    public let arguments: [ResolvedArgument]
 }
