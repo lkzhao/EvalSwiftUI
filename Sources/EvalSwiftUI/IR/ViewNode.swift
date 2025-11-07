@@ -16,11 +16,23 @@ struct ModifierNode {
 }
 
 struct ArgumentNode {
+    enum Value {
+        case expression(ExprSyntax)
+        case closure(ClosureExprSyntax)
+    }
+
     let label: String?
-    let expression: ExprSyntax
+    let value: Value
 }
 
 public struct ResolvedArgument {
     public let label: String?
     public let value: SwiftValue
 }
+
+public enum SwiftValue {
+    case string(String)
+    case memberAccess([String])
+    case viewContent(ViewContent)
+}
+

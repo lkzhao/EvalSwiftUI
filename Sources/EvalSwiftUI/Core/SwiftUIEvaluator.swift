@@ -12,14 +12,8 @@ public final class SwiftUIEvaluator {
                 viewBuilders: [any SwiftUIViewBuilder] = [],
                 modifierBuilders: [any SwiftUIModifierBuilder] = []) {
         self.expressionResolver = expressionResolver
-        viewRegistry = ViewRegistry(
-            expressionResolver: expressionResolver,
-            additionalBuilders: viewBuilders
-        )
-        modifierRegistry = ModifierRegistry(
-            expressionResolver: expressionResolver,
-            additionalBuilders: modifierBuilders
-        )
+        viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
+        modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
 
     public func evaluate(source: String) throws -> some View {
@@ -38,10 +32,38 @@ public final class SwiftUIEvaluator {
     }
 
     private func buildView(from node: ViewNode) throws -> AnyView {
-        var view = try viewRegistry.makeView(from: node.constructor)
+        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments)
+        var view = try viewRegistry.makeView(
+            from: node.constructor,
+            arguments: resolvedConstructorArguments
+        )
         for modifier in node.modifiers {
-            view = try modifierRegistry.applyModifier(modifier, to: view)
+            let resolvedModifierArguments = try resolveArguments(modifier.arguments)
+            view = try modifierRegistry.applyModifier(
+                modifier,
+                arguments: resolvedModifierArguments,
+                to: view
+            )
         }
         return view
+    }
+
+    private func resolveArguments(_ arguments: [ArgumentNode]) throws -> [ResolvedArgument] {
+        try arguments.map { argument in
+            switch argument.value {
+            case .expression(let expression):
+                let value = try expressionResolver.resolveExpression(expression)
+                return ResolvedArgument(label: argument.label, value: value)
+            case .closure(let closure):
+                let content = try makeViewContent(from: closure)
+                return ResolvedArgument(label: argument.label, value: .viewContent(content))
+            }
+        }
+    }
+
+    private func makeViewContent(from closure: ClosureExprSyntax) throws -> ViewContent {
+        let nodes = try viewNodeBuilder.buildViewNodes(from: closure)
+        let renderers = nodes.map { node in { try self.buildView(from: node) } }
+        return ViewContent(renderers: renderers)
     }
 }

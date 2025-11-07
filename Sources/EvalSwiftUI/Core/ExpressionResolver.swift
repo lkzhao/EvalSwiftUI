@@ -3,15 +3,6 @@ import SwiftSyntax
 public final class ExpressionResolver {
     public init() {}
 
-    func resolveArguments(_ arguments: [ArgumentNode]) throws -> [ResolvedArgument] {
-        try arguments.map { argument in
-            ResolvedArgument(
-                label: argument.label,
-                value: try resolveExpression(argument.expression)
-            )
-        }
-    }
-
     func resolveExpression(_ expression: ExprSyntax) throws -> SwiftValue {
         if let stringLiteral = expression.as(StringLiteralExprSyntax.self) {
             return .string(try stringLiteralValue(stringLiteral))
@@ -60,9 +51,4 @@ public final class ExpressionResolver {
 
         return result
     }
-}
-
-public enum SwiftValue {
-    case string(String)
-    case memberAccess([String])
 }

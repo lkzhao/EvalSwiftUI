@@ -2,23 +2,21 @@ import SwiftUI
 
 final class ModifierRegistry {
     private var builders: [String: any SwiftUIModifierBuilder]
-    private let expressionResolver: ExpressionResolver
 
-    init(expressionResolver: ExpressionResolver,
-         additionalBuilders: [any SwiftUIModifierBuilder] = []) {
-        self.expressionResolver = expressionResolver
+    init(additionalBuilders: [any SwiftUIModifierBuilder] = []) {
         builders = Self.makeLookup(
             defaults: Self.defaultBuilders,
             additional: additionalBuilders
         )
     }
 
-    func applyModifier(_ modifier: ModifierNode, to base: AnyView) throws -> AnyView {
+    func applyModifier(_ modifier: ModifierNode,
+                       arguments: [ResolvedArgument],
+                       to base: AnyView) throws -> AnyView {
         guard let builder = builders[modifier.name] else {
             throw SwiftUIEvaluatorError.unsupportedModifier(modifier.name)
         }
 
-        let arguments = try expressionResolver.resolveArguments(modifier.arguments)
         return try builder.apply(arguments: arguments, to: base)
     }
 

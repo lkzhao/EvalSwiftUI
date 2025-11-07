@@ -17,4 +17,15 @@ struct SwiftUIEvaluatorSuccessTests {
         """
         _ = try evalSwiftUI(source)
     }
+
+    @Test func rendersVStackWithChildText() throws {
+        let source = """
+        VStack {
+            Text("Hello, SwiftUI!")
+                .font(.title)
+                .padding()
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
 }
