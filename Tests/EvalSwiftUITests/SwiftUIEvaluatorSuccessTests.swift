@@ -1,3 +1,4 @@
+import SwiftUI
 import Testing
 @testable import EvalSwiftUI
 
@@ -6,6 +7,35 @@ private struct DictionaryContext: SwiftUIEvaluatorContext {
 
     func value(for identifier: String) -> SwiftValue? {
         values[identifier]
+    }
+}
+
+private struct Badge: View {
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "tag")
+                .imageScale(.small)
+            Text(label)
+                .font(.caption.bold())
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.orange.opacity(0.2))
+        .clipShape(Capsule())
+    }
+}
+
+private struct BadgeViewBuilder: SwiftUIViewBuilder {
+    let name = "Badge"
+
+    func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
+        guard let first = arguments.first, case let .string(label) = first.value else {
+            throw SwiftUIEvaluatorError.invalidArguments("Badge expects a leading string label.")
+        }
+
+        return AnyView(Badge(label: label))
     }
 }
 
@@ -194,6 +224,15 @@ struct SwiftUIEvaluatorSuccessTests {
         }
         """
         _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersCustomViewUsingBuilder() throws {
+        let source = """
+        Badge("Beta")
+        """
+
+        let evaluator = SwiftUIEvaluator(viewBuilders: [BadgeViewBuilder()])
+        _ = try evaluator.evaluate(source: source)
     }
 
     @Test func propagatesBindingsToNestedClosures() throws {

@@ -60,6 +60,49 @@ do {
 }
 ```
 
+### Custom Views via Builders
+
+You can expose domain-specific views by registering your own `SwiftUIViewBuilder`:
+
+```swift
+import EvalSwiftUI
+import SwiftUI
+
+struct Badge: View {
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "tag")
+                .imageScale(.small)
+            Text(label)
+                .font(.caption.bold())
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.orange.opacity(0.2))
+        .clipShape(Capsule())
+    }
+}
+
+struct BadgeViewBuilder: SwiftUIViewBuilder {
+    let name = "Badge"
+
+    func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
+        guard let first = arguments.first, case let .string(label) = first.value else {
+            throw SwiftUIEvaluatorError.invalidArguments("Badge expects a string label.")
+        }
+
+        return AnyView(Badge(label: label))
+    }
+}
+
+let evaluator = SwiftUIEvaluator(viewBuilders: [BadgeViewBuilder()])
+let badge = try evaluator.evaluate(source: "Badge(\"Beta\")")
+```
+
+This mirrors the `rendersCustomViewUsingBuilder` test, ensuring the documentation stays backed by executable coverage.
+
 ## Running Tests
 
 ```sh
