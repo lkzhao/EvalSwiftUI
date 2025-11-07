@@ -39,6 +39,7 @@ public indirect enum SwiftValue {
     case functionCall(FunctionCallValue)
     case bool(Bool)
     case optional(SwiftValue?)
+    case array([SwiftValue])
 }
 
 public struct FunctionCallValue {
@@ -65,6 +66,8 @@ extension SwiftValue {
             return "bool"
         case .optional:
             return "optional"
+        case .array:
+            return "array"
         }
     }
 

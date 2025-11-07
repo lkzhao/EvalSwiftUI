@@ -39,6 +39,17 @@ public final class ExpressionResolver {
             return .optional(nil)
         }
 
+        if let arrayLiteral = expression.as(ArrayExprSyntax.self) {
+            let elements = try arrayLiteral.elements.map { element in
+                try resolveExpression(
+                    ExprSyntax(element.expression),
+                    scope: scope,
+                    context: context
+                )
+            }
+            return .array(elements)
+        }
+
         if let functionCall = expression.as(FunctionCallExprSyntax.self) {
             return try resolveFunctionCall(functionCall, scope: scope, context: context)
         }

@@ -6,3 +6,6 @@
 - [x] Support stack alignment and spacing parameters in view builders.
 - [x] Expand modifier argument decoding for `foregroundStyle`, `font`, and `padding`.
 - [x] Implement `frame` modifier with configurable parameters.
+- [x] Support simple array literals in expression evaluation.
+- [ ] Support range expressions for repeatable data.
+- [ ] Render `ForEach` nodes given literal data sources.

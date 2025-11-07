@@ -208,6 +208,16 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func supportsArrayBindings() throws {
+        let source = """
+        VStack {
+            let labels = ["One", "Two"]
+            Text("Done")
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")
