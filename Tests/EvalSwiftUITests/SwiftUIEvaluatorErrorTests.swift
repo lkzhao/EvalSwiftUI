@@ -54,4 +54,24 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("Text expects"))
         }
     }
+
+    @Test func ifRequiresBooleanCondition() throws {
+        let source = """
+        VStack {
+            if "invalid" {
+                Text("Nope")
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("boolean value"))
+        }
+    }
 }

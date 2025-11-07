@@ -95,6 +95,35 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source, context: context)
     }
 
+    @Test func rendersConditionalContent() throws {
+        let source = """
+        VStack {
+            let showGreeting = true
+            if showGreeting {
+                Text("Hello")
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersConditionalElseBranches() throws {
+        let source = """
+        VStack {
+            let showPrimary = false
+            let showSecondary = true
+            if showPrimary {
+                Text("Primary")
+            } else if showSecondary {
+                Text("Secondary")
+            } else {
+                Text("Fallback")
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func supportsLetBindingsInsideClosures() throws {
         let source = """
         VStack {
