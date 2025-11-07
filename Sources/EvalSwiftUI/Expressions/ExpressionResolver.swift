@@ -1,6 +1,8 @@
 import SwiftSyntax
 
-final class ExpressionResolver {
+public final class ExpressionResolver {
+    public init() {}
+
     func resolveArguments(_ arguments: [ArgumentNode]) throws -> [ResolvedArgument] {
         try arguments.map { argument in
             ResolvedArgument(
@@ -60,7 +62,7 @@ final class ExpressionResolver {
     }
 }
 
-enum SwiftValue {
+public enum SwiftValue {
     case string(String)
     case memberAccess([String])
 }

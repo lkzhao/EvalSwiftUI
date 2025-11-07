@@ -1,13 +1,33 @@
+import SwiftParser
 import SwiftSyntax
 import SwiftUI
 
-final class SwiftUIEvaluator {
+public final class SwiftUIEvaluator {
     private let viewNodeBuilder = ViewNodeBuilder()
-    private let expressionResolver = ExpressionResolver()
-    private lazy var viewRegistry = ViewRegistry(expressionResolver: expressionResolver)
-    private lazy var modifierRegistry = ModifierRegistry(expressionResolver: expressionResolver)
+    private let expressionResolver: ExpressionResolver
+    private let viewRegistry: ViewRegistry
+    private let modifierRegistry: ModifierRegistry
 
-    func evaluate(syntax: SourceFileSyntax) throws -> some View {
+    public init(expressionResolver: ExpressionResolver = ExpressionResolver(),
+                viewBuilders: [any SwiftUIViewBuilder] = [],
+                modifierBuilders: [any SwiftUIModifierBuilder] = []) {
+        self.expressionResolver = expressionResolver
+        viewRegistry = ViewRegistry(
+            expressionResolver: expressionResolver,
+            additionalBuilders: viewBuilders
+        )
+        modifierRegistry = ModifierRegistry(
+            expressionResolver: expressionResolver,
+            additionalBuilders: modifierBuilders
+        )
+    }
+
+    public func evaluate(source: String) throws -> some View {
+        let syntax = Parser.parse(source: source)
+        return try evaluate(syntax: syntax)
+    }
+
+    private func evaluate(syntax: SourceFileSyntax) throws -> some View {
         guard let statement = syntax.statements.first,
               let call = statement.item.as(FunctionCallExprSyntax.self) else {
             throw SwiftUIEvaluatorError.missingRootExpression

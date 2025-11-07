@@ -20,7 +20,7 @@ struct ArgumentNode {
     let expression: ExprSyntax
 }
 
-struct ResolvedArgument {
-    let label: String?
-    let value: SwiftValue
+public struct ResolvedArgument {
+    public let label: String?
+    public let value: SwiftValue
 }

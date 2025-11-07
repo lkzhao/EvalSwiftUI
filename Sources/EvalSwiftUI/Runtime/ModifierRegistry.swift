@@ -1,27 +1,16 @@
 import SwiftUI
 
 final class ModifierRegistry {
-    private typealias ModifierBuilder = ([ResolvedArgument], AnyView) throws -> AnyView
-    private var builders: [String: ModifierBuilder]
+    private var builders: [String: any SwiftUIModifierBuilder]
     private let expressionResolver: ExpressionResolver
 
-    init(expressionResolver: ExpressionResolver) {
+    init(expressionResolver: ExpressionResolver,
+         additionalBuilders: [any SwiftUIModifierBuilder] = []) {
         self.expressionResolver = expressionResolver
-        builders = [
-            "font": { arguments, base in
-                guard let argument = arguments.first else {
-                    throw SwiftUIEvaluatorError.invalidArguments("font modifier expects a Font value.")
-                }
-                let font = try Self.font(from: argument.value)
-                return AnyView(base.font(font))
-            },
-            "padding": { arguments, base in
-                guard arguments.isEmpty else {
-                    throw SwiftUIEvaluatorError.unsupportedModifier("padding")
-                }
-                return AnyView(base.padding())
-            },
-        ]
+        builders = Self.makeLookup(
+            defaults: Self.defaultBuilders,
+            additional: additionalBuilders
+        )
     }
 
     func applyModifier(_ modifier: ModifierNode, to base: AnyView) throws -> AnyView {
@@ -30,18 +19,19 @@ final class ModifierRegistry {
         }
 
         let arguments = try expressionResolver.resolveArguments(modifier.arguments)
-        return try builder(arguments, base)
+        return try builder.apply(arguments: arguments, to: base)
     }
 
-    private static func font(from value: SwiftValue) throws -> Font {
-        guard case let .memberAccess(path) = value else {
-            throw SwiftUIEvaluatorError.invalidArguments("font modifier expects a Font value.")
-        }
+    private static var defaultBuilders: [any SwiftUIModifierBuilder] {
+        [FontModifierBuilder(), PaddingModifierBuilder()]
+    }
 
-        if path == ["title"] || path == ["Font", "title"] {
-            return .title
+    private static func makeLookup(defaults: [any SwiftUIModifierBuilder],
+                                   additional: [any SwiftUIModifierBuilder]) -> [String: any SwiftUIModifierBuilder] {
+        var lookup: [String: any SwiftUIModifierBuilder] = [:]
+        for builder in defaults + additional {
+            lookup[builder.name] = builder
         }
-
-        throw SwiftUIEvaluatorError.invalidArguments("Unsupported font: \(path.joined(separator: "."))")
+        return lookup
     }
 }

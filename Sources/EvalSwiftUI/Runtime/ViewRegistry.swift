@@ -1,21 +1,16 @@
 import SwiftUI
 
 final class ViewRegistry {
-    private typealias Builder = ([ResolvedArgument]) throws -> AnyView
-    private var builders: [String: Builder]
+    private var builders: [String: any SwiftUIViewBuilder]
     private let expressionResolver: ExpressionResolver
 
-    init(expressionResolver: ExpressionResolver) {
+    init(expressionResolver: ExpressionResolver,
+         additionalBuilders: [any SwiftUIViewBuilder] = []) {
         self.expressionResolver = expressionResolver
-        builders = [
-            "Text": { arguments in
-                guard let first = arguments.first,
-                      case let .string(value) = first.value else {
-                    throw SwiftUIEvaluatorError.invalidArguments("Text expects a leading string literal.")
-                }
-                return AnyView(Text(value))
-            },
-        ]
+        builders = Self.makeLookup(
+            defaults: Self.defaultBuilders,
+            additional: additionalBuilders
+        )
     }
 
     func makeView(from constructor: ViewConstructor) throws -> AnyView {
@@ -24,6 +19,19 @@ final class ViewRegistry {
         }
 
         let arguments = try expressionResolver.resolveArguments(constructor.arguments)
-        return try builder(arguments)
+        return try builder.makeView(arguments: arguments)
+    }
+
+    private static var defaultBuilders: [any SwiftUIViewBuilder] {
+        [TextViewBuilder()]
+    }
+
+    private static func makeLookup(defaults: [any SwiftUIViewBuilder],
+                                   additional: [any SwiftUIViewBuilder]) -> [String: any SwiftUIViewBuilder] {
+        var lookup: [String: any SwiftUIViewBuilder] = [:]
+        for builder in defaults + additional {
+            lookup[builder.name] = builder
+        }
+        return lookup
     }
 }
