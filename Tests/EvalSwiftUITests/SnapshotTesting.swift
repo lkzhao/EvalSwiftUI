@@ -9,16 +9,6 @@ enum SnapshotError: Error {
     case missingPixelData
 }
 
-struct SnapshotConfiguration {
-    let proposedWidth: CGFloat?
-    let proposedHeight: CGFloat?
-    let scale: CGFloat
-
-    static var automatic: SnapshotConfiguration {
-        SnapshotConfiguration(proposedWidth: nil, proposedHeight: nil, scale: 1)
-    }
-}
-
 struct ViewSnapshot: Equatable {
     let width: Int
     let height: Int
@@ -67,19 +57,10 @@ struct ViewSnapshot: Equatable {
 
 enum ViewSnapshotRenderer {
     @MainActor
-    static func snapshot<V: View>(
-        from view: V,
-        configuration: SnapshotConfiguration = .automatic
-    ) throws -> ViewSnapshot {
+    static func snapshot<V: View>(from view: V) throws -> ViewSnapshot {
         let renderer = ImageRenderer(content: view)
-        renderer.scale = configuration.scale
+        renderer.scale = 1
         renderer.isOpaque = false
-        if configuration.proposedWidth != nil || configuration.proposedHeight != nil {
-            renderer.proposedSize = ProposedViewSize(
-                width: configuration.proposedWidth,
-                height: configuration.proposedHeight
-            )
-        }
         guard let image = renderer.cgImage else {
             throw SnapshotError.failedToRenderImage
         }
@@ -90,11 +71,10 @@ enum ViewSnapshotRenderer {
 @MainActor
 func assertSnapshotsMatch<V: View>(
     source: String,
-    configuration: SnapshotConfiguration = .automatic,
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let evaluated = try evalSwiftUI(source)
-    let evaluatedSnapshot = try ViewSnapshotRenderer.snapshot(from: evaluated, configuration: configuration)
-    let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: expectedView(), configuration: configuration)
+    let evaluatedSnapshot = try ViewSnapshotRenderer.snapshot(from: evaluated)
+    let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: expectedView())
     #expect(evaluatedSnapshot == expectedSnapshot)
 }

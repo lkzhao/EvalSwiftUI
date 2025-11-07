@@ -5,33 +5,15 @@ import Testing
 @MainActor
 struct SwiftUIEvaluatorSnapshotTests {
     @Test func textMatchesSnapshot() throws {
-        let source = """
-        Text("Snapshot")
-            .font(.title)
-            .padding(8)
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Text("Snapshot")
                 .font(.title)
                 .padding(8)
-        }
+        )
     }
 
     @Test func nestedStacksMatchSnapshot() throws {
-        let source = """
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Primary")
-                .font(.headline)
-            HStack(spacing: 4) {
-                Text("L")
-                Text("R")
-            }
-        }
-        .padding()
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             VStack(alignment: .leading, spacing: 12) {
                 Text("Primary")
                     .font(.headline)
@@ -41,6 +23,6 @@ struct SwiftUIEvaluatorSnapshotTests {
                 }
             }
             .padding()
-        }
+        )
     }
 }

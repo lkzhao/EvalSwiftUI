@@ -2,6 +2,7 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
+import CompilerPluginSupport
 
 let package = Package(
     name: "EvalSwiftUI",
@@ -32,9 +33,20 @@ let package = Package(
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
             ]
         ),
+        .macro(
+            name: "EvalSwiftUIMacros",
+            dependencies: [
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
+            ]
+        ),
         .testTarget(
             name: "EvalSwiftUITests",
-            dependencies: ["EvalSwiftUI"]
+            dependencies: [
+                "EvalSwiftUI",
+                "EvalSwiftUIMacros"
+            ]
         ),
     ]
 )
