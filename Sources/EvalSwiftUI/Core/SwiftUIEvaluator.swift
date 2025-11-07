@@ -3,7 +3,7 @@ import SwiftSyntax
 import SwiftUI
 
 public final class SwiftUIEvaluator {
-    private let viewNodeBuilder = ViewNodeBuilder()
+    private let viewNodeBuilder: ViewNodeBuilder
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
     private let modifierRegistry: ModifierRegistry
@@ -12,6 +12,7 @@ public final class SwiftUIEvaluator {
                 viewBuilders: [any SwiftUIViewBuilder] = [],
                 modifierBuilders: [any SwiftUIModifierBuilder] = []) {
         self.expressionResolver = expressionResolver
+        viewNodeBuilder = ViewNodeBuilder(expressionResolver: expressionResolver)
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
         modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
@@ -27,18 +28,18 @@ public final class SwiftUIEvaluator {
             throw SwiftUIEvaluatorError.missingRootExpression
         }
 
-        let viewNode = try viewNodeBuilder.buildViewNode(from: call)
+        let viewNode = try viewNodeBuilder.buildViewNode(from: call, scope: [:])
         return try buildView(from: viewNode)
     }
 
     private func buildView(from node: ViewNode) throws -> AnyView {
-        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments)
+        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: node.scope)
         var view = try viewRegistry.makeView(
             from: node.constructor,
             arguments: resolvedConstructorArguments
         )
         for modifier in node.modifiers {
-            let resolvedModifierArguments = try resolveArguments(modifier.arguments)
+            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: node.scope)
             view = try modifierRegistry.applyModifier(
                 modifier,
                 arguments: resolvedModifierArguments,
@@ -48,21 +49,21 @@ public final class SwiftUIEvaluator {
         return view
     }
 
-    private func resolveArguments(_ arguments: [ArgumentNode]) throws -> [ResolvedArgument] {
+    private func resolveArguments(_ arguments: [ArgumentNode], scope: ExpressionScope) throws -> [ResolvedArgument] {
         try arguments.map { argument in
             switch argument.value {
             case .expression(let expression):
-                let value = try expressionResolver.resolveExpression(expression)
+                let value = try expressionResolver.resolveExpression(expression, scope: scope)
                 return ResolvedArgument(label: argument.label, value: value)
-            case .closure(let closure):
-                let content = try makeViewContent(from: closure)
+            case .closure(let closure, let capturedScope):
+                let content = try makeViewContent(from: closure, scope: capturedScope)
                 return ResolvedArgument(label: argument.label, value: .viewContent(content))
             }
         }
     }
 
-    private func makeViewContent(from closure: ClosureExprSyntax) throws -> ViewContent {
-        let nodes = try viewNodeBuilder.buildViewNodes(from: closure)
+    private func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
+        let nodes = try viewNodeBuilder.buildViewNodes(from: closure, scope: scope)
         let renderers = nodes.map { node in { try self.buildView(from: node) } }
         return ViewContent(renderers: renderers)
     }

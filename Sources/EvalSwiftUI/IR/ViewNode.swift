@@ -3,6 +3,7 @@ import SwiftSyntax
 struct ViewNode {
     let constructor: ViewConstructor
     var modifiers: [ModifierNode]
+    let scope: ExpressionScope
 }
 
 struct ViewConstructor {
@@ -18,7 +19,7 @@ struct ModifierNode {
 struct ArgumentNode {
     enum Value {
         case expression(ExprSyntax)
-        case closure(ClosureExprSyntax)
+        case closure(ClosureExprSyntax, scope: ExpressionScope)
     }
 
     let label: String?
@@ -42,3 +43,5 @@ public struct FunctionCallValue {
     public let name: [String]
     public let arguments: [ResolvedArgument]
 }
+
+typealias ExpressionScope = [String: SwiftValue]

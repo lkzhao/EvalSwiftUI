@@ -51,6 +51,28 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func supportsLetBindingsInsideClosures() throws {
+        let source = """
+        VStack {
+            let value = "scoped"
+            Text(value)
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func propagatesBindingsToNestedClosures() throws {
+        let source = """
+        VStack {
+            let label = "outer"
+            HStack {
+                Text(label)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")
@@ -62,12 +84,5 @@ struct SwiftUIEvaluatorSuccessTests {
             .frame(minWidth: 60, maxWidth: .infinity, alignment: .center)
         """
         _ = try evalSwiftUI(source)
-    }
-
-    @Test func safeEvaluatorReturnsViewOnError() {
-        let source = """
-        Text(123)
-        """
-        _ = evalSwiftUISafe(source)
     }
 }

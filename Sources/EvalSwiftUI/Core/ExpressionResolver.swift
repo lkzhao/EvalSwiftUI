@@ -3,7 +3,7 @@ import SwiftSyntax
 public final class ExpressionResolver {
     public init() {}
 
-    func resolveExpression(_ expression: ExprSyntax) throws -> SwiftValue {
+    func resolveExpression(_ expression: ExprSyntax, scope: ExpressionScope = [:]) throws -> SwiftValue {
         if let stringLiteral = expression.as(StringLiteralExprSyntax.self) {
             return .string(try stringLiteralValue(stringLiteral))
         }
@@ -23,7 +23,7 @@ public final class ExpressionResolver {
         }
 
         if let functionCall = expression.as(FunctionCallExprSyntax.self) {
-            return try resolveFunctionCall(functionCall)
+            return try resolveFunctionCall(functionCall, scope: scope)
         }
 
         if let memberAccess = expression.as(MemberAccessExprSyntax.self) {
@@ -31,6 +31,9 @@ public final class ExpressionResolver {
         }
 
         if let reference = expression.as(DeclReferenceExprSyntax.self) {
+            if let scopedValue = scope[reference.baseName.text] {
+                return scopedValue
+            }
             return .memberAccess([reference.baseName.text])
         }
 
@@ -70,7 +73,7 @@ public final class ExpressionResolver {
         return result
     }
 
-    private func resolveFunctionCall(_ call: FunctionCallExprSyntax) throws -> SwiftValue {
+    private func resolveFunctionCall(_ call: FunctionCallExprSyntax, scope: ExpressionScope) throws -> SwiftValue {
         let name: [String]
         if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
             name = try memberAccessPath(memberAccess)
@@ -80,13 +83,13 @@ public final class ExpressionResolver {
             throw SwiftUIEvaluatorError.unsupportedExpression(call.description)
         }
 
-        let arguments = try resolveCallArguments(call.arguments)
+        let arguments = try resolveCallArguments(call.arguments, scope: scope)
         return .functionCall(FunctionCallValue(name: name, arguments: arguments))
     }
 
-    private func resolveCallArguments(_ arguments: LabeledExprListSyntax) throws -> [ResolvedArgument] {
+    private func resolveCallArguments(_ arguments: LabeledExprListSyntax, scope: ExpressionScope) throws -> [ResolvedArgument] {
         try arguments.map { element in
-            let value = try resolveExpression(ExprSyntax(element.expression))
+            let value = try resolveExpression(ExprSyntax(element.expression), scope: scope)
             return ResolvedArgument(label: element.label?.text, value: value)
         }
     }
