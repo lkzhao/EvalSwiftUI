@@ -63,4 +63,11 @@ struct SwiftUIEvaluatorSuccessTests {
         """
         _ = try evalSwiftUI(source)
     }
+
+    @Test func safeEvaluatorReturnsViewOnError() {
+        let source = """
+        Text(123)
+        """
+        _ = evalSwiftUISafe(source)
+    }
 }

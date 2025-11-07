@@ -10,7 +10,5 @@ public func evalSwiftUI(_ source: String) throws -> AnyView {
 }
 
 public func evalSwiftUI(_ source: () -> String) throws -> AnyView {
-    let evaluator = SwiftUIEvaluator()
-    let view = try evaluator.evaluate(source: source())
-    return AnyView(view)
+    try evalSwiftUI(source())
 }
