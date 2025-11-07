@@ -8,10 +8,6 @@ struct ForegroundStyleModifierBuilder: SwiftUIModifierBuilder {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle requires at least one argument.")
         }
 
-        guard #available(macOS 12.0, *) else {
-            throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle requires macOS 12.0 or newer.")
-        }
-
         guard case let .memberAccess(path) = argument.value,
               let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle expects a known style or Color.")
