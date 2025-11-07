@@ -59,6 +59,20 @@ public struct RangeValue {
     public let style: Style
 }
 
+extension RangeValue {
+    func elements() -> [Int] {
+        switch style {
+        case .halfOpen:
+            if lowerBound >= upperBound {
+                return []
+            }
+            return Array(lowerBound..<upperBound)
+        case .closed:
+            return Array(lowerBound...upperBound)
+        }
+    }
+}
+
 typealias ExpressionScope = [String: SwiftValue]
 
 extension SwiftValue {

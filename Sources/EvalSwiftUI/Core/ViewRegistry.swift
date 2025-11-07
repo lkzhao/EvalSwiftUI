@@ -20,7 +20,13 @@ final class ViewRegistry {
     }
 
     private static var defaultBuilders: [any SwiftUIViewBuilder] {
-        [TextViewBuilder(), VStackViewBuilder(), HStackViewBuilder(), ImageViewBuilder()]
+        [
+            TextViewBuilder(),
+            VStackViewBuilder(),
+            HStackViewBuilder(),
+            ImageViewBuilder(),
+            ForEachViewBuilder()
+        ]
     }
 
     private static func makeLookup(defaults: [any SwiftUIViewBuilder],

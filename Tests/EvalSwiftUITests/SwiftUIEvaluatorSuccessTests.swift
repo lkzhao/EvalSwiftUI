@@ -229,6 +229,29 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func rendersForEachFromArray() throws {
+        let source = """
+        VStack {
+            let users = ["Ava", "Ben"]
+            ForEach(users) { user in
+                Text(user)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersForEachFromRange() throws {
+        let source = """
+        VStack {
+            ForEach(0..<3) { index in
+                Text("Row \\(index)")
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")

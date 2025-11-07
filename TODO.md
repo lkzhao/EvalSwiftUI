@@ -8,4 +8,4 @@
 - [x] Implement `frame` modifier with configurable parameters.
 - [x] Support simple array literals in expression evaluation.
 - [x] Support range expressions for repeatable data.
-- [ ] Render `ForEach` nodes given literal data sources.
+- [x] Render `ForEach` nodes given literal data sources.

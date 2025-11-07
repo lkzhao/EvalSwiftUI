@@ -36,14 +36,15 @@ public final class SwiftUIEvaluator {
         return try buildView(from: viewNode)
     }
 
-    private func buildView(from node: ViewNode) throws -> AnyView {
-        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: node.scope)
+    private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
+        let scope = node.scope.merging(scopeOverrides) { _, new in new }
+        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: scope)
         var view = try viewRegistry.makeView(
             from: node.constructor,
             arguments: resolvedConstructorArguments
         )
         for modifier in node.modifiers {
-            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: node.scope)
+            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: scope)
             view = try modifierRegistry.applyModifier(
                 modifier,
                 arguments: resolvedModifierArguments,
@@ -72,7 +73,30 @@ public final class SwiftUIEvaluator {
 
     private func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
         let nodes = try viewNodeBuilder.buildViewNodes(from: closure, scope: scope)
-        let renderers = nodes.map { node in { try self.buildView(from: node) } }
-        return ViewContent(renderers: renderers)
+        let parameterNames = closureParameterNames(closure)
+        let renderers = nodes.map { node in
+            { overrides in
+                try self.buildView(from: node, scopeOverrides: overrides)
+            }
+        }
+        return ViewContent(renderers: renderers, parameters: parameterNames)
+    }
+
+    private func closureParameterNames(_ closure: ClosureExprSyntax) -> [String] {
+        guard let parameterClause = closure.signature?.parameterClause else {
+            return []
+        }
+
+        switch parameterClause {
+        case .parameterClause(let clause):
+            return clause.parameters.map { parameter in
+                if let secondName = parameter.secondName {
+                    return secondName.text
+                }
+                return parameter.firstName.text
+            }
+        case .simpleInput(let shorthand):
+            return shorthand.map { $0.name.text }
+        }
     }
 }

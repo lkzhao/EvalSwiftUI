@@ -94,4 +94,44 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("optional value"))
         }
     }
+
+    @Test func forEachRequiresCollectionData() throws {
+        let source = """
+        VStack {
+            ForEach(Text("nope")) { value in
+                Text("Value: \\(value)")
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("array or range"))
+        }
+    }
+
+    @Test func forEachRequiresParameter() throws {
+        let source = """
+        VStack {
+            ForEach(["A", "B"]) {
+                Text("No parameter")
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("exactly one parameter"))
+        }
+    }
 }
