@@ -40,8 +40,8 @@ struct SwiftUIEvaluatorSuccessTests {
 
     @Test func rendersNestedStacks() throws {
         let source = """
-        VStack {
-            HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 4) {
                 Text("Left")
                 Text("Right")
             }

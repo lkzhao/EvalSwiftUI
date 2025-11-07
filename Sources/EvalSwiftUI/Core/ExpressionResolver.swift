@@ -8,6 +8,20 @@ public final class ExpressionResolver {
             return .string(try stringLiteralValue(stringLiteral))
         }
 
+        if let integerLiteral = expression.as(IntegerLiteralExprSyntax.self) {
+            guard let value = Double(integerLiteral.literal.text) else {
+                throw SwiftUIEvaluatorError.invalidArguments("Unable to parse integer literal \(integerLiteral.literal.text).")
+            }
+            return .number(value)
+        }
+
+        if let floatLiteral = expression.as(FloatLiteralExprSyntax.self) {
+            guard let value = Double(floatLiteral.literal.text) else {
+                throw SwiftUIEvaluatorError.invalidArguments("Unable to parse float literal \(floatLiteral.literal.text).")
+            }
+            return .number(value)
+        }
+
         if let memberAccess = expression.as(MemberAccessExprSyntax.self) {
             return .memberAccess(try memberAccessPath(memberAccess))
         }

@@ -46,12 +46,12 @@ struct SwiftUIEvaluatorErrorTests {
 
         do {
             _ = try evalSwiftUI(source)
-            throw TestFailure.expected("Expected unsupported expression error")
+            throw TestFailure.expected("Expected invalid arguments error")
         } catch let error as SwiftUIEvaluatorError {
-            guard case .unsupportedExpression(let description) = error else {
+            guard case .invalidArguments(let message) = error else {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
-            #expect(description.contains("123"))
+            #expect(message.contains("Text expects"))
         }
     }
 }

@@ -34,5 +34,5 @@ public enum SwiftValue {
     case string(String)
     case memberAccess([String])
     case viewContent(ViewContent)
+    case number(Double)
 }
-
