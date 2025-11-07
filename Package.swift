@@ -5,7 +5,13 @@ import PackageDescription
 
 let package = Package(
     name: "EvalSwiftUI",
-    platforms: [.macOS(.v12), .iOS(.v15), .tvOS(.v15), .watchOS(.v8), .macCatalyst(.v15)],
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16),
+        .tvOS(.v16),
+        .watchOS(.v9),
+        .macCatalyst(.v16)
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
