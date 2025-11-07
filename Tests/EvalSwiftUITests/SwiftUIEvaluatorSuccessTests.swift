@@ -37,4 +37,17 @@ struct SwiftUIEvaluatorSuccessTests {
         """
         _ = try evalSwiftUI(source)
     }
+
+    @Test func rendersNestedStacks() throws {
+        let source = """
+        VStack {
+            HStack {
+                Text("Left")
+                Text("Right")
+            }
+            Text("Bottom")
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
 }
