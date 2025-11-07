@@ -59,6 +59,10 @@ public final class ExpressionResolver {
             return .range(rangeValue)
         }
 
+        if let keyPathExpr = expression.as(KeyPathExprSyntax.self) {
+            return .keyPath(try keyPathValue(from: keyPathExpr))
+        }
+
         if let functionCall = expression.as(FunctionCallExprSyntax.self) {
             return try resolveFunctionCall(functionCall, scope: scope, context: context)
         }
@@ -159,6 +163,16 @@ public final class ExpressionResolver {
         }
 
         return components
+    }
+
+    private func keyPathValue(from keyPath: KeyPathExprSyntax) throws -> KeyPathValue {
+        let components = try keyPath.components.map { component -> String in
+            guard let property = component.component.as(KeyPathPropertyComponentSyntax.self) else {
+                throw SwiftUIEvaluatorError.invalidArguments("Only property key paths are supported in id arguments.")
+            }
+            return property.declName.baseName.text
+        }
+        return KeyPathValue(components: components)
     }
 
     private func stringLiteralValue(

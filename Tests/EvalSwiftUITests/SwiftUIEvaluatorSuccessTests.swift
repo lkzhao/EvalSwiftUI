@@ -291,6 +291,18 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func rendersForEachWithExplicitId() throws {
+        let source = """
+        VStack {
+            let users = ["Ava", "Ben"]
+            ForEach(users, id: \\.self) { user in
+                Text(user)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")

@@ -41,11 +41,16 @@ public indirect enum SwiftValue {
     case optional(SwiftValue?)
     case array([SwiftValue])
     case range(RangeValue)
+    case keyPath(KeyPathValue)
 }
 
 public struct FunctionCallValue {
     public let name: [String]
     public let arguments: [ResolvedArgument]
+}
+
+public struct KeyPathValue {
+    public let components: [String]
 }
 
 public struct RangeValue {
@@ -96,6 +101,8 @@ extension SwiftValue {
             return "array"
         case .range:
             return "range"
+        case .keyPath:
+            return "keyPath"
         }
     }
 

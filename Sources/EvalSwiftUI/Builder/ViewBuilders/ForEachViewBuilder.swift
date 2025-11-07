@@ -22,20 +22,22 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
             throw SwiftUIEvaluatorError.invalidArguments("ForEach content must declare exactly one parameter.")
         }
 
+        let idStrategy = try makeIdentifierStrategy(from: arguments.first { $0.label == "id" }?.value)
         let sequence = try sequenceValues(from: dataArgument.value)
-        let renderedRows = try sequence.enumerated().map { offset, element -> AnyView in
+        let rows = try sequence.enumerated().map { offset, element -> RenderedRow in
             var overrides: ExpressionScope = [:]
             overrides[parameterName] = element
             let views = try content.renderViews(overriding: overrides)
             guard let view = views.first, views.count == 1 else {
                 throw SwiftUIEvaluatorError.invalidArguments("ForEach content must return exactly one view.")
             }
-            return view
+            let identifier = try idStrategy.makeIdentifier(for: element, index: offset)
+            return RenderedRow(id: identifier, view: view)
         }
 
         return AnyView(
-            ForEach(Array(renderedRows.enumerated()), id: \.0) { _, view in
-                view
+            ForEach(rows) { row in
+                row.view
             }
         )
     }
@@ -54,5 +56,56 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
         default:
             throw SwiftUIEvaluatorError.invalidArguments("ForEach supports array or range data sources.")
         }
+    }
+
+    private func makeIdentifierStrategy(from value: SwiftValue?) throws -> IdentifierStrategy {
+        guard let value else { return .index }
+        guard case .keyPath(let keyPath) = value else {
+            throw SwiftUIEvaluatorError.invalidArguments("id: expects a key path literal such as \\.self.")
+        }
+        guard keyPath.components.count == 1, keyPath.components.first == "self" else {
+            throw SwiftUIEvaluatorError.invalidArguments("Only \\.self identifiers are supported today.")
+        }
+        return .selfValue
+    }
+
+    private enum IdentifierStrategy {
+        case index
+        case selfValue
+
+        func makeIdentifier(for element: SwiftValue, index: Int) throws -> AnyHashable {
+            switch self {
+            case .index:
+                return AnyHashable(index)
+            case .selfValue:
+                return try hashableValue(from: element)
+            }
+        }
+
+        private func hashableValue(from value: SwiftValue) throws -> AnyHashable {
+            switch value {
+            case .string(let string):
+                return AnyHashable(string)
+            case .number(let number):
+                if number.truncatingRemainder(dividingBy: 1) == 0 {
+                    return AnyHashable(Int(number))
+                }
+                return AnyHashable(number)
+            case .bool(let flag):
+                return AnyHashable(flag)
+            case .optional(let wrapped):
+                guard let unwrapped = wrapped?.unwrappedOptional() else {
+                    throw SwiftUIEvaluatorError.invalidArguments("id: key path resolved to nil.")
+                }
+                return try hashableValue(from: unwrapped)
+            default:
+                throw SwiftUIEvaluatorError.invalidArguments("id: \\.self requires string, number, or boolean elements.")
+            }
+        }
+    }
+
+    private struct RenderedRow: Identifiable {
+        let id: AnyHashable
+        let view: AnyView
     }
 }
