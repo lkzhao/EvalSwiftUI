@@ -5,4 +5,4 @@
 - [x] Introduce registry-driven view/modifier builders so new SwiftUI features can plug in without touching the evaluator core.
 - [x] Support stack alignment and spacing parameters in view builders.
 - [x] Expand modifier argument decoding for `foregroundStyle`, `font`, and `padding`.
-- [ ] Implement `frame` modifier with configurable parameters.
+- [x] Implement `frame` modifier with configurable parameters.

@@ -58,6 +58,8 @@ struct SwiftUIEvaluatorSuccessTests {
             .padding(.horizontal, 8)
             .padding(4)
             .foregroundStyle(.red)
+            .frame(width: 120, height: 60, alignment: .leading)
+            .frame(minWidth: 60, maxWidth: .infinity, alignment: .center)
         """
         _ = try evalSwiftUI(source)
     }
