@@ -5,5 +5,14 @@ import Testing
     let source = """
     Text("Hello, SwiftUI!")
     """
-    let view = try evalSwiftUI(source)
+    _ = try evalSwiftUI(source)
+}
+
+@Test func textWithFontAndPadding() async throws {
+    let source = """
+    Text("Hello, SwiftUI!")
+        .font(.title)
+        .padding()
+    """
+    _ = try evalSwiftUI(source)
 }
