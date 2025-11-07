@@ -28,4 +28,13 @@ struct SwiftUIEvaluatorSuccessTests {
         """
         _ = try evalSwiftUI(source)
     }
+
+    @Test func rendersImageWithModifiers() throws {
+        let source = """
+        Image(systemName: "globe")
+            .imageScale(.large)
+            .foregroundStyle(.tint)
+        """
+        _ = try evalSwiftUI(source)
+    }
 }

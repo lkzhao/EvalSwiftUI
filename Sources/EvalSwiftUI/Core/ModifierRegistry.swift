@@ -21,7 +21,12 @@ final class ModifierRegistry {
     }
 
     private static var defaultBuilders: [any SwiftUIModifierBuilder] {
-        [FontModifierBuilder(), PaddingModifierBuilder()]
+        [
+            FontModifierBuilder(),
+            PaddingModifierBuilder(),
+            ImageScaleModifierBuilder(),
+            ForegroundStyleModifierBuilder()
+        ]
     }
 
     private static func makeLookup(defaults: [any SwiftUIModifierBuilder],
