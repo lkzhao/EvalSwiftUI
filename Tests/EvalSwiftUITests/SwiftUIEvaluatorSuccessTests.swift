@@ -218,6 +218,17 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func supportsRangeBindings() throws {
+        let source = """
+        VStack {
+            let exclusives = 0..<3
+            let inclusives = 1...3
+            Text("Done")
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")

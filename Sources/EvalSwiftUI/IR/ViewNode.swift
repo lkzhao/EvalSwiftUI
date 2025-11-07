@@ -40,11 +40,23 @@ public indirect enum SwiftValue {
     case bool(Bool)
     case optional(SwiftValue?)
     case array([SwiftValue])
+    case range(RangeValue)
 }
 
 public struct FunctionCallValue {
     public let name: [String]
     public let arguments: [ResolvedArgument]
+}
+
+public struct RangeValue {
+    public enum Style {
+        case halfOpen
+        case closed
+    }
+
+    public let lowerBound: Int
+    public let upperBound: Int
+    public let style: Style
 }
 
 typealias ExpressionScope = [String: SwiftValue]
@@ -68,6 +80,8 @@ extension SwiftValue {
             return "optional"
         case .array:
             return "array"
+        case .range:
+            return "range"
         }
     }
 
