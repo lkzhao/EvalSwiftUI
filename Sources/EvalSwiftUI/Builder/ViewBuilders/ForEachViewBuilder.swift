@@ -18,8 +18,14 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
             throw SwiftUIEvaluatorError.invalidArguments("ForEach requires a trailing content closure.")
         }
 
-        guard content.parameters.count == 1, let parameterName = content.parameters.first else {
-            throw SwiftUIEvaluatorError.invalidArguments("ForEach content must declare exactly one parameter.")
+        let parameterName: String
+        if let explicit = content.parameters.first {
+            guard content.parameters.count == 1 else {
+                throw SwiftUIEvaluatorError.invalidArguments("ForEach content must declare exactly one parameter.")
+            }
+            parameterName = explicit
+        } else {
+            parameterName = "$0"
         }
 
         let idStrategy = try makeIdentifierStrategy(from: arguments.first { $0.label == "id" }?.value)

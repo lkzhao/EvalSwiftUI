@@ -10,4 +10,4 @@
 - [x] Support range expressions for repeatable data.
 - [x] Render `ForEach` nodes given literal data sources.
 - [x] Allow `ForEach` to honor explicit `id:` arguments such as `\.self`.
-- [ ] Support shorthand closure parameters (e.g. `$0`) in content builders.
+- [x] Support shorthand closure parameters (e.g. `$0`) in content builders.

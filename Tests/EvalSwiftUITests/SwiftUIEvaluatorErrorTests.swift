@@ -115,11 +115,11 @@ struct SwiftUIEvaluatorErrorTests {
         }
     }
 
-    @Test func forEachRequiresParameter() throws {
+    @Test func forEachRejectsMultipleParameters() throws {
         let source = """
         VStack {
-            ForEach(["A", "B"]) {
-                Text("No parameter")
+            ForEach(["A", "B"]) { first, second in
+                Text(first)
             }
         }
         """

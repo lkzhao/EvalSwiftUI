@@ -303,6 +303,18 @@ struct SwiftUIEvaluatorSuccessTests {
         _ = try evalSwiftUI(source)
     }
 
+    @Test func rendersForEachUsingShorthandParameter() throws {
+        let source = """
+        VStack {
+            let users = ["Ava", "Ben"]
+            ForEach(users) {
+                Text($0)
+            }
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
     @Test func rendersAdvancedModifiers() throws {
         let source = """
         Text("Styled")
