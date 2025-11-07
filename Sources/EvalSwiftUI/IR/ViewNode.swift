@@ -37,6 +37,7 @@ public enum SwiftValue {
     case viewContent(ViewContent)
     case number(Double)
     case functionCall(FunctionCallValue)
+    case bool(Bool)
 }
 
 public struct FunctionCallValue {
@@ -45,3 +46,22 @@ public struct FunctionCallValue {
 }
 
 typealias ExpressionScope = [String: SwiftValue]
+
+extension SwiftValue {
+    var typeDescription: String {
+        switch self {
+        case .string:
+            return "string"
+        case .memberAccess:
+            return "member reference"
+        case .viewContent:
+            return "view content"
+        case .number:
+            return "number"
+        case .functionCall:
+            return "function call"
+        case .bool:
+            return "bool"
+        }
+    }
+}

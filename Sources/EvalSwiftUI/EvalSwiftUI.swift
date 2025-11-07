@@ -3,12 +3,18 @@
 
 import SwiftUI
 
-public func evalSwiftUI(_ source: String) throws -> AnyView {
-    let evaluator = SwiftUIEvaluator()
+public func evalSwiftUI(
+    _ source: String,
+    context: (any SwiftUIEvaluatorContext)? = nil
+) throws -> AnyView {
+    let evaluator = SwiftUIEvaluator(context: context)
     let view = try evaluator.evaluate(source: source)
     return AnyView(view)
 }
 
-public func evalSwiftUI(_ source: () -> String) throws -> AnyView {
-    try evalSwiftUI(source())
+public func evalSwiftUI(
+    _ source: () -> String,
+    context: (any SwiftUIEvaluatorContext)? = nil
+) throws -> AnyView {
+    try evalSwiftUI(source(), context: context)
 }

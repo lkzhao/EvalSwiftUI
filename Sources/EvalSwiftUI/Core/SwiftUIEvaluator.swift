@@ -7,12 +7,16 @@ public final class SwiftUIEvaluator {
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
     private let modifierRegistry: ModifierRegistry
+    private let context: (any SwiftUIEvaluatorContext)?
 
-    public init(expressionResolver: ExpressionResolver = ExpressionResolver(),
+    public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
-                modifierBuilders: [any SwiftUIModifierBuilder] = []) {
-        self.expressionResolver = expressionResolver
-        viewNodeBuilder = ViewNodeBuilder(expressionResolver: expressionResolver)
+                modifierBuilders: [any SwiftUIModifierBuilder] = [],
+                context: (any SwiftUIEvaluatorContext)? = nil) {
+        self.context = context
+        let resolver = expressionResolver ?? ExpressionResolver(context: context)
+        self.expressionResolver = resolver
+        viewNodeBuilder = ViewNodeBuilder(expressionResolver: resolver, context: context)
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
         modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
@@ -53,7 +57,11 @@ public final class SwiftUIEvaluator {
         try arguments.map { argument in
             switch argument.value {
             case .expression(let expression):
-                let value = try expressionResolver.resolveExpression(expression, scope: scope)
+                let value = try expressionResolver.resolveExpression(
+                    expression,
+                    scope: scope,
+                    context: context
+                )
                 return ResolvedArgument(label: argument.label, value: value)
             case .closure(let closure, let capturedScope):
                 let content = try makeViewContent(from: closure, scope: capturedScope)

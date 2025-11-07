@@ -1,11 +1,20 @@
 import SwiftSyntax
 
 public final class ExpressionResolver {
-    public init() {}
+    private let defaultContext: (any SwiftUIEvaluatorContext)?
 
-    func resolveExpression(_ expression: ExprSyntax, scope: ExpressionScope = [:]) throws -> SwiftValue {
+    public init(context: (any SwiftUIEvaluatorContext)? = nil) {
+        self.defaultContext = context
+    }
+
+    func resolveExpression(
+        _ expression: ExprSyntax,
+        scope: ExpressionScope = [:],
+        context externalContext: (any SwiftUIEvaluatorContext)? = nil
+    ) throws -> SwiftValue {
+        let context = externalContext ?? defaultContext
         if let stringLiteral = expression.as(StringLiteralExprSyntax.self) {
-            return .string(try stringLiteralValue(stringLiteral))
+            return .string(try stringLiteralValue(stringLiteral, scope: scope, context: context))
         }
 
         if let integerLiteral = expression.as(IntegerLiteralExprSyntax.self) {
@@ -22,8 +31,12 @@ public final class ExpressionResolver {
             return .number(value)
         }
 
+        if let booleanLiteral = expression.as(BooleanLiteralExprSyntax.self) {
+            return .bool(booleanLiteral.literal.text == "true")
+        }
+
         if let functionCall = expression.as(FunctionCallExprSyntax.self) {
-            return try resolveFunctionCall(functionCall, scope: scope)
+            return try resolveFunctionCall(functionCall, scope: scope, context: context)
         }
 
         if let memberAccess = expression.as(MemberAccessExprSyntax.self) {
@@ -33,6 +46,9 @@ public final class ExpressionResolver {
         if let reference = expression.as(DeclReferenceExprSyntax.self) {
             if let scopedValue = scope[reference.baseName.text] {
                 return scopedValue
+            }
+            if let externalValue = context?.value(for: reference.baseName.text) {
+                return externalValue
             }
             return .memberAccess([reference.baseName.text])
         }
@@ -59,12 +75,27 @@ public final class ExpressionResolver {
         return components
     }
 
-    private func stringLiteralValue(_ literal: StringLiteralExprSyntax) throws -> String {
+    private func stringLiteralValue(
+        _ literal: StringLiteralExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> String {
         var result = ""
 
         for segment in literal.segments {
             if let stringSegment = segment.as(StringSegmentSyntax.self) {
                 result.append(stringSegment.content.text)
+            } else if let interpolation = segment.as(ExpressionSegmentSyntax.self) {
+                guard interpolation.expressions.count == 1,
+                      let element = interpolation.expressions.first else {
+                    throw SwiftUIEvaluatorError.invalidArguments("Only simple string interpolation expressions are supported.")
+                }
+                let value = try resolveExpression(
+                    ExprSyntax(element.expression),
+                    scope: scope,
+                    context: context
+                )
+                result.append(try stringValue(from: value))
             } else {
                 throw SwiftUIEvaluatorError.invalidArguments("String interpolation is not supported.")
             }
@@ -73,7 +104,11 @@ public final class ExpressionResolver {
         return result
     }
 
-    private func resolveFunctionCall(_ call: FunctionCallExprSyntax, scope: ExpressionScope) throws -> SwiftValue {
+    private func resolveFunctionCall(
+        _ call: FunctionCallExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
         let name: [String]
         if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
             name = try memberAccessPath(memberAccess)
@@ -83,14 +118,39 @@ public final class ExpressionResolver {
             throw SwiftUIEvaluatorError.unsupportedExpression(call.description)
         }
 
-        let arguments = try resolveCallArguments(call.arguments, scope: scope)
+        let arguments = try resolveCallArguments(call.arguments, scope: scope, context: context)
         return .functionCall(FunctionCallValue(name: name, arguments: arguments))
     }
 
-    private func resolveCallArguments(_ arguments: LabeledExprListSyntax, scope: ExpressionScope) throws -> [ResolvedArgument] {
+    private func resolveCallArguments(
+        _ arguments: LabeledExprListSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> [ResolvedArgument] {
         try arguments.map { element in
-            let value = try resolveExpression(ExprSyntax(element.expression), scope: scope)
+            let value = try resolveExpression(
+                ExprSyntax(element.expression),
+                scope: scope,
+                context: context
+            )
             return ResolvedArgument(label: element.label?.text, value: value)
+        }
+    }
+
+    private func stringValue(from value: SwiftValue) throws -> String {
+        switch value {
+        case .string(let string):
+            return string
+        case .number(let number):
+            return number.truncatingRemainder(dividingBy: 1) == 0
+                ? String(Int(number))
+                : String(number)
+        case .bool(let flag):
+            return String(flag)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments(
+                "String interpolation expects string, numeric, or boolean values, received \(value.typeDescription)."
+            )
         }
     }
 }

@@ -6,9 +6,9 @@ enum TestFailure: Error {
 }
 
 struct SwiftUIEvaluatorErrorTests {
-    @Test func textRejectsStringInterpolation() throws {
+    @Test func textRejectsUnsupportedInterpolationValues() throws {
         let source = """
-        Text("Hello \\(42)")
+        Text("Hello \\(Text("World"))")
         """
 
         do {
@@ -18,7 +18,7 @@ struct SwiftUIEvaluatorErrorTests {
             guard case .invalidArguments(let message) = error else {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
-            #expect(message.contains("String interpolation"))
+            #expect(message.contains("string, numeric, or boolean"))
         }
     }
 

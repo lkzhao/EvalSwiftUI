@@ -2,9 +2,11 @@ import SwiftSyntax
 
 final class ViewNodeBuilder {
     private let expressionResolver: ExpressionResolver
+    private let context: (any SwiftUIEvaluatorContext)?
 
-    init(expressionResolver: ExpressionResolver) {
+    init(expressionResolver: ExpressionResolver, context: (any SwiftUIEvaluatorContext)? = nil) {
         self.expressionResolver = expressionResolver
+        self.context = context
     }
 
     func buildViewNode(from call: FunctionCallExprSyntax, scope: ExpressionScope) throws -> ViewNode {
@@ -97,7 +99,8 @@ final class ViewNodeBuilder {
 
             let value = try expressionResolver.resolveExpression(
                 ExprSyntax(initializer.value),
-                scope: updatedScope
+                scope: updatedScope,
+                context: context
             )
             updatedScope[namePattern.identifier.text] = value
         }

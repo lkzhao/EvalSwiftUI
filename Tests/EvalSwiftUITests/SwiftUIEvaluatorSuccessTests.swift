@@ -1,6 +1,14 @@
 import Testing
 @testable import EvalSwiftUI
 
+private struct DictionaryContext: SwiftUIEvaluatorContext {
+    let values: [String: SwiftValue]
+
+    func value(for identifier: String) -> SwiftValue? {
+        values[identifier]
+    }
+}
+
 struct SwiftUIEvaluatorSuccessTests {
     @Test func rendersTextLiteral() throws {
         let source = """
@@ -49,6 +57,42 @@ struct SwiftUIEvaluatorSuccessTests {
         }
         """
         _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersTextWithStringInterpolation() throws {
+        let source = """
+        VStack {
+            let name = "Taylor"
+            Text("Hello \\(name)")
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersTextUsingExternalContext() throws {
+        let source = """
+        Text("Welcome \\(username)")
+        """
+        let context = DictionaryContext(values: ["username": .string("Morgan")])
+        _ = try evalSwiftUI(source, context: context)
+    }
+
+    @Test func rendersTextWithBooleanInterpolation() throws {
+        let source = """
+        VStack {
+            let isEnabled = true
+            Text("Enabled: \\(isEnabled)")
+        }
+        """
+        _ = try evalSwiftUI(source)
+    }
+
+    @Test func rendersTextUsingBooleanContext() throws {
+        let source = """
+        Text("Flag: \\(isEnabled)")
+        """
+        let context = DictionaryContext(values: ["isEnabled": .bool(true)])
+        _ = try evalSwiftUI(source, context: context)
     }
 
     @Test func supportsLetBindingsInsideClosures() throws {
