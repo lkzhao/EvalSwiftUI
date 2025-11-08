@@ -34,7 +34,10 @@ final class ViewRegistry {
             ForEachViewBuilder(),
             ButtonViewBuilder(),
             ToggleViewBuilder(),
-            ScrollViewViewBuilder()
+            ScrollViewViewBuilder(),
+            RectangleViewBuilder(),
+            RoundedRectangleViewBuilder(),
+            CircleViewBuilder()
         ]
     }
 

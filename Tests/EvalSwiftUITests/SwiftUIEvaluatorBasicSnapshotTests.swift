@@ -45,6 +45,36 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
         )
     }
 
+    @Test func rendersRectangleShape() throws {
+        let source = """
+        Rectangle()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Rectangle()
+        }
+    }
+
+    @Test func rendersRoundedRectangleShape() throws {
+        let source = """
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+        }
+    }
+
+    @Test func rendersCircleShape() throws {
+        let source = """
+        Circle()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Circle()
+        }
+    }
+
     @Test func rendersSpacerInsideHStack() throws {
         #expectSnapshot(
             HStack(spacing: 0) {
