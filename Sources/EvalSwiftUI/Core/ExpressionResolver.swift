@@ -13,6 +13,18 @@ public final class ExpressionResolver {
         context externalContext: (any SwiftUIEvaluatorContext)? = nil
     ) throws -> SwiftValue {
         let context = externalContext ?? defaultContext
+
+        if let parenthesized = expression.as(TupleExprSyntax.self),
+           parenthesized.elements.count == 1,
+           let element = parenthesized.elements.first,
+           element.label == nil {
+            return try resolveExpression(
+                ExprSyntax(element.expression),
+                scope: scope,
+                context: context
+            )
+        }
+
         if let stringLiteral = expression.as(StringLiteralExprSyntax.self) {
             return .string(try stringLiteralValue(stringLiteral, scope: scope, context: context))
         }
@@ -247,16 +259,16 @@ public final class ExpressionResolver {
         switch value {
         case .number(let number):
             guard number.truncatingRemainder(dividingBy: 1) == 0 else {
-                throw SwiftUIEvaluatorError.invalidArguments("Range bounds must be whole numbers.")
+                throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to whole numbers.")
             }
             return Int(number)
         case .optional(let wrapped):
             guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("Range bounds cannot be nil.")
+                throw SwiftUIEvaluatorError.invalidArguments("Integer expressions cannot resolve to nil.")
             }
             return try integerValue(from: unwrapped)
         default:
-            throw SwiftUIEvaluatorError.invalidArguments("Range bounds must resolve to numeric expressions.")
+            throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to numeric values.")
         }
     }
 
@@ -342,6 +354,28 @@ public final class ExpressionResolver {
                 storage[key] = resolvedValue
             }
             return .dictionary(storage)
+        }
+    }
+
+    private func containsValue(
+        base: SwiftValue,
+        element: SwiftValue
+    ) throws -> Bool? {
+        switch base {
+        case .array(let elements):
+            return elements.contains { candidate in
+                valuesEqual(candidate, element)
+            }
+        case .range(let rangeValue):
+            let value = try integerValue(from: element)
+            return rangeValue.contains(value)
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                return false
+            }
+            return try containsValue(base: unwrapped, element: element)
+        default:
+            return nil
         }
     }
 
@@ -471,6 +505,14 @@ public final class ExpressionResolver {
     ) throws -> SwiftValue {
         let name: [String]
         if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
+            if let value = try resolveMemberFunctionCall(
+                memberAccess,
+                call: call,
+                scope: scope,
+                context: context
+            ) {
+                return value
+            }
             name = try memberAccessPath(memberAccess)
         } else if let reference = call.calledExpression.as(DeclReferenceExprSyntax.self) {
             name = [reference.baseName.text]
@@ -480,6 +522,58 @@ public final class ExpressionResolver {
 
         let arguments = try resolveCallArguments(call.arguments, scope: scope, context: context)
         return .functionCall(FunctionCallValue(name: name, arguments: arguments))
+    }
+
+    private func resolveMemberFunctionCall(
+        _ memberAccess: MemberAccessExprSyntax,
+        call: FunctionCallExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue? {
+        guard let baseExpression = memberAccess.base else {
+            return nil
+        }
+
+        let baseValue = try resolveExpression(
+            ExprSyntax(baseExpression),
+            scope: scope,
+            context: context
+        )
+
+        switch memberAccess.declName.baseName.text {
+        case "contains":
+            return try resolveContainsCall(
+                baseValue: baseValue,
+                arguments: call.arguments,
+                scope: scope,
+                context: context
+            )
+        default:
+            return nil
+        }
+    }
+
+    private func resolveContainsCall(
+        baseValue: SwiftValue,
+        arguments: LabeledExprListSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue? {
+        guard let argument = arguments.first, arguments.count == 1 else {
+            throw SwiftUIEvaluatorError.invalidArguments("contains expects exactly one argument.")
+        }
+
+        let element = try resolveExpression(
+            ExprSyntax(argument.expression),
+            scope: scope,
+            context: context
+        )
+
+        guard let contains = try containsValue(base: baseValue, element: element) else {
+            return nil
+        }
+
+        return .bool(contains)
     }
 
     private func resolveCallArguments(

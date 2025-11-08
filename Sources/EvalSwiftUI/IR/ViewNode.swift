@@ -77,6 +77,15 @@ extension RangeValue {
             return Array(lowerBound...upperBound)
         }
     }
+
+    func contains(_ value: Int) -> Bool {
+        switch style {
+        case .halfOpen:
+            return value >= lowerBound && value < upperBound
+        case .closed:
+            return value >= lowerBound && value <= upperBound
+        }
+    }
 }
 
 typealias ExpressionScope = [String: SwiftValue]

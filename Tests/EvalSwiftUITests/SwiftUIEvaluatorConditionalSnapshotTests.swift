@@ -216,4 +216,34 @@ struct SwiftUIEvaluatorConditionalSnapshotTests {
             }
         )
     }
+
+    @Test func evaluatesRangeContainsExpressions() throws {
+        #expectSnapshot(
+            VStack {
+                let upperBound = 4
+                if (0..<upperBound).contains(3) {
+                    Text("Within Half Open")
+                }
+
+                if !(1...upperBound).contains(6) {
+                    Text("Outside Closed")
+                }
+            }
+        )
+    }
+
+    @Test func evaluatesArrayContainsExpressions() throws {
+        #expectSnapshot(
+            VStack {
+                let names = ["Ava", "Ben"]
+                if names.contains("Ben") {
+                    Text("Found")
+                }
+
+                if !names.contains("Eve") {
+                    Text("Missing")
+                }
+            }
+        )
+    }
 }
