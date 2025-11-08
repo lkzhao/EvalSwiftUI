@@ -2,6 +2,45 @@
 
 EvalSwiftUI is a lightweight Swift package that parses SwiftUI source strings at runtime, builds a typed intermediate representation, and renders the resulting views. The design focuses on extensibility (via registries for builders/modifiers) and high test coverage to make iterative SwiftUI experiments safe.
 
+## Language Scope
+
+EvalSwiftUI intentionally implements a simplified SwiftUI-like language. It interprets a subset of Swift syntax (expressions, closures, inline `struct View` declarations, and basic state) and only knows about a curated set of view constructors and modifiers. Advanced Swift features—such as generics, result builders, async/await, custom property wrappers, or the full SwiftUI runtime—are out of scope unless you provide custom builders through the registries. Keep this in mind when pasting SwiftUI samples: if a construct is missing from the lists below, you will need to stub or rework it before evaluation will succeed.
+
+### Built-in View Constructors
+
+The default `ViewRegistry` wires up the following view builders (see `Sources/EvalSwiftUI/Core/ViewRegistry.swift`):
+
+- `Text`
+- `VStack`
+- `HStack`
+- `ZStack`
+- `Spacer`
+- `Image`
+- `ForEach`
+- `Button`
+- `Toggle`
+- `ScrollView`
+- `Rectangle`
+- `RoundedRectangle`
+- `Circle`
+
+### Built-in Modifiers
+
+Likewise, the `ModifierRegistry` (implemented in `Sources/EvalSwiftUI/Core/ModifierRegistry.swift`) exposes these modifiers out of the box:
+
+- `font(_:)`
+- `padding(_:)`
+- `imageScale(_:)`
+- `foregroundStyle(_:)`
+- `frame(...)`
+- `background(_:)`
+- `overlay(_:)`
+- `cornerRadius(_:)`
+- `opacity(_:)`
+- `shadow(...)`
+
+You can extend either registry by supplying additional builders to `SwiftUIEvaluator` if your use case requires more of the SwiftUI surface area.
+
 ## Getting Started
 
 ### Adding the Package
