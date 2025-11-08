@@ -154,7 +154,7 @@ final class ViewNodeBuilder {
                 scope: scope,
                 context: context
             )
-            return valuesEqual(expectedValue, subject) ? [:] : nil
+            return expectedValue.equals(subject) ? [:] : nil
         }
 
         throw SwiftUIEvaluatorError.invalidArguments(
@@ -207,49 +207,6 @@ final class ViewNodeBuilder {
             return nil
         }
         return [identifier: unwrapped]
-    }
-
-    private func valuesEqual(_ lhs: SwiftValue, _ rhs: SwiftValue) -> Bool {
-        switch (lhs, rhs) {
-        case (.string(let left), .string(let right)):
-            return left == right
-        case (.number(let left), .number(let right)):
-            return left == right
-        case (.bool(let left), .bool(let right)):
-            return left == right
-        case (.memberAccess(let left), .memberAccess(let right)):
-            return memberPathsEqual(left, right)
-        case (.optional(let left), .optional(let right)):
-            switch (left?.unwrappedOptional(), right?.unwrappedOptional()) {
-            case (nil, nil):
-                return true
-            case let (lhsValue?, rhsValue?):
-                return valuesEqual(lhsValue, rhsValue)
-            default:
-                return false
-            }
-        case (.optional(let wrapped), _):
-            if let unwrapped = wrapped?.unwrappedOptional() {
-                return valuesEqual(unwrapped, rhs)
-            }
-            return false
-        case (_, .optional):
-            return valuesEqual(rhs, lhs)
-        default:
-            return false
-        }
-    }
-
-    private func memberPathsEqual(_ lhs: [String], _ rhs: [String]) -> Bool {
-        if lhs == rhs {
-            return true
-        }
-
-        guard let lhsLast = lhs.last, let rhsLast = rhs.last else {
-            return false
-        }
-
-        return lhsLast == rhsLast
     }
 
     private func processIfExpression(_ ifExpr: IfExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {

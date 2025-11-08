@@ -127,17 +127,14 @@ public final class ExpressionResolver {
             return nil
         }
 
-        var values: [SwiftValue] = []
+        var operandExpressions: [ExprSyntax?] = []
+        var operandValues: [SwiftValue?] = []
         var operators: [String] = []
 
         for (index, element) in elements.enumerated() {
             if index.isMultiple(of: 2) {
-                let resolved = try resolveExpression(
-                    element,
-                    scope: scope,
-                    context: context
-                )
-                values.append(resolved)
+                operandExpressions.append(ExprSyntax(element))
+                operandValues.append(nil)
             } else if let operatorExpr = element.as(BinaryOperatorExprSyntax.self) {
                 operators.append(operatorExpr.operator.text)
             } else {
@@ -145,41 +142,97 @@ public final class ExpressionResolver {
             }
         }
 
-        let precedenceGroups: [[String]] = [
-            ["*", "/", "%"],
-            ["+", "-"],
-            ["??"],
-            ["<", "<=", ">", ">=", "==", "!="],
-            ["&&"],
-            ["||"],
+        func resolveOperand(at index: Int) throws -> SwiftValue {
+            if let cached = operandValues[index] {
+                return cached
+            }
+            guard let expression = operandExpressions[index] else {
+                throw SwiftUIEvaluatorError.unsupportedExpression("Operand resolution failed.")
+            }
+            let value = try resolveExpression(
+                expression,
+                scope: scope,
+                context: context
+            )
+            operandValues[index] = value
+            return value
+        }
+
+        enum Associativity {
+            case left
+            case right
+        }
+
+        let precedenceGroups: [(symbols: Set<String>, associativity: Associativity)] = [
+            (symbols: Set(["*", "/", "%"]), associativity: .left),
+            (symbols: Set(["+", "-"]), associativity: .left),
+            (symbols: Set(["??"]), associativity: .right),
+            (symbols: Set(["<", "<=", ">", ">=", "==", "!="]), associativity: .left),
+            (symbols: Set(["&&"]), associativity: .left),
+            (symbols: Set(["||"]), associativity: .left),
         ]
 
         for group in precedenceGroups {
-            var index = 0
-            while index < operators.count {
-                let symbol = operators[index]
-                if group.contains(symbol) {
-                    let lhs = values[index]
-                    let rhs = values[index + 1]
-                    let result = try applyBinaryOperator(
-                        symbol,
-                        lhs: lhs,
-                        rhs: rhs
-                    )
-                    values[index] = result
-                    values.remove(at: index + 1)
-                    operators.remove(at: index)
-                } else {
-                    index += 1
+            switch group.associativity {
+            case .left:
+                var index = 0
+                while index < operators.count {
+                    let symbol = operators[index]
+                    if group.symbols.contains(symbol) {
+                        let result = try applyBinaryOperator(
+                            symbol,
+                            lhs: { try resolveOperand(at: index) },
+                            rhs: { try resolveOperand(at: index + 1) }
+                        )
+                        operandValues[index] = result
+                        operandExpressions[index] = nil
+                        operandExpressions.remove(at: index + 1)
+                        operandValues.remove(at: index + 1)
+                        operators.remove(at: index)
+                    } else {
+                        index += 1
+                    }
+                }
+            case .right:
+                var index = operators.count - 1
+                while index >= 0 {
+                    let symbol = operators[index]
+                    if group.symbols.contains(symbol) {
+                        let result = try applyBinaryOperator(
+                            symbol,
+                            lhs: { try resolveOperand(at: index) },
+                            rhs: { try resolveOperand(at: index + 1) }
+                        )
+                        operandValues[index] = result
+                        operandExpressions[index] = nil
+                        operandExpressions.remove(at: index + 1)
+                        operandValues.remove(at: index + 1)
+                        operators.remove(at: index)
+                    }
+                    index -= 1
                 }
             }
         }
 
-        guard values.count == 1, operators.isEmpty else {
+        guard operators.isEmpty,
+              operandExpressions.count == 1,
+              operandValues.count == 1 else {
             return nil
         }
 
-        return values[0]
+        if let cached = operandValues[0] {
+            return cached
+        }
+
+        guard let expression = operandExpressions[0] else {
+            return nil
+        }
+
+        return try resolveExpression(
+            expression,
+            scope: scope,
+            context: context
+        )
     }
 
     private func resolvePrefixOperator(
@@ -360,11 +413,11 @@ public final class ExpressionResolver {
     private func containsValue(
         base: SwiftValue,
         element: SwiftValue
-    ) throws -> Bool? {
+    ) throws -> Bool {
         switch base {
         case .array(let elements):
             return elements.contains { candidate in
-                valuesEqual(candidate, element)
+                candidate.equals(element)
             }
         case .range(let rangeValue):
             let value = try integerValue(from: element)
@@ -375,7 +428,7 @@ public final class ExpressionResolver {
             }
             return try containsValue(base: unwrapped, element: element)
         default:
-            return nil
+            throw SwiftUIEvaluatorError.invalidArguments("contains is only supported on arrays and ranges.")
         }
     }
 
@@ -393,79 +446,65 @@ public final class ExpressionResolver {
 
     private func applyBinaryOperator(
         _ symbol: String,
-        lhs: SwiftValue,
-        rhs: SwiftValue
+        lhs: () throws -> SwiftValue,
+        rhs: () throws -> SwiftValue
     ) throws -> SwiftValue {
         switch symbol {
         case "+":
-            if isStringLike(lhs) || isStringLike(rhs) {
+            let left = try lhs()
+            let right = try rhs()
+            if isStringLike(left) || isStringLike(right) {
                 return .string(
-                    try stringValue(from: lhs) + stringValue(from: rhs)
+                    try stringValue(from: left) + stringValue(from: right)
                 )
             }
-            return .number(try numberValue(from: lhs) + numberValue(from: rhs))
+            return .number(try numberValue(from: left) + numberValue(from: right))
         case "-":
-            return .number(try numberValue(from: lhs) - numberValue(from: rhs))
+            return .number(try numberValue(from: lhs()) - numberValue(from: rhs()))
         case "*":
-            return .number(try numberValue(from: lhs) * numberValue(from: rhs))
+            return .number(try numberValue(from: lhs()) * numberValue(from: rhs()))
         case "/":
-            return .number(try numberValue(from: lhs) / numberValue(from: rhs))
+            return .number(try numberValue(from: lhs()) / numberValue(from: rhs()))
         case "%":
-            let left = try numberValue(from: lhs)
-            let right = try numberValue(from: rhs)
+            let left = try numberValue(from: lhs())
+            let right = try numberValue(from: rhs())
             return .number(left.truncatingRemainder(dividingBy: right))
         case "<":
-            return .bool(try numberValue(from: lhs) < numberValue(from: rhs))
+            return .bool(try numberValue(from: lhs()) < numberValue(from: rhs()))
         case "<=":
-            return .bool(try numberValue(from: lhs) <= numberValue(from: rhs))
+            return .bool(try numberValue(from: lhs()) <= numberValue(from: rhs()))
         case ">":
-            return .bool(try numberValue(from: lhs) > numberValue(from: rhs))
+            return .bool(try numberValue(from: lhs()) > numberValue(from: rhs()))
         case ">=":
-            return .bool(try numberValue(from: lhs) >= numberValue(from: rhs))
+            return .bool(try numberValue(from: lhs()) >= numberValue(from: rhs()))
         case "==":
-            return .bool(valuesEqual(lhs, rhs))
+            let left = try lhs()
+            let right = try rhs()
+            return .bool(left.equals(right))
         case "!=":
-            return .bool(!valuesEqual(lhs, rhs))
+            let left = try lhs()
+            let right = try rhs()
+            return .bool(!left.equals(right))
         case "&&":
-            return .bool(try boolValue(from: lhs) && boolValue(from: rhs))
+            let left = try boolValue(from: lhs())
+            if !left {
+                return .bool(false)
+            }
+            return .bool(try boolValue(from: rhs()))
         case "||":
-            return .bool(try boolValue(from: lhs) || boolValue(from: rhs))
+            let left = try boolValue(from: lhs())
+            if left {
+                return .bool(true)
+            }
+            return .bool(try boolValue(from: rhs()))
         case "??":
-            if let unwrapped = lhs.unwrappedOptional() {
+            let left = try lhs()
+            if let unwrapped = left.unwrappedOptional() {
                 return unwrapped
             }
-            return rhs
+            return try rhs()
         default:
             throw SwiftUIEvaluatorError.unsupportedExpression(symbol)
-        }
-    }
-
-    private func valuesEqual(_ lhs: SwiftValue, _ rhs: SwiftValue) -> Bool {
-        switch (lhs, rhs) {
-        case (.string(let left), .string(let right)):
-            return left == right
-        case (.number(let left), .number(let right)):
-            return left == right
-        case (.bool(let left), .bool(let right)):
-            return left == right
-        case (.optional(let left), .optional(let right)):
-            switch (left?.unwrappedOptional(), right?.unwrappedOptional()) {
-            case (nil, nil):
-                return true
-            case let (lhsValue?, rhsValue?):
-                return valuesEqual(lhsValue, rhsValue)
-            default:
-                return false
-            }
-        case (.optional(let wrapped), _):
-            if let unwrapped = wrapped?.unwrappedOptional() {
-                return valuesEqual(unwrapped, rhs)
-            }
-            return false
-        case (_, .optional):
-            return valuesEqual(rhs, lhs)
-        default:
-            return false
         }
     }
 
@@ -569,11 +608,7 @@ public final class ExpressionResolver {
             context: context
         )
 
-        guard let contains = try containsValue(base: baseValue, element: element) else {
-            return nil
-        }
-
-        return .bool(contains)
+        return .bool(try containsValue(base: baseValue, element: element))
     }
 
     private func resolveCallArguments(

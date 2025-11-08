@@ -175,4 +175,25 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("component id"))
         }
     }
+
+    @Test func containsRequiresCollectionBase() throws {
+        let source = """
+        VStack {
+            let value = 3
+            if value.contains(3) {
+                Text("Invalid")
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("arrays and ranges"))
+        }
+    }
 }

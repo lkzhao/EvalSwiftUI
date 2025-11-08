@@ -246,4 +246,30 @@ struct SwiftUIEvaluatorConditionalSnapshotTests {
             }
         )
     }
+
+    @Test func honorsNilCoalescingPrecedence() throws {
+        #expectSnapshot(
+            VStack(spacing: 4) {
+                let optionalFlag: Bool? = true
+                let boolResult = optionalFlag ?? false && false
+                if boolResult {
+                    Text("Flag On")
+                } else {
+                    Text("Flag Off")
+                }
+
+                let optionalNumber: Int? = 1
+                let number = optionalNumber ?? 2 * 3
+                Text("Number \(number)")
+
+                let missing: Int? = nil
+                let comparison = missing ?? 1 < 2
+                if comparison {
+                    Text("Comparison True")
+                } else {
+                    Text("Comparison False")
+                }
+            }
+        )
+    }
 }

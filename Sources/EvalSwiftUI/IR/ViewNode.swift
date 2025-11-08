@@ -134,4 +134,47 @@ extension SwiftValue {
         }
         return false
     }
+
+    func equals(_ other: SwiftValue) -> Bool {
+        switch (self, other) {
+        case (.string(let left), .string(let right)):
+            return left == right
+        case (.number(let left), .number(let right)):
+            return left == right
+        case (.bool(let left), .bool(let right)):
+            return left == right
+        case (.memberAccess(let left), .memberAccess(let right)):
+            return memberPathsEqual(left, right)
+        case (.optional(let left), .optional(let right)):
+            switch (left?.unwrappedOptional(), right?.unwrappedOptional()) {
+            case (nil, nil):
+                return true
+            case let (lhsValue?, rhsValue?):
+                return lhsValue.equals(rhsValue)
+            default:
+                return false
+            }
+        case (.optional(let wrapped), _):
+            if let unwrapped = wrapped?.unwrappedOptional() {
+                return unwrapped.equals(other)
+            }
+            return false
+        case (_, .optional):
+            return other.equals(self)
+        default:
+            return false
+        }
+    }
+}
+
+private func memberPathsEqual(_ lhs: [String], _ rhs: [String]) -> Bool {
+    if lhs == rhs {
+        return true
+    }
+
+    guard let lhsLast = lhs.last, let rhsLast = rhs.last else {
+        return false
+    }
+
+    return lhsLast == rhsLast
 }
