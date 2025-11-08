@@ -10,6 +10,7 @@ public final class SwiftUIEvaluator {
     private let viewRegistry: ViewRegistry
     private let modifierRegistry: ModifierRegistry
     private let context: (any SwiftUIEvaluatorContext)?
+    private var inlineInstanceTracker: [String: Int] = [:]
 
     public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
@@ -109,6 +110,7 @@ public final class SwiftUIEvaluator {
     }
 
     func renderSyntax(from syntax: SourceFileSyntax) throws -> AnyView {
+        inlineInstanceTracker = [:]
         let filteredStatements = try filteredTopLevelStatements(from: syntax.statements)
         let result = try viewNodeBuilder.buildViewNodes(
             in: filteredStatements,
@@ -249,6 +251,12 @@ public final class SwiftUIEvaluator {
         .state(stateStore.makeState(identifier: identifier, initialValue: initialValue))
     }
 
+    func nextInlineInstanceIdentifier(for name: String) -> String {
+        let next = inlineInstanceTracker[name, default: 0]
+        inlineInstanceTracker[name] = next + 1
+        return "\(name)#\(next)"
+    }
+
     func renderStructBody(
         statements: CodeBlockItemListSyntax,
         scope: ExpressionScope
@@ -295,9 +303,10 @@ private final class InlineStructViewBuilder: SwiftUIViewBuilder {
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
         var scope: ExpressionScope = [:]
+        let instanceIdentifier = evaluator.nextInlineInstanceIdentifier(for: definition.name)
         for property in definition.stateProperties {
             let initialValue = try evaluator.resolveExpression(property.initializer, scope: [:])
-            let namespacedIdentifier = "\(definition.name).\(property.name)"
+            let namespacedIdentifier = "\(instanceIdentifier).\(property.name)"
             scope[property.name] = evaluator.makeStateValue(named: namespacedIdentifier, initialValue: initialValue)
         }
         return try evaluator.renderStructBody(statements: definition.bodyStatements, scope: scope)
