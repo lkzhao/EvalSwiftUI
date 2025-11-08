@@ -3,6 +3,7 @@
 
 import SwiftUI
 
+@MainActor
 public func evalSwiftUI(
     _ source: String,
     context: (any SwiftUIEvaluatorContext)? = nil
@@ -12,6 +13,7 @@ public func evalSwiftUI(
     return AnyView(view)
 }
 
+@MainActor
 public func evalSwiftUI(
     _ source: () -> String,
     context: (any SwiftUIEvaluatorContext)? = nil

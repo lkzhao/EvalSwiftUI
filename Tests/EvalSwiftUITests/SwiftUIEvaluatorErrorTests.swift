@@ -5,6 +5,7 @@ enum TestFailure: Error {
     case expected(String)
 }
 
+@MainActor
 struct SwiftUIEvaluatorErrorTests {
     @Test func textRejectsUnsupportedInterpolationValues() throws {
         let source = """
