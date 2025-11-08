@@ -69,22 +69,20 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
         guard case .keyPath(let keyPath) = value else {
             throw SwiftUIEvaluatorError.invalidArguments("id: expects a key path literal such as \\.self.")
         }
-        guard keyPath.components.count == 1, keyPath.components.first == "self" else {
-            throw SwiftUIEvaluatorError.invalidArguments("Only \\.self identifiers are supported today.")
-        }
-        return .selfValue
+        return .keyPath(keyPath)
     }
 
     private enum IdentifierStrategy {
         case index
-        case selfValue
+        case keyPath(KeyPathValue)
 
         func makeIdentifier(for element: SwiftValue, index: Int) throws -> AnyHashable {
             switch self {
             case .index:
                 return AnyHashable(index)
-            case .selfValue:
-                return try hashableValue(from: element)
+            case .keyPath(let keyPath):
+                let value = try value(at: keyPath.components[...], in: element)
+                return try hashableValue(from: value)
             }
         }
 
@@ -105,7 +103,33 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
                 }
                 return try hashableValue(from: unwrapped)
             default:
-                throw SwiftUIEvaluatorError.invalidArguments("id: \\.self requires string, number, or boolean elements.")
+                throw SwiftUIEvaluatorError.invalidArguments("id: key paths must produce string, number, or boolean values.")
+            }
+        }
+
+        private func value(at keyPath: ArraySlice<String>, in element: SwiftValue) throws -> SwiftValue {
+            guard let head = keyPath.first else {
+                return element
+            }
+
+            if head == "self" {
+                return try value(at: keyPath.dropFirst(), in: element)
+            }
+
+            let remaining = keyPath.dropFirst()
+            switch element {
+            case .dictionary(let dictionary):
+                guard let next = dictionary[head] else {
+                    throw SwiftUIEvaluatorError.invalidArguments("id: key path component \(head) was not found.")
+                }
+                return try value(at: remaining, in: next)
+            case .optional(let wrapped):
+                guard let unwrapped = wrapped?.unwrappedOptional() else {
+                    throw SwiftUIEvaluatorError.invalidArguments("id: key path encountered nil while resolving \(head).")
+                }
+                return try value(at: keyPath, in: unwrapped)
+            default:
+                throw SwiftUIEvaluatorError.invalidArguments("id: key paths require dictionary elements, received \(element.typeDescription).")
             }
         }
     }

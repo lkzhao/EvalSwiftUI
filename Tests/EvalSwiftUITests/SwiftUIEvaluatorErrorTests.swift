@@ -154,4 +154,25 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("key path literal"))
         }
     }
+
+    @Test func forEachKeyPathMustResolveValue() throws {
+        let source = """
+        VStack {
+            let users = [["name": "Ava"]]
+            ForEach(users, id: \\.id) { _ in
+                Text("Row")
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("component id"))
+        }
+    }
 }

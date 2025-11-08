@@ -50,6 +50,10 @@ public final class ExpressionResolver {
             return .array(elements)
         }
 
+        if let dictionaryLiteral = expression.as(DictionaryExprSyntax.self) {
+            return try dictionaryValue(from: dictionaryLiteral, scope: scope, context: context)
+        }
+
         if let sequenceExpr = expression.as(SequenceExprSyntax.self),
            let rangeValue = try resolveRangeExpression(
                sequenceExpr,
@@ -173,6 +177,34 @@ public final class ExpressionResolver {
             return property.declName.baseName.text
         }
         return KeyPathValue(components: components)
+    }
+
+    private func dictionaryValue(
+        from dictionary: DictionaryExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        switch dictionary.content {
+        case .colon:
+            return .dictionary([:])
+        case .elements(let elements):
+            var storage: [String: SwiftValue] = [:]
+            for element in elements {
+                let resolvedKey = try resolveExpression(
+                    ExprSyntax(element.key),
+                    scope: scope,
+                    context: context
+                )
+                let key = try stringValue(from: resolvedKey)
+                let resolvedValue = try resolveExpression(
+                    ExprSyntax(element.value),
+                    scope: scope,
+                    context: context
+                )
+                storage[key] = resolvedValue
+            }
+            return .dictionary(storage)
+        }
     }
 
     private func stringLiteralValue(

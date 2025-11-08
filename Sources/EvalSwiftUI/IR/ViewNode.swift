@@ -42,6 +42,7 @@ public indirect enum SwiftValue {
     case array([SwiftValue])
     case range(RangeValue)
     case keyPath(KeyPathValue)
+    case dictionary([String: SwiftValue])
 }
 
 public struct FunctionCallValue {
@@ -103,6 +104,8 @@ extension SwiftValue {
             return "range"
         case .keyPath:
             return "keyPath"
+        case .dictionary:
+            return "dictionary"
         }
     }
 
