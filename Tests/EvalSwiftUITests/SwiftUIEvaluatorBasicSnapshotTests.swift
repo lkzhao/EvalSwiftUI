@@ -59,4 +59,19 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
                 .frame(minWidth: 60, maxWidth: .infinity, alignment: .center)
         )
     }
+
+    @Test func rendersZStack() throws {
+        #expectSnapshot(
+            ZStack(alignment: .topLeading) {
+                Text("Background")
+                    .padding(12)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Foreground")
+                        .font(.headline)
+                    Text("Detail")
+                        .font(.caption)
+                }
+            }
+        )
+    }
 }
