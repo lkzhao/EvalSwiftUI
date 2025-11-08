@@ -3,6 +3,7 @@ import SwiftSyntax
 import SwiftUI
 
 public final class SwiftUIEvaluator {
+    private let stateStore = RuntimeStateStore()
     private let viewNodeBuilder: ViewNodeBuilder
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
@@ -16,7 +17,11 @@ public final class SwiftUIEvaluator {
         self.context = context
         let resolver = expressionResolver ?? ExpressionResolver(context: context)
         self.expressionResolver = resolver
-        viewNodeBuilder = ViewNodeBuilder(expressionResolver: resolver, context: context)
+        viewNodeBuilder = ViewNodeBuilder(
+            expressionResolver: resolver,
+            context: context,
+            stateStore: stateStore
+        )
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
         modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
@@ -27,6 +32,7 @@ public final class SwiftUIEvaluator {
     }
 
     private func evaluate(syntax: SourceFileSyntax) throws -> some View {
+        stateStore.reset()
         let result = try viewNodeBuilder.buildViewNodes(in: syntax.statements, scope: [:])
         guard let viewNode = result.nodes.last else {
             throw SwiftUIEvaluatorError.missingRootExpression

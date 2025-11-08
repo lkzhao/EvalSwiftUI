@@ -130,4 +130,27 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
             Text("Hello, runtime!")
         }
     }
+
+    @Test func rendersStateInitialValue() throws {
+        let source = """
+        @State var count: Int = 5
+        Text("Count: \\(count)")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Count: 5")
+        }
+    }
+
+    @Test func appliesCompoundAssignmentsBeforeRootView() throws {
+        let source = """
+        var count = 1
+        count += 2
+        Text("Count: \\(count)")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Count: 3")
+        }
+    }
 }

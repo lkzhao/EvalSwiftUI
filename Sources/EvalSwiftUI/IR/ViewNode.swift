@@ -43,6 +43,8 @@ public indirect enum SwiftValue {
     case range(RangeValue)
     case keyPath(KeyPathValue)
     case dictionary([String: SwiftValue])
+    case state(StateReference)
+    case binding(BindingValue)
 }
 
 public struct FunctionCallValue {
@@ -115,6 +117,10 @@ extension SwiftValue {
             return "keyPath"
         case .dictionary:
             return "dictionary"
+        case .state:
+            return "state"
+        case .binding:
+            return "binding"
         }
     }
 
@@ -123,6 +129,8 @@ extension SwiftValue {
         case .optional(let wrapped):
             guard let wrapped else { return nil }
             return wrapped.unwrappedOptional()
+        case .state(let reference):
+            return reference.read().unwrappedOptional()
         default:
             return self
         }
@@ -131,6 +139,9 @@ extension SwiftValue {
     var isOptional: Bool {
         if case .optional = self {
             return true
+        }
+        if case .state(let reference) = self {
+            return reference.read().isOptional
         }
         return false
     }
@@ -161,9 +172,24 @@ extension SwiftValue {
             return false
         case (_, .optional):
             return other.equals(self)
+        case (.state(let left), .state(let right)):
+            return left.read().equals(right.read())
+        case (.state, _):
+            return resolvingStateReference().equals(other)
+        case (_, .state):
+            return equals(other.resolvingStateReference())
+        case (.binding(let left), .binding(let right)):
+            return left.reference.identifier == right.reference.identifier
         default:
             return false
         }
+    }
+
+    func resolvingStateReference() -> SwiftValue {
+        if case .state(let reference) = self {
+            return reference.read()
+        }
+        return self
     }
 }
 

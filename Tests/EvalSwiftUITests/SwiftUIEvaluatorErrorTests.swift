@@ -196,4 +196,21 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("arrays and ranges"))
         }
     }
+
+    @Test func assignmentsRequireExistingIdentifiers() throws {
+        let source = """
+        count += 1
+        Text("Value")
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("Identifier count is not defined"))
+        }
+    }
 }
