@@ -125,6 +125,46 @@ struct SwiftUIEvaluatorCollectionSnapshotTests {
         }
     }
 
+    @Test func rendersVerticalScrollView() throws {
+        let source = """
+        ScrollView {
+            ForEach(0..<3) { index in
+                Text("Row \\(index)")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    Text("Row 0")
+                    Text("Row 1")
+                    Text("Row 2")
+                }
+            }
+        }
+    }
+
+    @Test func rendersHorizontalScrollView() throws {
+        let source = """
+        ScrollView(.horizontal, showsIndicators: false) {
+            ForEach(0..<3) { index in
+                Text("Item \\(index)")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    Text("Item 0")
+                    Text("Item 1")
+                    Text("Item 2")
+                }
+            }
+        }
+    }
+
     @Test func rendersCustomViewUsingBuilder() throws {
         try assertSnapshotsMatch(
             source: """
