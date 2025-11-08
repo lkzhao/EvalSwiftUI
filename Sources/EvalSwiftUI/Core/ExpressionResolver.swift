@@ -29,6 +29,27 @@ public final class ExpressionResolver {
             return .string(try stringLiteralValue(stringLiteral, scope: scope, context: context))
         }
 
+        if let ternaryExpr = expression.as(TernaryExprSyntax.self) {
+            let conditionValue = try resolveExpression(
+                ExprSyntax(ternaryExpr.condition),
+                scope: scope,
+                context: context
+            )
+            let isTrue = try boolValue(from: conditionValue)
+            if isTrue {
+                return try resolveExpression(
+                    ExprSyntax(ternaryExpr.thenExpression),
+                    scope: scope,
+                    context: context
+                )
+            }
+            return try resolveExpression(
+                ExprSyntax(ternaryExpr.elseExpression),
+                scope: scope,
+                context: context
+            )
+        }
+
         if let integerLiteral = expression.as(IntegerLiteralExprSyntax.self) {
             guard let value = Double(integerLiteral.literal.text) else {
                 throw SwiftUIEvaluatorError.invalidArguments("Unable to parse integer literal \(integerLiteral.literal.text).")
@@ -125,6 +146,28 @@ public final class ExpressionResolver {
         let elements = Array(sequence.elements)
         guard elements.count >= 3, !elements.count.isMultiple(of: 2) else {
             return nil
+        }
+
+        if elements.count == 3,
+           let unresolved = elements[1].as(UnresolvedTernaryExprSyntax.self) {
+            let conditionValue = try resolveExpression(
+                elements[0],
+                scope: scope,
+                context: context
+            )
+            let isTrue = try boolValue(from: conditionValue)
+            if isTrue {
+                return try resolveExpression(
+                    ExprSyntax(unresolved.thenExpression),
+                    scope: scope,
+                    context: context
+                )
+            }
+            return try resolveExpression(
+                elements[2],
+                scope: scope,
+                context: context
+            )
         }
 
         var operandExpressions: [ExprSyntax?] = []
