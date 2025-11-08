@@ -94,6 +94,74 @@ struct SwiftUIEvaluatorStateTests {
         #expect(updatedSnapshot == expectedSnapshot)
     }
 
+    @Test func rendersForEachFromStateArray() throws {
+        let source = """
+        @State var countIds = [0, 1, 2]
+        VStack {
+            ForEach(countIds, id: \\.self) {
+                Text("Count \\($0)")
+            }
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        let renderedView = try coordinator.render()
+        let renderedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(renderedView))
+
+        let expected = VStack {
+            ForEach([0, 1, 2], id: \.self) { value in
+                Text("Count \(value)")
+            }
+        }
+        let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expected))
+
+        #expect(renderedSnapshot == expectedSnapshot)
+    }
+
+    @Test func rendersStatefulRowsInsideForEach() throws {
+        let source = """
+        struct CountView: View {
+            @State var count = 0
+
+            var body: some View {
+                VStack {
+                    Text("State \\(count)")
+                }
+            }
+        }
+
+        @State var countIds = [0, 1, 2]
+        ForEach(countIds, id: \\.self) {
+            HStack {
+                Text("ID \\($0)")
+                CountView()
+            }
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        let renderedView = try coordinator.render()
+        let renderedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(renderedView))
+
+        let expected = ForEach([0, 1, 2], id: \.self) { value in
+            HStack {
+                Text("ID \(value)")
+                ExpectedInlineCountView()
+            }
+        }
+        let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expected))
+
+        #expect(renderedSnapshot == expectedSnapshot)
+    }
+
     @Test func inlineStructInstancesMaintainIndependentState() throws {
         let source = """
         struct CountView: View {
@@ -198,6 +266,14 @@ private struct ExpectedInlineStructContainer: View {
                     Button("Increase") {}
                 }
             }
+        }
+    }
+}
+
+private struct ExpectedInlineCountView: View {
+    var body: some View {
+        VStack {
+            Text("State 0")
         }
     }
 }

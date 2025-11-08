@@ -77,10 +77,11 @@ public final class SwiftUIEvaluator {
                 )
                 return ResolvedArgument(label: argument.label, value: value)
             case .closure(let closure, let capturedScope):
+                let mergedScope = capturedScope.merging(scope) { _, new in new }
                 let resolvedClosure = ResolvedClosure(
                     evaluator: self,
                     closure: closure,
-                    scope: capturedScope
+                    scope: mergedScope
                 )
                 return ResolvedArgument(label: argument.label, value: .closure(resolvedClosure))
             }
