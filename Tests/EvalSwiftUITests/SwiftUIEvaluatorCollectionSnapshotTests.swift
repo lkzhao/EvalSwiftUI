@@ -165,6 +165,57 @@ struct SwiftUIEvaluatorCollectionSnapshotTests {
         }
     }
 
+    @Test func rendersArraySubscript() throws {
+        let source = """
+        VStack(spacing: 0) {
+            let users = ["Ava", "Ben", "Cara"]
+            Text(users[1])
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Ben")
+            }
+        }
+    }
+
+    @Test func rendersDictionarySubscriptOptional() throws {
+        let source = """
+        VStack(spacing: 0) {
+            let profile = ["name": "Riley"]
+            if let name = profile["name"] {
+                Text(name)
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Riley")
+            }
+        }
+    }
+
+    @Test func dictionarySubscriptMissingFallsThroughElse() throws {
+        let source = """
+        VStack(spacing: 0) {
+            let profile = ["name": "Riley"]
+            if let company = profile["company"] {
+                Text(company)
+            } else {
+                Text("Missing")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Missing")
+            }
+        }
+    }
+
     @Test func rendersCustomViewUsingBuilder() throws {
         try assertSnapshotsMatch(
             source: """

@@ -249,4 +249,63 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("top level"))
         }
     }
+
+    @Test func arraySubscriptRequiresIntegerIndex() throws {
+        let source = """
+        VStack {
+            let users = ["Ava", "Ben"]
+            Text(users["name"])
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("Integer expressions must resolve"))
+        }
+    }
+
+    @Test func arraySubscriptIndexMustBeInBounds() throws {
+        let source = """
+        VStack {
+            let users = ["Ava"]
+            Text(users[2])
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("out of bounds"))
+        }
+    }
+
+    @Test func dictionarySubscriptRequiresStringKey() throws {
+        let source = """
+        VStack {
+            let profile = ["name": "Riley"]
+            if let value = profile[0] {
+                Text(value)
+            }
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("string keys"))
+        }
+    }
 }

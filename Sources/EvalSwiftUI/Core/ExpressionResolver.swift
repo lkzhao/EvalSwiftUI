@@ -121,6 +121,14 @@ public final class ExpressionResolver {
             return try resolveFunctionCall(functionCall, scope: scope, context: context)
         }
 
+        if let subscriptExpr = expression.as(SubscriptCallExprSyntax.self) {
+            return try resolveSubscriptExpression(
+                subscriptExpr,
+                scope: scope,
+                context: context
+            )
+        }
+
         if let memberAccess = expression.as(MemberAccessExprSyntax.self) {
             return .memberAccess(try memberAccessPath(memberAccess))
         }
@@ -282,6 +290,57 @@ public final class ExpressionResolver {
             scope: scope,
             context: context
         )
+    }
+
+    private func resolveSubscriptExpression(
+        _ expression: SubscriptCallExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        let baseValue = try resolveExpression(
+            expression.calledExpression,
+            scope: scope,
+            context: context
+        )
+
+        guard expression.arguments.count == 1,
+              let argument = expression.arguments.first else {
+            throw SwiftUIEvaluatorError.invalidArguments("Subscripts with multiple arguments are not supported.")
+        }
+
+        let indexValue = try resolveExpression(
+            ExprSyntax(argument.expression),
+            scope: scope,
+            context: context
+        )
+
+        return try evaluateSubscript(base: baseValue, index: indexValue)
+    }
+
+    private func evaluateSubscript(base: SwiftValue, index: SwiftValue) throws -> SwiftValue {
+        switch base.resolvingStateReference() {
+        case .array(let elements):
+            let position = try integerValue(from: index)
+            guard elements.indices.contains(position) else {
+                throw SwiftUIEvaluatorError.invalidArguments(
+                    "Array subscript index \(position) is out of bounds."
+                )
+            }
+            return elements[position]
+        case .dictionary(let dictionary):
+            let key = try dictionaryKey(from: index)
+            if let value = dictionary[key] {
+                return .optional(value)
+            }
+            return .optional(nil)
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                throw SwiftUIEvaluatorError.invalidArguments("Cannot subscript a nil value.")
+            }
+            return try evaluateSubscript(base: unwrapped, index: index)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("Subscripts are only supported on arrays and dictionaries.")
+        }
     }
 
     private func resolvePrefixOperator(
@@ -464,6 +523,20 @@ public final class ExpressionResolver {
                 storage[key] = resolvedValue
             }
             return .dictionary(storage)
+        }
+    }
+
+    private func dictionaryKey(from value: SwiftValue) throws -> String {
+        switch value.resolvingStateReference() {
+        case .string(let string):
+            return string
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                throw SwiftUIEvaluatorError.invalidArguments("Dictionary subscripts cannot use nil keys.")
+            }
+            return try dictionaryKey(from: unwrapped)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("Dictionary subscripts require string keys.")
         }
     }
 
