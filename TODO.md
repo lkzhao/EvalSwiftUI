@@ -14,4 +14,4 @@
 - [x] Ship a `ZStackViewBuilder` (with alignment decoding) and register it in `ViewRegistry` so layered layouts render just like stacks already do.
 - [x] Add a `SpacerViewBuilder` that understands optional `minLength` arguments to make horizontal/vertical stacks match typical SwiftUI spacing scenarios.
 - [x] Introduce `background`/`overlay` modifier builders capable of consuming `ViewContent` closures, enabling decorated views without hand-written custom modifiers.
-- [ ] Teach `ViewNodeBuilder` how to lower `switch` statements (value + pattern cases) into child nodes so control flow parity goes beyond simple `if` expressions.
+- [x] Teach `ViewNodeBuilder` how to lower `switch` statements (value + pattern cases) into child nodes so control flow parity goes beyond simple `if` expressions.

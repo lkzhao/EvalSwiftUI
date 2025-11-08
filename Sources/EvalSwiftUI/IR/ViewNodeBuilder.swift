@@ -64,6 +64,12 @@ final class ViewNodeBuilder {
                     continue
                 }
 
+                if let switchExpr = expr.as(SwitchExprSyntax.self) {
+                    let nodes = try processSwitchExpression(switchExpr, scope: currentScope)
+                    children.append(contentsOf: nodes)
+                    continue
+                }
+
                 if let callExpr = expr.as(FunctionCallExprSyntax.self) {
                     children.append(try buildViewNode(from: callExpr, scope: currentScope))
                     continue
@@ -74,6 +80,176 @@ final class ViewNodeBuilder {
         }
 
         return (children, currentScope)
+    }
+
+    private func processSwitchExpression(_ switchExpr: SwitchExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
+        let subjectValue = try expressionResolver.resolveExpression(
+            ExprSyntax(switchExpr.subject),
+            scope: scope,
+            context: context
+        )
+
+        for element in switchExpr.cases {
+            guard let switchCase = element.as(SwitchCaseSyntax.self) else { continue }
+
+            switch switchCase.label {
+            case .case(let caseLabel):
+                for caseItem in caseLabel.caseItems {
+                    guard let caseScope = try matchCaseItem(caseItem, subject: subjectValue, scope: scope) else {
+                        continue
+                    }
+                    return try buildViewNodes(in: switchCase.statements, scope: caseScope).nodes
+                }
+            case .default:
+                return try buildViewNodes(in: switchCase.statements, scope: scope).nodes
+            }
+        }
+
+        return []
+    }
+
+    private func matchCaseItem(
+        _ caseItem: SwitchCaseItemSyntax,
+        subject: SwiftValue,
+        scope: ExpressionScope
+    ) throws -> ExpressionScope? {
+        guard let bindings = try matchPattern(caseItem.pattern, with: subject, scope: scope) else {
+            return nil
+        }
+
+        var mergedScope = scope
+        mergedScope.merge(bindings) { _, new in new }
+
+        if let whereClause = caseItem.whereClause {
+            let conditionValue = try expressionResolver.resolveExpression(
+                ExprSyntax(whereClause.condition),
+                scope: mergedScope,
+                context: context
+            )
+            guard case .bool(let isTrue) = conditionValue else {
+                throw SwiftUIEvaluatorError.invalidArguments("switch case where clauses must resolve to a boolean value.")
+            }
+            guard isTrue else { return nil }
+        }
+
+        return mergedScope
+    }
+
+    private func matchPattern(
+        _ pattern: PatternSyntax,
+        with subject: SwiftValue,
+        scope: ExpressionScope
+    ) throws -> ExpressionScope? {
+        if let bindingPattern = pattern.as(ValueBindingPatternSyntax.self) {
+            return try matchValueBindingPattern(bindingPattern, subject: subject)
+        }
+
+        if pattern.is(WildcardPatternSyntax.self) {
+            return [:]
+        }
+
+        if let expressionPattern = pattern.as(ExpressionPatternSyntax.self) {
+            let expectedValue = try expressionResolver.resolveExpression(
+                ExprSyntax(expressionPattern.expression),
+                scope: scope,
+                context: context
+            )
+            return valuesEqual(expectedValue, subject) ? [:] : nil
+        }
+
+        throw SwiftUIEvaluatorError.invalidArguments(
+            "Unsupported switch pattern: \(pattern.trimmed.description)"
+        )
+    }
+
+    private func matchValueBindingPattern(
+        _ pattern: ValueBindingPatternSyntax,
+        subject: SwiftValue
+    ) throws -> ExpressionScope? {
+        guard let identifierPattern = pattern.pattern.as(IdentifierPatternSyntax.self) else {
+            if let expressionPattern = pattern.pattern.as(ExpressionPatternSyntax.self) {
+                if let optionalExpression = expressionPattern.expression.as(OptionalChainingExprSyntax.self) {
+                    if let reference = optionalExpression.expression.as(DeclReferenceExprSyntax.self) {
+                        return try bindOptionalValue(named: reference.baseName.text, subject: subject)
+                    }
+
+                    if let patternExpr = optionalExpression.expression.as(PatternExprSyntax.self),
+                       let identifierPattern = patternExpr.pattern.as(IdentifierPatternSyntax.self) {
+                        return try bindOptionalValue(named: identifierPattern.identifier.text, subject: subject)
+                    }
+
+                    throw SwiftUIEvaluatorError.invalidArguments(
+                        "Unsupported optional binding expression base: \(optionalExpression.expression.syntaxNodeType)"
+                    )
+                }
+
+                throw SwiftUIEvaluatorError.invalidArguments(
+                    "Unsupported expression pattern in switch binding: \(expressionPattern.expression.syntaxNodeType)"
+                )
+            }
+
+            throw SwiftUIEvaluatorError.invalidArguments(
+                "switch case bindings require identifier patterns, received \(pattern.pattern.syntaxNodeType)"
+            )
+        }
+
+        let identifier = identifierPattern.identifier.text
+        if identifierPattern.representsOptionalBinding {
+            return try bindOptionalValue(named: identifier, subject: subject)
+        }
+
+        return [identifier: subject]
+    }
+
+    private func bindOptionalValue(named identifier: String, subject: SwiftValue) throws -> ExpressionScope? {
+        guard case .optional(let wrapped) = subject,
+              let unwrapped = wrapped?.unwrappedOptional() else {
+            return nil
+        }
+        return [identifier: unwrapped]
+    }
+
+    private func valuesEqual(_ lhs: SwiftValue, _ rhs: SwiftValue) -> Bool {
+        switch (lhs, rhs) {
+        case (.string(let left), .string(let right)):
+            return left == right
+        case (.number(let left), .number(let right)):
+            return left == right
+        case (.bool(let left), .bool(let right)):
+            return left == right
+        case (.memberAccess(let left), .memberAccess(let right)):
+            return memberPathsEqual(left, right)
+        case (.optional(let left), .optional(let right)):
+            switch (left?.unwrappedOptional(), right?.unwrappedOptional()) {
+            case (nil, nil):
+                return true
+            case let (lhsValue?, rhsValue?):
+                return valuesEqual(lhsValue, rhsValue)
+            default:
+                return false
+            }
+        case (.optional(let wrapped), _):
+            if let unwrapped = wrapped?.unwrappedOptional() {
+                return valuesEqual(unwrapped, rhs)
+            }
+            return false
+        case (_, .optional):
+            return valuesEqual(rhs, lhs)
+        default:
+            return false
+        }
+    }
+
+    private func memberPathsEqual(_ lhs: [String], _ rhs: [String]) -> Bool {
+        if lhs == rhs {
+            return true
+        }
+
+        guard let lhsLast = lhs.last, let rhsLast = rhs.last else {
+            return false
+        }
+
+        return lhsLast == rhsLast
     }
 
     private func processIfExpression(_ ifExpr: IfExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
@@ -238,5 +414,14 @@ private extension TypeSyntax {
         }
 
         return false
+    }
+}
+
+private extension IdentifierPatternSyntax {
+    var representsOptionalBinding: Bool {
+        guard let trailing = unexpectedAfterIdentifier else {
+            return false
+        }
+        return trailing.description.contains("?")
     }
 }

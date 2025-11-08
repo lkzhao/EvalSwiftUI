@@ -125,4 +125,34 @@ struct SwiftUIEvaluatorConditionalSnapshotTests {
             }
         )
     }
+
+    @Test func rendersSwitchLiteralCases() throws {
+        #expectSnapshot(
+            VStack {
+                let status = "ready"
+                switch status {
+                case "ready":
+                    Text("Ready")
+                case "done":
+                    Text("Done")
+                default:
+                    Text("Unknown")
+                }
+            }
+        )
+    }
+
+    @Test func rendersSwitchBindings() throws {
+        #expectSnapshot(
+            VStack {
+                let username: String? = "Morgan"
+                switch username {
+                case let value?:
+                    Text(value)
+                default:
+                    Text("Anonymous")
+                }
+            }
+        )
+    }
 }
