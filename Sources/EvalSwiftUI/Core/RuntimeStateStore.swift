@@ -56,7 +56,7 @@ public struct StateReference {
     }
 }
 
-public struct BindingValue {
+public struct BindingValue: @unchecked Sendable {
     let reference: StateReference
 
     func read() -> SwiftValue {

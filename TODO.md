@@ -28,3 +28,11 @@
 - [x] Differentiate between view-producing closures and action closures so builders like `Button` can run imperative statements inside trailing closures.
 - [x] Add a `ButtonViewBuilder` that wires label/content closures plus actions into a real `SwiftUI.Button`, using bindings from the runtime store when needed.
 - [x] Wrap evaluations in a SwiftUI container view that re-renders when the state store changes, and cover the stateful counter scenario in tests (success + snapshot).
+
+## Next steps
+
+- [x] Surface binding-backed controls by decoding `.binding` values inside view builders (e.g. add a `ToggleViewBuilder` plus a helper that turns `SwiftValue.binding` into `Binding<Bool>` so stateful snippets can flip `@State` flags without manual bridging), and cover the behavior in `SwiftUIEvaluatorStateTests` with a toggle scenario.
+- [ ] Add a `ScrollViewViewBuilder` that understands axis and indicator arguments so snippets that wrap `ForEach` in `ScrollView { ... }` no longer throw `unknownView`, registering it in `ViewRegistry` and snapshotting vertical + horizontal cases.
+- [ ] Introduce shape builders for `Rectangle`, `RoundedRectangle`, and `Circle` (with support for decoding corner radii/line widths) so basic SwiftUI primitives no longer fail with `unknownView`, and register them in `ViewRegistry` alongside coverage in the snapshot suites.
+- [ ] Teach `ModifierRegistry` about basic styling modifiers like `cornerRadius`, `opacity`, and `shadow` by introducing dedicated builders in `Sources/EvalSwiftUI/Builder/ModifierBuilders` to reduce `unsupportedModifier` failures for common SwiftUI chains.
+- [ ] Extend `ExpressionResolver.resolveExpression` to handle subscript expressions (`users[index]`, `dict["key"]`) so dynamic lookups feed into stacks/conditionals instead of bubbling `unsupportedExpression`, and add success/error diagnostics around array/dictionary subscripts with optional chaining.

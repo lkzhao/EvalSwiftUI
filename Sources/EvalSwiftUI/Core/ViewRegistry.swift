@@ -32,7 +32,8 @@ final class ViewRegistry {
             SpacerViewBuilder(),
             ImageViewBuilder(),
             ForEachViewBuilder(),
-            ButtonViewBuilder()
+            ButtonViewBuilder(),
+            ToggleViewBuilder()
         ]
     }
 

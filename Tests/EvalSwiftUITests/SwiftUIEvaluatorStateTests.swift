@@ -147,6 +147,44 @@ struct SwiftUIEvaluatorStateTests {
 
         #expect(updatedSnapshot == expectedSnapshot)
     }
+
+    @Test func toggleReflectsStateChanges() throws {
+        let source = """
+        @State var isOn = false
+        Toggle("Wi-Fi", isOn: $isOn)
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        let initialView = try coordinator.render()
+        let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(initialView))
+
+        let expectedOff = Toggle(isOn: .constant(false)) {
+            Text("Wi-Fi")
+        }
+        let expectedOffSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expectedOff))
+
+        #expect(initialSnapshot == expectedOffSnapshot)
+
+        guard let isOnReference = store.reference(for: "isOn") else {
+            throw TestFailure.expected("Missing binding for isOn")
+        }
+
+        isOnReference.write(.bool(true))
+
+        let updatedView = try coordinator.render()
+        let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
+
+        let expectedOn = Toggle(isOn: .constant(true)) {
+            Text("Wi-Fi")
+        }
+        let expectedOnSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expectedOn))
+
+        #expect(updatedSnapshot == expectedOnSnapshot)
+    }
 }
 
 private struct ExpectedInlineStructContainer: View {

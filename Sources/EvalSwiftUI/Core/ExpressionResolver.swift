@@ -126,13 +126,19 @@ public final class ExpressionResolver {
         }
 
         if let reference = expression.as(DeclReferenceExprSyntax.self) {
-            if let scopedValue = scope[reference.baseName.text] {
+            let identifier = reference.baseName.text
+            if let scopedValue = scope[identifier] {
                 return scopedValue
             }
-            if let externalValue = context?.value(for: reference.baseName.text) {
+            if identifier.hasPrefix("$"),
+               let bindingTarget = scope[String(identifier.dropFirst())],
+               case .state(let reference) = bindingTarget {
+                return .binding(BindingValue(reference: reference))
+            }
+            if let externalValue = context?.value(for: identifier) {
                 return externalValue
             }
-            return .memberAccess([reference.baseName.text])
+            return .memberAccess([identifier])
         }
 
         throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
