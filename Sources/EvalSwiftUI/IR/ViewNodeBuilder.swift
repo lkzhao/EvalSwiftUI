@@ -47,19 +47,24 @@ final class ViewNodeBuilder {
     }
 
     func buildViewNodes(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
-        try buildViewNodes(in: closure.statements, scope: scope).nodes
+        try buildViewNodes(in: closure.statements, scope: scope, allowStateDeclarations: false).nodes
     }
 
     func buildViewNodes(
         in statements: CodeBlockItemListSyntax,
-        scope: ExpressionScope
+        scope: ExpressionScope,
+        allowStateDeclarations: Bool
     ) throws -> (nodes: [ViewNode], scope: ExpressionScope) {
         var children: [ViewNode] = []
         var currentScope = scope
 
         for statement in statements {
             if let variableDecl = statement.item.as(VariableDeclSyntax.self) {
-                currentScope = try processVariableDecl(variableDecl, scope: currentScope)
+                currentScope = try processVariableDecl(
+                    variableDecl,
+                    scope: currentScope,
+                    allowStateDeclarations: allowStateDeclarations
+                )
                 continue
             }
 
@@ -107,10 +112,18 @@ final class ViewNodeBuilder {
                     guard let caseScope = try matchCaseItem(caseItem, subject: subjectValue, scope: scope) else {
                         continue
                     }
-                    return try buildViewNodes(in: switchCase.statements, scope: caseScope).nodes
+                    return try buildViewNodes(
+                        in: switchCase.statements,
+                        scope: caseScope,
+                        allowStateDeclarations: false
+                    ).nodes
                 }
             case .default:
-                return try buildViewNodes(in: switchCase.statements, scope: scope).nodes
+                return try buildViewNodes(
+                    in: switchCase.statements,
+                    scope: scope,
+                    allowStateDeclarations: false
+                ).nodes
             }
         }
 
@@ -236,7 +249,11 @@ final class ViewNodeBuilder {
             }
 
             if isTrue {
-                return try buildViewNodes(in: ifExpr.body.statements, scope: scope).nodes
+                return try buildViewNodes(
+                    in: ifExpr.body.statements,
+                    scope: scope,
+                    allowStateDeclarations: false
+                ).nodes
             }
 
             return try buildElseBody(ifExpr.elseBody, scope: scope)
@@ -283,7 +300,11 @@ final class ViewNodeBuilder {
 
         var boundScope = scope
         boundScope[identifierPattern.identifier.text] = unwrapped
-        return try buildViewNodes(in: body.statements, scope: boundScope).nodes
+        return try buildViewNodes(
+            in: body.statements,
+            scope: boundScope,
+            allowStateDeclarations: false
+        ).nodes
     }
 
     private func buildElseBody(_ elseBody: IfExprSyntax.ElseBody?, scope: ExpressionScope) throws -> [ViewNode] {
@@ -295,7 +316,11 @@ final class ViewNodeBuilder {
         case .ifExpr(let nested):
             return try processIfExpression(nested, scope: scope)
         case .codeBlock(let block):
-            return try buildViewNodes(in: block.statements, scope: scope).nodes
+            return try buildViewNodes(
+                in: block.statements,
+                scope: scope,
+                allowStateDeclarations: false
+            ).nodes
         }
     }
 
@@ -340,7 +365,11 @@ final class ViewNodeBuilder {
         return arguments
     }
 
-    private func processVariableDecl(_ decl: VariableDeclSyntax, scope: ExpressionScope) throws -> ExpressionScope {
+    private func processVariableDecl(
+        _ decl: VariableDeclSyntax,
+        scope: ExpressionScope,
+        allowStateDeclarations: Bool
+    ) throws -> ExpressionScope {
         var updatedScope = scope
         let hasStateAttribute = decl.attributes.containsStateAttribute
         for binding in decl.bindings {
@@ -361,6 +390,9 @@ final class ViewNodeBuilder {
                 value = .optional(value)
             }
             if hasStateAttribute {
+                guard allowStateDeclarations else {
+                    throw SwiftUIEvaluatorError.invalidArguments("@State declarations are only supported at the top level.")
+                }
                 updatedScope[namePattern.identifier.text] = registerStateVariable(
                     named: namePattern.identifier.text,
                     initialValue: value

@@ -7,8 +7,8 @@ import Testing
 struct SwiftUIEvaluatorStateTests {
     @Test func stateMutationTriggersDifferentRender() throws {
         let source = """
+        @State var count: Int = 0
         VStack(spacing: 8) {
-            @State var count: Int = 0
             Text("Count: \\(count)")
         }
         """

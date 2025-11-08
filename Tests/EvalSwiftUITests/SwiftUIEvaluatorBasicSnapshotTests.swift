@@ -175,4 +175,19 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
             }
         )
     }
+
+    @Test func rendersMultipleRootViewsInsideVStack() throws {
+        let source = """
+        @State var count: Int = 0
+        Text("Primary")
+        Text("Secondary")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Primary")
+                Text("Secondary")
+            }
+        }
+    }
 }

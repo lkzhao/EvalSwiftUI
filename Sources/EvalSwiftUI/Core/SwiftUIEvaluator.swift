@@ -100,17 +100,26 @@ public final class SwiftUIEvaluator {
                        scope: ExpressionScope,
                        overrides: ExpressionScope = [:]) throws {
         let mergedScope = scope.merging(overrides) { _, new in new }
-        _ = try viewNodeBuilder.buildViewNodes(in: closure.statements, scope: mergedScope)
+        _ = try viewNodeBuilder.buildViewNodes(
+            in: closure.statements,
+            scope: mergedScope,
+            allowStateDeclarations: false
+        )
     }
 
     func renderSyntax(from syntax: SourceFileSyntax) throws -> AnyView {
-        let result = try viewNodeBuilder.buildViewNodes(in: syntax.statements, scope: [:])
+        let result = try viewNodeBuilder.buildViewNodes(
+            in: syntax.statements,
+            scope: [:],
+            allowStateDeclarations: true
+        )
         guard let viewNode = result.nodes.last else {
             throw SwiftUIEvaluatorError.missingRootExpression
         }
 
         if result.nodes.count > 1 {
-            throw SwiftUIEvaluatorError.invalidArguments("Expected exactly one root view expression.")
+            let views = try result.nodes.map { try buildView(from: $0) }
+            return wrapInStack(views)
         }
 
         return try buildView(from: viewNode)
@@ -132,5 +141,15 @@ public final class SwiftUIEvaluator {
         case .simpleInput(let shorthand):
             return shorthand.map { $0.name.text }
         }
+    }
+
+    private func wrapInStack(_ views: [AnyView]) -> AnyView {
+        AnyView(
+            VStack(alignment: .center, spacing: 0) {
+                ForEach(Array(views.enumerated()), id: \.0) { _, view in
+                    view
+                }
+            }
+        )
     }
 }

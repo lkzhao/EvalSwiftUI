@@ -230,4 +230,23 @@ struct SwiftUIEvaluatorErrorTests {
             #expect(message.contains("action closure"))
         }
     }
+
+    @Test func stateDeclarationsMustBeTopLevel() throws {
+        let source = """
+        VStack {
+            @State var count: Int = 0
+            Text("Count: \\(count)")
+        }
+        """
+
+        do {
+            _ = try evalSwiftUI(source)
+            throw TestFailure.expected("Expected invalid arguments error")
+        } catch let error as SwiftUIEvaluatorError {
+            guard case .invalidArguments(let message) = error else {
+                throw TestFailure.expected("Unexpected error: \(error)")
+            }
+            #expect(message.contains("top level"))
+        }
+    }
 }
