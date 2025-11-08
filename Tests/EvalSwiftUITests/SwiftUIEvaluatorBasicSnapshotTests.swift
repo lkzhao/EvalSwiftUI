@@ -190,4 +190,52 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
             }
         }
     }
+
+    @Test func rendersInlineStructViews() throws {
+        let source = """
+        struct CountView: View {
+            @State var count: Int = 0
+
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text("Count: \\(count)")
+                    Button("Increase") {
+                        count += 1
+                    }
+                }
+            }
+        }
+
+        struct SomeOtherView: View {
+            var body: some View {
+                CountView()
+            }
+        }
+
+        SomeOtherView()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            ExpectedSomeOtherView()
+        }
+    }
+}
+
+private struct ExpectedCountView: View {
+    @State var count: Int = 0
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("Count: \(count)")
+            Button("Increase") {
+                count += 1
+            }
+        }
+    }
+}
+
+private struct ExpectedSomeOtherView: View {
+    var body: some View {
+        ExpectedCountView()
+    }
 }

@@ -60,6 +60,50 @@ do {
 }
 ```
 
+### Stateful snippets and inline views
+
+`@State` works the same way it does in native SwiftUI. You can keep everything inline or even declare `struct` views directly in the snippet:
+
+```swift
+let counterSource = """
+@State var count: Int = 0
+VStack(spacing: 12) {
+    Text("Count: \\(count)")
+    Button("Increase") {
+        count += 1
+    }
+}
+"""
+
+let counterView = try evalSwiftUI(counterSource)
+
+let structSource = """
+struct CountView: View {
+    @State var count: Int = 0
+
+    var body: some View {
+        VStack {
+            Text("Count: \\(count)")
+            Button("Increase") {
+                count += 1
+            }
+        }
+    }
+}
+
+struct ContainerView: View {
+    var body: some View {
+        CountView()
+        CountView()
+    }
+}
+
+ContainerView()
+"""
+
+let containerView = try evalSwiftUI(structSource)
+```
+
 ### Custom Views via Builders
 
 You can expose domain-specific views by registering your own `SwiftUIViewBuilder`:

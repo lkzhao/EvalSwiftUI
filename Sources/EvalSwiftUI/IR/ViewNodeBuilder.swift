@@ -556,7 +556,7 @@ private extension IdentifierPatternSyntax {
     }
 }
 
-private extension AttributeListSyntax {
+extension AttributeListSyntax {
     var containsStateAttribute: Bool {
         contains { element in
             guard let attribute = element.as(AttributeSyntax.self) else {

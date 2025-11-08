@@ -93,4 +93,73 @@ struct SwiftUIEvaluatorStateTests {
 
         #expect(updatedSnapshot == expectedSnapshot)
     }
+
+    @Test func inlineStructInstancesMaintainIndependentState() throws {
+        let source = """
+        struct CountView: View {
+            @State var count: Int = 0
+
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text("Count: \\(count)")
+                    Button("Increase") {
+                        count += 1
+                    }
+                }
+            }
+        }
+
+        struct Container: View {
+            var body: some View {
+                VStack(spacing: 0) {
+                    CountView()
+                    CountView()
+                }
+            }
+        }
+
+        Container()
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        guard let first = store.reference(for: "CountView#0.count"),
+              let second = store.reference(for: "CountView#1.count") else {
+            throw TestFailure.expected("Missing inline state references")
+        }
+
+        first.write(.number(1))
+        #expect(second.read().equals(.number(0)))
+
+        second.write(.number(2))
+        #expect(first.read().equals(.number(1)))
+
+        let updatedView = try coordinator.render()
+        let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
+
+        let expected = ExpectedInlineStructContainer(counts: [1, 2])
+        let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expected))
+
+        #expect(updatedSnapshot == expectedSnapshot)
+    }
+}
+
+private struct ExpectedInlineStructContainer: View {
+    let counts: [Int]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(counts.enumerated()), id: \.0) { _, value in
+                VStack(spacing: 4) {
+                    Text("Count: \(value)")
+                    Button("Increase") {}
+                }
+            }
+        }
+    }
 }
