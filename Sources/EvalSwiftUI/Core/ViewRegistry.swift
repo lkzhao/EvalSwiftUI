@@ -27,7 +27,8 @@ final class ViewRegistry {
             ZStackViewBuilder(),
             SpacerViewBuilder(),
             ImageViewBuilder(),
-            ForEachViewBuilder()
+            ForEachViewBuilder(),
+            ButtonViewBuilder()
         ]
     }
 

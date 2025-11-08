@@ -301,6 +301,11 @@ public final class ExpressionResolver {
         case "+":
             let value = try numberValue(from: operand)
             return .number(value)
+        case "$":
+            guard case .state(let reference) = operand else {
+                throw SwiftUIEvaluatorError.invalidArguments("$ requires an @State-backed identifier.")
+            }
+            return .binding(BindingValue(reference: reference))
         default:
             throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
         }
@@ -352,7 +357,8 @@ public final class ExpressionResolver {
     }
 
     private func integerValue(from value: SwiftValue) throws -> Int {
-        switch value {
+        let resolved = value.resolvingStateReference()
+        switch resolved {
         case .number(let number):
             guard number.truncatingRemainder(dividingBy: 1) == 0 else {
                 throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to whole numbers.")
@@ -369,7 +375,8 @@ public final class ExpressionResolver {
     }
 
     private func numberValue(from value: SwiftValue) throws -> Double {
-        switch value {
+        let resolved = value.resolvingStateReference()
+        switch resolved {
         case .number(let number):
             return number
         case .optional(let wrapped):
@@ -383,7 +390,8 @@ public final class ExpressionResolver {
     }
 
     private func boolValue(from value: SwiftValue) throws -> Bool {
-        switch value {
+        let resolved = value.resolvingStateReference()
+        switch resolved {
         case .bool(let flag):
             return flag
         case .optional(let wrapped):
@@ -457,7 +465,8 @@ public final class ExpressionResolver {
         base: SwiftValue,
         element: SwiftValue
     ) throws -> Bool {
-        switch base {
+        let resolvedBase = base.resolvingStateReference()
+        switch resolvedBase {
         case .array(let elements):
             return elements.contains { candidate in
                 candidate.equals(element)
@@ -473,6 +482,22 @@ public final class ExpressionResolver {
         default:
             throw SwiftUIEvaluatorError.invalidArguments("contains is only supported on arrays and ranges.")
         }
+    }
+
+    func evaluateCompoundAssignment(
+        symbol: String,
+        lhs: SwiftValue,
+        rhs: SwiftValue
+    ) throws -> SwiftValue {
+        guard symbol.hasSuffix("=") else {
+            throw SwiftUIEvaluatorError.invalidArguments("Unsupported compound assignment operator \(symbol).")
+        }
+        let binarySymbol = String(symbol.dropLast())
+        return try applyBinaryOperator(
+            binarySymbol,
+            lhs: { lhs },
+            rhs: { rhs }
+        )
     }
 
     private func isStringLike(_ value: SwiftValue) -> Bool {
@@ -670,7 +695,8 @@ public final class ExpressionResolver {
     }
 
     private func stringValue(from value: SwiftValue) throws -> String {
-        switch value {
+        let resolved = value.resolvingStateReference()
+        switch resolved {
         case .string(let string):
             return string
         case .number(let number):

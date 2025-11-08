@@ -1,12 +1,18 @@
 import SwiftSyntax
+import SwiftSyntaxBuilder
 
 final class ViewNodeBuilder {
     private let expressionResolver: ExpressionResolver
     private let context: (any SwiftUIEvaluatorContext)?
+    private let stateStore: RuntimeStateStore
+    private static let compoundAssignmentOperators: Set<String> = ["+=", "-=", "*=", "/="]
 
-    init(expressionResolver: ExpressionResolver, context: (any SwiftUIEvaluatorContext)? = nil) {
+    init(expressionResolver: ExpressionResolver,
+         context: (any SwiftUIEvaluatorContext)? = nil,
+         stateStore: RuntimeStateStore) {
         self.expressionResolver = expressionResolver
         self.context = context
+        self.stateStore = stateStore
     }
 
     func buildViewNode(from call: FunctionCallExprSyntax, scope: ExpressionScope) throws -> ViewNode {
@@ -41,23 +47,31 @@ final class ViewNodeBuilder {
     }
 
     func buildViewNodes(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
-        try buildViewNodes(in: closure.statements, scope: scope).nodes
+        try buildViewNodes(in: closure.statements, scope: scope, allowStateDeclarations: false).nodes
     }
 
-    private func buildViewNodes(
+    func buildViewNodes(
         in statements: CodeBlockItemListSyntax,
-        scope: ExpressionScope
+        scope: ExpressionScope,
+        allowStateDeclarations: Bool
     ) throws -> (nodes: [ViewNode], scope: ExpressionScope) {
         var children: [ViewNode] = []
         var currentScope = scope
 
         for statement in statements {
             if let variableDecl = statement.item.as(VariableDeclSyntax.self) {
-                currentScope = try processVariableDecl(variableDecl, scope: currentScope)
+                currentScope = try processVariableDecl(
+                    variableDecl,
+                    scope: currentScope,
+                    allowStateDeclarations: allowStateDeclarations
+                )
                 continue
             }
 
             if let expr = expression(from: statement.item) {
+                if try processMutationExpression(expr, scope: &currentScope) {
+                    continue
+                }
                 if let ifExpr = expr.as(IfExprSyntax.self) {
                     let nodes = try processIfExpression(ifExpr, scope: currentScope)
                     children.append(contentsOf: nodes)
@@ -98,10 +112,18 @@ final class ViewNodeBuilder {
                     guard let caseScope = try matchCaseItem(caseItem, subject: subjectValue, scope: scope) else {
                         continue
                     }
-                    return try buildViewNodes(in: switchCase.statements, scope: caseScope).nodes
+                    return try buildViewNodes(
+                        in: switchCase.statements,
+                        scope: caseScope,
+                        allowStateDeclarations: false
+                    ).nodes
                 }
             case .default:
-                return try buildViewNodes(in: switchCase.statements, scope: scope).nodes
+                return try buildViewNodes(
+                    in: switchCase.statements,
+                    scope: scope,
+                    allowStateDeclarations: false
+                ).nodes
             }
         }
 
@@ -227,7 +249,11 @@ final class ViewNodeBuilder {
             }
 
             if isTrue {
-                return try buildViewNodes(in: ifExpr.body.statements, scope: scope).nodes
+                return try buildViewNodes(
+                    in: ifExpr.body.statements,
+                    scope: scope,
+                    allowStateDeclarations: false
+                ).nodes
             }
 
             return try buildElseBody(ifExpr.elseBody, scope: scope)
@@ -274,7 +300,11 @@ final class ViewNodeBuilder {
 
         var boundScope = scope
         boundScope[identifierPattern.identifier.text] = unwrapped
-        return try buildViewNodes(in: body.statements, scope: boundScope).nodes
+        return try buildViewNodes(
+            in: body.statements,
+            scope: boundScope,
+            allowStateDeclarations: false
+        ).nodes
     }
 
     private func buildElseBody(_ elseBody: IfExprSyntax.ElseBody?, scope: ExpressionScope) throws -> [ViewNode] {
@@ -286,7 +316,11 @@ final class ViewNodeBuilder {
         case .ifExpr(let nested):
             return try processIfExpression(nested, scope: scope)
         case .codeBlock(let block):
-            return try buildViewNodes(in: block.statements, scope: scope).nodes
+            return try buildViewNodes(
+                in: block.statements,
+                scope: scope,
+                allowStateDeclarations: false
+            ).nodes
         }
     }
 
@@ -331,8 +365,13 @@ final class ViewNodeBuilder {
         return arguments
     }
 
-    private func processVariableDecl(_ decl: VariableDeclSyntax, scope: ExpressionScope) throws -> ExpressionScope {
+    private func processVariableDecl(
+        _ decl: VariableDeclSyntax,
+        scope: ExpressionScope,
+        allowStateDeclarations: Bool
+    ) throws -> ExpressionScope {
         var updatedScope = scope
+        let hasStateAttribute = decl.attributes.containsStateAttribute
         for binding in decl.bindings {
             guard let namePattern = binding.pattern.as(IdentifierPatternSyntax.self),
                   let initializer = binding.initializer else {
@@ -344,12 +383,146 @@ final class ViewNodeBuilder {
                 scope: updatedScope,
                 context: context
             )
+            if !hasStateAttribute {
+                value = value.resolvingStateReference()
+            }
             if isOptional(binding) && !value.isOptional {
                 value = .optional(value)
+            }
+            if hasStateAttribute {
+                guard allowStateDeclarations else {
+                    throw SwiftUIEvaluatorError.invalidArguments("@State declarations are only supported at the top level.")
+                }
+                updatedScope[namePattern.identifier.text] = registerStateVariable(
+                    named: namePattern.identifier.text,
+                    initialValue: value
+                )
+                continue
             }
             updatedScope[namePattern.identifier.text] = value
         }
         return updatedScope
+    }
+
+    private func registerStateVariable(named identifier: String, initialValue: SwiftValue) -> SwiftValue {
+        let resolvedValue = initialValue.resolvingStateReference()
+        let reference = stateStore.makeState(identifier: identifier, initialValue: resolvedValue)
+        return .state(reference)
+    }
+
+    private func processMutationExpression(_ expression: ExprSyntax, scope: inout ExpressionScope) throws -> Bool {
+        guard let sequence = expression.as(SequenceExprSyntax.self) else {
+            return false
+        }
+
+        if try processAssignmentSequence(sequence, scope: &scope) {
+            return true
+        }
+
+        if try processCompoundAssignmentSequence(sequence, scope: &scope) {
+            return true
+        }
+
+        return false
+    }
+
+    private func processAssignmentSequence(_ sequence: SequenceExprSyntax, scope: inout ExpressionScope) throws -> Bool {
+        let elements = Array(sequence.elements)
+        guard elements.count >= 3 else {
+            return false
+        }
+
+        guard elements.indices.contains(1), elements[1].is(AssignmentExprSyntax.self) else {
+            return false
+        }
+
+        guard let identifier = elements[0].as(DeclReferenceExprSyntax.self) else {
+            throw SwiftUIEvaluatorError.invalidArguments("Assignments require identifier targets.")
+        }
+
+        let rhsElements = elements[2...]
+        let rhsExpression = try expression(from: rhsElements)
+        let rhsValue = try expressionResolver.resolveExpression(
+            rhsExpression,
+            scope: scope,
+            context: context
+        )
+        try assignValue(rhsValue, to: identifier.baseName.text, scope: &scope)
+        return true
+    }
+
+    private func processCompoundAssignmentSequence(_ sequence: SequenceExprSyntax, scope: inout ExpressionScope) throws -> Bool {
+        let elements = Array(sequence.elements)
+        guard elements.count >= 3 else {
+            return false
+        }
+
+        guard let operatorExpr = elements[1].as(BinaryOperatorExprSyntax.self) else {
+            return false
+        }
+
+        let symbol = operatorExpr.operator.text
+        guard Self.compoundAssignmentOperators.contains(symbol) else {
+            return false
+        }
+
+        guard let identifier = elements[0].as(DeclReferenceExprSyntax.self) else {
+            throw SwiftUIEvaluatorError.invalidArguments("Assignments require identifier targets.")
+        }
+
+        let rhsExpression = try expression(from: elements[2...])
+        let rhsValue = try expressionResolver.resolveExpression(
+            rhsExpression,
+            scope: scope,
+            context: context
+        )
+        let currentValue = try currentValue(for: identifier.baseName.text, scope: scope)
+        let newValue = try expressionResolver.evaluateCompoundAssignment(
+            symbol: symbol,
+            lhs: currentValue,
+            rhs: rhsValue
+        )
+        try assignValue(newValue, to: identifier.baseName.text, scope: &scope)
+        return true
+    }
+
+    private func expression(from elements: ArraySlice<ExprSyntax>) throws -> ExprSyntax {
+        guard let first = elements.first else {
+            throw SwiftUIEvaluatorError.invalidArguments("Assignment requires a right-hand expression.")
+        }
+
+        if elements.count == 1 {
+            return first
+        }
+
+        return ExprSyntax(
+            SequenceExprSyntax {
+                for element in elements {
+                    element
+                }
+            }
+        )
+    }
+
+    private func currentValue(for identifier: String, scope: ExpressionScope) throws -> SwiftValue {
+        if let scoped = scope[identifier] {
+            return scoped.resolvingStateReference()
+        }
+        throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
+    }
+
+    private func assignValue(_ value: SwiftValue, to identifier: String, scope: inout ExpressionScope) throws {
+        let resolvedValue = value.resolvingStateReference()
+        guard let existing = scope[identifier] else {
+            throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
+        }
+
+        if case .state(let reference) = existing {
+            reference.write(resolvedValue)
+            return
+        }
+
+        scope[identifier] = resolvedValue
     }
 
     private func isOptional(_ binding: PatternBindingSyntax) -> Bool {
@@ -380,5 +553,16 @@ private extension IdentifierPatternSyntax {
             return false
         }
         return trailing.description.contains("?")
+    }
+}
+
+private extension AttributeListSyntax {
+    var containsStateAttribute: Bool {
+        contains { element in
+            guard let attribute = element.as(AttributeSyntax.self) else {
+                return false
+            }
+            return attribute.attributeName.trimmedDescription == "State"
+        }
     }
 }

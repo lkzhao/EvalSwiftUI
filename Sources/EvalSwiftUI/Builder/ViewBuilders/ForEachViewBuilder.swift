@@ -5,18 +5,18 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
         guard let dataArgument = arguments.first(where: { argument in
-            if case .viewContent = argument.value { return false }
+            if case .closure = argument.value { return false }
             return argument.label == nil
         }) else {
             throw SwiftUIEvaluatorError.invalidArguments("ForEach requires an unlabeled data argument.")
         }
 
-        guard let contentArgument = arguments.first(where: { argument in
-            if case .viewContent = argument.value { return true }
-            return false
-        }), case let .viewContent(content) = contentArgument.value else {
+        guard let closure = arguments.first(where: { argument in
+            argument.value.resolvedClosure != nil
+        })?.value.resolvedClosure else {
             throw SwiftUIEvaluatorError.invalidArguments("ForEach requires a trailing content closure.")
         }
+        let content = try closure.makeViewContent()
 
         let parameterName: String
         if let explicit = content.parameters.first {

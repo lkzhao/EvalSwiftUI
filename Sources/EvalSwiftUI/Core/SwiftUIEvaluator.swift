@@ -3,6 +3,7 @@ import SwiftSyntax
 import SwiftUI
 
 public final class SwiftUIEvaluator {
+    let stateStore: RuntimeStateStore
     private let viewNodeBuilder: ViewNodeBuilder
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
@@ -12,28 +13,37 @@ public final class SwiftUIEvaluator {
     public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
                 modifierBuilders: [any SwiftUIModifierBuilder] = [],
-                context: (any SwiftUIEvaluatorContext)? = nil) {
+                context: (any SwiftUIEvaluatorContext)? = nil,
+                stateStore: RuntimeStateStore? = nil) {
         self.context = context
+        self.stateStore = stateStore ?? RuntimeStateStore()
         let resolver = expressionResolver ?? ExpressionResolver(context: context)
         self.expressionResolver = resolver
-        viewNodeBuilder = ViewNodeBuilder(expressionResolver: resolver, context: context)
+        viewNodeBuilder = ViewNodeBuilder(
+            expressionResolver: resolver,
+            context: context,
+            stateStore: self.stateStore
+        )
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
         modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
 
+    @MainActor
     public func evaluate(source: String) throws -> some View {
         let syntax = Parser.parse(source: source)
         return try evaluate(syntax: syntax)
     }
 
+    @MainActor
     private func evaluate(syntax: SourceFileSyntax) throws -> some View {
-        guard let statement = syntax.statements.first,
-              let call = statement.item.as(FunctionCallExprSyntax.self) else {
-            throw SwiftUIEvaluatorError.missingRootExpression
-        }
-
-        let viewNode = try viewNodeBuilder.buildViewNode(from: call, scope: [:])
-        return try buildView(from: viewNode)
+        stateStore.reset()
+        let coordinator = RuntimeRenderCoordinator(evaluator: self, syntax: syntax)
+        let initialView = try coordinator.render()
+        return RuntimeRenderedView(
+            initialView: initialView,
+            coordinator: coordinator,
+            stateStore: stateStore
+        )
     }
 
     private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
@@ -65,13 +75,17 @@ public final class SwiftUIEvaluator {
                 )
                 return ResolvedArgument(label: argument.label, value: value)
             case .closure(let closure, let capturedScope):
-                let content = try makeViewContent(from: closure, scope: capturedScope)
-                return ResolvedArgument(label: argument.label, value: .viewContent(content))
+                let resolvedClosure = ResolvedClosure(
+                    evaluator: self,
+                    closure: closure,
+                    scope: capturedScope
+                )
+                return ResolvedArgument(label: argument.label, value: .closure(resolvedClosure))
             }
         }
     }
 
-    private func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
+    func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
         let nodes = try viewNodeBuilder.buildViewNodes(from: closure, scope: scope)
         let parameterNames = closureParameterNames(closure)
         let renderers = nodes.map { node in
@@ -80,6 +94,35 @@ public final class SwiftUIEvaluator {
             }
         }
         return ViewContent(renderers: renderers, parameters: parameterNames)
+    }
+
+    func performAction(from closure: ClosureExprSyntax,
+                       scope: ExpressionScope,
+                       overrides: ExpressionScope = [:]) throws {
+        let mergedScope = scope.merging(overrides) { _, new in new }
+        _ = try viewNodeBuilder.buildViewNodes(
+            in: closure.statements,
+            scope: mergedScope,
+            allowStateDeclarations: false
+        )
+    }
+
+    func renderSyntax(from syntax: SourceFileSyntax) throws -> AnyView {
+        let result = try viewNodeBuilder.buildViewNodes(
+            in: syntax.statements,
+            scope: [:],
+            allowStateDeclarations: true
+        )
+        guard let viewNode = result.nodes.last else {
+            throw SwiftUIEvaluatorError.missingRootExpression
+        }
+
+        if result.nodes.count > 1 {
+            let views = try result.nodes.map { try buildView(from: $0) }
+            return wrapInStack(views)
+        }
+
+        return try buildView(from: viewNode)
     }
 
     private func closureParameterNames(_ closure: ClosureExprSyntax) -> [String] {
@@ -98,5 +141,15 @@ public final class SwiftUIEvaluator {
         case .simpleInput(let shorthand):
             return shorthand.map { $0.name.text }
         }
+    }
+
+    private func wrapInStack(_ views: [AnyView]) -> AnyView {
+        AnyView(
+            VStack(alignment: .center, spacing: 0) {
+                ForEach(Array(views.enumerated()), id: \.0) { _, view in
+                    view
+                }
+            }
+        )
     }
 }

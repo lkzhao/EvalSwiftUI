@@ -4,12 +4,12 @@ struct HStackViewBuilder: SwiftUIViewBuilder {
     let name = "HStack"
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
-        guard let contentArg = arguments.first(where: { argument in
-            if case .viewContent = argument.value { return true }
-            return false
-        }), case let .viewContent(content) = contentArg.value else {
+        guard let closure = arguments.first(where: { argument in
+            argument.value.resolvedClosure != nil
+        })?.value.resolvedClosure else {
             throw SwiftUIEvaluatorError.invalidArguments("HStack requires a content closure.")
         }
+        let content = try closure.makeViewContent()
 
         let alignment = try decodeAlignment(from: arguments.first { $0.label == "alignment" }?.value)
         let spacing = try decodeSpacing(from: arguments.first { $0.label == "spacing" }?.value)

@@ -118,4 +118,76 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
                 }
         )
     }
+
+    @Test func rendersRootViewAfterTopLevelStatements() throws {
+        let source = """
+        let greeting = "Hello"
+        @State var count: Int = 0
+        Text("\\(greeting), runtime!")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Hello, runtime!")
+        }
+    }
+
+    @Test func rendersStateInitialValue() throws {
+        let source = """
+        @State var count: Int = 5
+        Text("Count: \\(count)")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Count: 5")
+        }
+    }
+
+    @Test func appliesCompoundAssignmentsBeforeRootView() throws {
+        let source = """
+        var count = 1
+        count += 2
+        Text("Count: \\(count)")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Count: 3")
+        }
+    }
+
+    @Test func rendersButtonUsingTitle() throws {
+        #expectSnapshot(
+            Button("Tap Me") {
+                // Intentionally empty action
+            }
+        )
+    }
+
+    @Test func rendersButtonUsingLabelClosure() throws {
+        #expectSnapshot(
+            Button {
+                // Intentionally empty action
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                    Text("Add Item")
+                }
+                .padding(6)
+            }
+        )
+    }
+
+    @Test func rendersMultipleRootViewsInsideVStack() throws {
+        let source = """
+        @State var count: Int = 0
+        Text("Primary")
+        Text("Secondary")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Primary")
+                Text("Secondary")
+            }
+        }
+    }
 }
