@@ -28,7 +28,10 @@ final class ModifierRegistry {
             ForegroundStyleModifierBuilder(),
             FrameModifierBuilder(),
             BackgroundModifierBuilder(),
-            OverlayModifierBuilder()
+            OverlayModifierBuilder(),
+            CornerRadiusModifierBuilder(),
+            OpacityModifierBuilder(),
+            ShadowModifierBuilder()
         ]
     }
 

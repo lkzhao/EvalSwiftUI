@@ -11,11 +11,11 @@ struct RoundedRectangleViewBuilder: SwiftUIViewBuilder {
 
     private func decodeCornerRadius(from arguments: [ResolvedArgument]) throws -> CGFloat {
         if let labeled = arguments.first(where: { $0.label == "cornerRadius" }) {
-            return try number(from: labeled.value)
+            return try labeled.value.asCGFloat(description: "RoundedRectangle cornerRadius")
         }
 
         if let unlabeled = arguments.first(where: { $0.label == nil && $0.value.resolvedClosure == nil }) {
-            return try number(from: unlabeled.value)
+            return try unlabeled.value.asCGFloat(description: "RoundedRectangle cornerRadius")
         }
 
         throw SwiftUIEvaluatorError.invalidArguments("RoundedRectangle requires a cornerRadius argument.")
@@ -37,17 +37,4 @@ struct RoundedRectangleViewBuilder: SwiftUIViewBuilder {
         }
     }
 
-    private func number(from value: SwiftValue) throws -> CGFloat {
-        switch value.resolvingStateReference() {
-        case .number(let double):
-            return CGFloat(double)
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("cornerRadius cannot be nil.")
-            }
-            return try number(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("cornerRadius expects a numeric literal.")
-        }
-    }
 }

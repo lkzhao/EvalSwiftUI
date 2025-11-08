@@ -75,6 +75,58 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
         }
     }
 
+    @Test func rendersCornerRadiusModifier() throws {
+        let source = """
+        Text("Rounded")
+            .padding(8)
+            .background {
+                RoundedRectangle(cornerRadius: 4)
+                    .foregroundStyle(.blue)
+            }
+            .cornerRadius(10, antialiased: false)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Rounded")
+                .padding(8)
+                .background {
+                    RoundedRectangle(cornerRadius: 4)
+                        .foregroundStyle(.blue)
+                }
+                .cornerRadius(10, antialiased: false)
+        }
+    }
+
+    @Test func rendersOpacityModifier() throws {
+        let source = """
+        VStack(spacing: 4) {
+            Text("Primary").opacity(0.6)
+            Text("Secondary").opacity(0.2)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("Primary").opacity(0.6)
+                Text("Secondary").opacity(0.2)
+            }
+        }
+    }
+
+    @Test func rendersShadowModifier() throws {
+        let source = """
+        Text("Shadowed")
+            .padding(4)
+            .shadow(color: .gray, radius: 4, x: 2, y: 2)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Shadowed")
+                .padding(4)
+                .shadow(color: .gray, radius: 4, x: 2, y: 2)
+        }
+    }
+
     @Test func rendersSpacerInsideHStack() throws {
         #expectSnapshot(
             HStack(spacing: 0) {
