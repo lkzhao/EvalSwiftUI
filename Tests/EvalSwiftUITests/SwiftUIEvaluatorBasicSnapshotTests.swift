@@ -153,4 +153,26 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
             Text("Count: 3")
         }
     }
+
+    @Test func rendersButtonUsingTitle() throws {
+        #expectSnapshot(
+            Button("Tap Me") {
+                // Intentionally empty action
+            }
+        )
+    }
+
+    @Test func rendersButtonUsingLabelClosure() throws {
+        #expectSnapshot(
+            Button {
+                // Intentionally empty action
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                    Text("Add Item")
+                }
+                .padding(6)
+            }
+        )
+    }
 }

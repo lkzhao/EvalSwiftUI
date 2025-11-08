@@ -229,7 +229,7 @@ public struct ResolvedClosure {
     }
 }
 
-public struct ActionContent {
+public struct ActionContent: @unchecked Sendable {
     private unowned let evaluator: SwiftUIEvaluator
     private let closure: ClosureExprSyntax
     private let scope: ExpressionScope
