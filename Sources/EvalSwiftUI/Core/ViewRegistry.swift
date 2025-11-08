@@ -19,6 +19,10 @@ final class ViewRegistry {
         return try builder.makeView(arguments: arguments)
     }
 
+    func register(builder: any SwiftUIViewBuilder) {
+        builders[builder.name] = builder
+    }
+
     private static var defaultBuilders: [any SwiftUIViewBuilder] {
         [
             TextViewBuilder(),
