@@ -39,6 +39,10 @@ public final class RuntimeStateStore {
             onChange()
         }
     }
+
+    func identifiers() -> [String] {
+        Array(slots.keys)
+    }
 }
 
 public struct StateReference {

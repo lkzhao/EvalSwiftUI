@@ -10,7 +10,8 @@ public final class SwiftUIEvaluator {
     private let viewRegistry: ViewRegistry
     private let modifierRegistry: ModifierRegistry
     private let context: (any SwiftUIEvaluatorContext)?
-    private var inlineInstanceTracker: [String: Int] = [:]
+    private var inlineInstanceTracker: [InlineInstanceKey: Int] = [:]
+    private var inlineInstanceNamespace: [String] = []
 
     public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
@@ -112,6 +113,7 @@ public final class SwiftUIEvaluator {
 
     func renderSyntax(from syntax: SourceFileSyntax) throws -> AnyView {
         inlineInstanceTracker = [:]
+        inlineInstanceNamespace = []
         let filteredStatements = try filteredTopLevelStatements(from: syntax.statements)
         let result = try viewNodeBuilder.buildViewNodes(
             in: filteredStatements,
@@ -253,9 +255,21 @@ public final class SwiftUIEvaluator {
     }
 
     func nextInlineInstanceIdentifier(for name: String) -> String {
-        let next = inlineInstanceTracker[name, default: 0]
-        inlineInstanceTracker[name] = next + 1
+        let key = InlineInstanceKey(namespace: inlineInstanceNamespace, name: name)
+        let next = inlineInstanceTracker[key, default: 0]
+        inlineInstanceTracker[key] = next + 1
+        guard inlineInstanceNamespace.isEmpty else {
+            let prefix = inlineInstanceNamespace.joined(separator: ".")
+            return "\(prefix).\(name)#\(next)"
+        }
         return "\(name)#\(next)"
+    }
+
+    func withInlineInstanceNamespace<T>(_ components: [String], perform: () throws -> T) rethrows -> T {
+        guard !components.isEmpty else { return try perform() }
+        inlineInstanceNamespace.append(contentsOf: components)
+        defer { inlineInstanceNamespace.removeLast(components.count) }
+        return try perform()
     }
 
     func renderStructBody(
@@ -278,6 +292,11 @@ public final class SwiftUIEvaluator {
         let views = try result.nodes.map { try buildView(from: $0) }
         return wrapInStack(views)
     }
+}
+
+private struct InlineInstanceKey: Hashable {
+    let namespace: [String]
+    let name: String
 }
 
 private struct InlineStructDefinition {

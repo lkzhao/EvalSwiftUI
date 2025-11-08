@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct ForEachViewBuilder: SwiftUIViewBuilder {
@@ -33,11 +34,19 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
         let rows = try sequence.enumerated().map { offset, element -> RenderedRow in
             var overrides: ExpressionScope = [:]
             overrides[parameterName] = element
-            let views = try content.renderViews(overriding: overrides)
+            let identifier = try idStrategy.makeIdentifier(for: element, index: offset)
+            let namespace = inlineNamespaceComponents(
+                for: identifier,
+                closureIdentifier: closure.identifier
+            )
+            let views = try closure.renderViews(
+                using: content,
+                overriding: overrides,
+                inlineNamespace: namespace
+            )
             guard let view = views.first, views.count == 1 else {
                 throw SwiftUIEvaluatorError.invalidArguments("ForEach content must return exactly one view.")
             }
-            let identifier = try idStrategy.makeIdentifier(for: element, index: offset)
             return RenderedRow(id: identifier, view: view)
         }
 
@@ -141,5 +150,28 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
     private struct RenderedRow: Identifiable {
         let id: AnyHashable
         let view: AnyView
+    }
+
+    private func inlineNamespaceComponents(
+        for identifier: AnyHashable,
+        closureIdentifier: String
+    ) -> [String] {
+        [
+            "ForEach",
+            sanitizedNamespaceComponent(closureIdentifier),
+            "row-\(sanitizedNamespaceComponent(String(describing: identifier)))"
+        ]
+    }
+
+    private func sanitizedNamespaceComponent(_ value: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-"))
+        let mappedScalars = value.unicodeScalars.map { scalar -> Character in
+            if allowed.contains(scalar) {
+                return Character(scalar)
+            }
+            return "_"
+        }
+        let sanitized = String(mappedScalars).trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        return sanitized.isEmpty ? "value" : sanitized
     }
 }

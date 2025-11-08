@@ -216,6 +216,56 @@ struct SwiftUIEvaluatorStateTests {
         #expect(updatedSnapshot == expectedSnapshot)
     }
 
+    @Test func preservesChildStateWhenReorderingForEachData() throws {
+        let source = """
+        struct CountView: View {
+            @State var count: Int = 0
+
+            var body: some View {
+                Text("Count: \\(count)")
+            }
+        }
+
+        struct Host: View {
+            @State var ids = [0, 1, 2]
+
+            var body: some View {
+                VStack {
+                    ForEach(ids, id: \\.self) { _ in
+                        CountView()
+                    }
+                }
+            }
+        }
+
+        Host()
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        let countReferences = try rowStateReferences(in: store)
+        for (row, reference) in countReferences {
+            reference.write(.number(Double(row + 10)))
+        }
+
+        guard let idsIdentifier = store.identifiers().first(where: { $0.hasSuffix(".ids") }),
+              let idsReference = store.reference(for: idsIdentifier) else {
+            throw TestFailure.expected("Missing ids state reference")
+        }
+        idsReference.write(.array([.number(2), .number(1), .number(0)]))
+
+        _ = try coordinator.render()
+
+        for (row, reference) in countReferences {
+            #expect(reference.read().equals(.number(Double(row + 10))))
+        }
+    }
+
     @Test func toggleReflectsStateChanges() throws {
         let source = """
         @State var isOn = false
@@ -276,4 +326,31 @@ private struct ExpectedInlineCountView: View {
             Text("State 0")
         }
     }
+}
+
+private func rowStateReferences(in store: RuntimeStateStore) throws -> [Int: StateReference] {
+    var references: [Int: StateReference] = [:]
+    for identifier in store.identifiers() where identifier.contains("CountView#") {
+        guard let rowValue = rowValueFromIdentifier(identifier),
+              let reference = store.reference(for: identifier) else {
+            continue
+        }
+        references[rowValue] = reference
+    }
+    guard references.count >= 1 else {
+        throw TestFailure.expected("Missing CountView state references")
+    }
+    return references
+}
+
+private func rowValueFromIdentifier(_ identifier: String) -> Int? {
+    guard let rowRange = identifier.range(of: ".row-") else {
+        return nil
+    }
+    let remainder = identifier[rowRange.upperBound...]
+    guard let endRange = remainder.range(of: ".CountView") else {
+        return nil
+    }
+    let valueSubstring = remainder[..<endRange.lowerBound]
+    return Int(valueSubstring)
 }

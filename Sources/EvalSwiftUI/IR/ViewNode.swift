@@ -1,4 +1,5 @@
 import SwiftSyntax
+import SwiftUI
 
 struct ViewNode {
     let constructor: ViewConstructor
@@ -222,6 +223,20 @@ public struct ResolvedClosure {
 
     func makeViewContent() throws -> ViewContent {
         try evaluator.makeViewContent(from: closure, scope: scope)
+    }
+
+    var identifier: String {
+        closure.description
+    }
+
+    func renderViews(
+        using content: ViewContent,
+        overriding overrides: ExpressionScope,
+        inlineNamespace: [String]
+    ) throws -> [AnyView] {
+        try evaluator.withInlineInstanceNamespace(inlineNamespace) {
+            try content.renderViews(overriding: overrides)
+        }
     }
 
     func makeActionContent() -> ActionContent {
