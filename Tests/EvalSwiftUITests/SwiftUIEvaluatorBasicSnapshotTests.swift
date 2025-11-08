@@ -118,4 +118,16 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
                 }
         )
     }
+
+    @Test func rendersRootViewAfterTopLevelStatements() throws {
+        let source = """
+        let greeting = "Hello"
+        @State var count: Int = 0
+        Text("\\(greeting), runtime!")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Hello, runtime!")
+        }
+    }
 }

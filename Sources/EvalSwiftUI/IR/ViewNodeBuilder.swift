@@ -44,7 +44,7 @@ final class ViewNodeBuilder {
         try buildViewNodes(in: closure.statements, scope: scope).nodes
     }
 
-    private func buildViewNodes(
+    func buildViewNodes(
         in statements: CodeBlockItemListSyntax,
         scope: ExpressionScope
     ) throws -> (nodes: [ViewNode], scope: ExpressionScope) {

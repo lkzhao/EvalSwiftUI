@@ -27,12 +27,15 @@ public final class SwiftUIEvaluator {
     }
 
     private func evaluate(syntax: SourceFileSyntax) throws -> some View {
-        guard let statement = syntax.statements.first,
-              let call = statement.item.as(FunctionCallExprSyntax.self) else {
+        let result = try viewNodeBuilder.buildViewNodes(in: syntax.statements, scope: [:])
+        guard let viewNode = result.nodes.last else {
             throw SwiftUIEvaluatorError.missingRootExpression
         }
 
-        let viewNode = try viewNodeBuilder.buildViewNode(from: call, scope: [:])
+        if result.nodes.count > 1 {
+            throw SwiftUIEvaluatorError.invalidArguments("Expected exactly one root view expression.")
+        }
+
         return try buildView(from: viewNode)
     }
 
