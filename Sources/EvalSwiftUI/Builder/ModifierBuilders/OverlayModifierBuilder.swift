@@ -17,13 +17,12 @@ struct OverlayModifierBuilder: SwiftUIModifierBuilder {
     }
 
     private func viewContent(from arguments: [ResolvedArgument]) throws -> ViewContent {
-        guard let argument = arguments.first(where: { argument in
-            if case .viewContent = argument.value { return true }
-            return false
-        }), case let .viewContent(content) = argument.value else {
+        guard let closure = arguments.first(where: { argument in
+            argument.value.resolvedClosure != nil
+        })?.value.resolvedClosure else {
             throw SwiftUIEvaluatorError.invalidArguments("overlay requires a trailing content closure.")
         }
-        return content
+        return try closure.makeViewContent()
     }
 
     private func makeCompositeView(from views: [AnyView]) throws -> AnyView {

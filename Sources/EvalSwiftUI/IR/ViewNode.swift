@@ -34,7 +34,6 @@ public struct ResolvedArgument {
 public indirect enum SwiftValue {
     case string(String)
     case memberAccess([String])
-    case viewContent(ViewContent)
     case number(Double)
     case functionCall(FunctionCallValue)
     case bool(Bool)
@@ -45,6 +44,7 @@ public indirect enum SwiftValue {
     case dictionary([String: SwiftValue])
     case state(StateReference)
     case binding(BindingValue)
+    case closure(ResolvedClosure)
 }
 
 public struct FunctionCallValue {
@@ -99,8 +99,6 @@ extension SwiftValue {
             return "string"
         case .memberAccess:
             return "member reference"
-        case .viewContent:
-            return "view content"
         case .number:
             return "number"
         case .functionCall:
@@ -121,6 +119,8 @@ extension SwiftValue {
             return "state"
         case .binding:
             return "binding"
+        case .closure:
+            return "closure"
         }
     }
 
@@ -180,6 +180,8 @@ extension SwiftValue {
             return equals(other.resolvingStateReference())
         case (.binding(let left), .binding(let right)):
             return left.reference.identifier == right.reference.identifier
+        case (.closure, .closure):
+            return false
         default:
             return false
         }
@@ -203,4 +205,53 @@ private func memberPathsEqual(_ lhs: [String], _ rhs: [String]) -> Bool {
     }
 
     return lhsLast == rhsLast
+}
+
+public struct ResolvedClosure {
+    private unowned let evaluator: SwiftUIEvaluator
+    private let closure: ClosureExprSyntax
+    private let scope: ExpressionScope
+
+    init(evaluator: SwiftUIEvaluator,
+         closure: ClosureExprSyntax,
+         scope: ExpressionScope) {
+        self.evaluator = evaluator
+        self.closure = closure
+        self.scope = scope
+    }
+
+    func makeViewContent() throws -> ViewContent {
+        try evaluator.makeViewContent(from: closure, scope: scope)
+    }
+
+    func makeActionContent() -> ActionContent {
+        ActionContent(evaluator: evaluator, closure: closure, scope: scope)
+    }
+}
+
+public struct ActionContent {
+    private unowned let evaluator: SwiftUIEvaluator
+    private let closure: ClosureExprSyntax
+    private let scope: ExpressionScope
+
+    init(evaluator: SwiftUIEvaluator,
+         closure: ClosureExprSyntax,
+         scope: ExpressionScope) {
+        self.evaluator = evaluator
+        self.closure = closure
+        self.scope = scope
+    }
+
+    func perform(overriding overrides: ExpressionScope = [:]) throws {
+        try evaluator.performAction(from: closure, scope: scope, overrides: overrides)
+    }
+}
+
+extension SwiftValue {
+    var resolvedClosure: ResolvedClosure? {
+        if case let .closure(value) = self {
+            return value
+        }
+        return nil
+    }
 }

@@ -74,13 +74,17 @@ public final class SwiftUIEvaluator {
                 )
                 return ResolvedArgument(label: argument.label, value: value)
             case .closure(let closure, let capturedScope):
-                let content = try makeViewContent(from: closure, scope: capturedScope)
-                return ResolvedArgument(label: argument.label, value: .viewContent(content))
+                let resolvedClosure = ResolvedClosure(
+                    evaluator: self,
+                    closure: closure,
+                    scope: capturedScope
+                )
+                return ResolvedArgument(label: argument.label, value: .closure(resolvedClosure))
             }
         }
     }
 
-    private func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
+    func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
         let nodes = try viewNodeBuilder.buildViewNodes(from: closure, scope: scope)
         let parameterNames = closureParameterNames(closure)
         let renderers = nodes.map { node in
@@ -89,6 +93,13 @@ public final class SwiftUIEvaluator {
             }
         }
         return ViewContent(renderers: renderers, parameters: parameterNames)
+    }
+
+    func performAction(from closure: ClosureExprSyntax,
+                       scope: ExpressionScope,
+                       overrides: ExpressionScope = [:]) throws {
+        let mergedScope = scope.merging(overrides) { _, new in new }
+        _ = try viewNodeBuilder.buildViewNodes(in: closure.statements, scope: mergedScope)
     }
 
     private func closureParameterNames(_ closure: ClosureExprSyntax) -> [String] {
