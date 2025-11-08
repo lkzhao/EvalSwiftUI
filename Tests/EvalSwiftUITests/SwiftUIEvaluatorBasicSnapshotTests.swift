@@ -18,6 +18,15 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
         )
     }
 
+    @Test func rendersTextUsingStringConcatenation() throws {
+        #expectSnapshot(
+            VStack {
+                let name = "Taylor"
+                Text("Hello, " + name + "!")
+            }
+        )
+    }
+
     @Test func rendersVStackWithChildText() throws {
         #expectSnapshot(
             VStack {

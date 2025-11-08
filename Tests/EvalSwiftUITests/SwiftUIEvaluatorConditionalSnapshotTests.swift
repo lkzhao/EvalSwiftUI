@@ -155,4 +155,65 @@ struct SwiftUIEvaluatorConditionalSnapshotTests {
             }
         )
     }
+
+    @Test func evaluatesArithmeticComparisons() throws {
+        let source = """
+        VStack {
+            let width = 8
+            if width * 2 >= 16 {
+                Text("Wide")
+            } else {
+                Text("Narrow")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack {
+                Text("Wide")
+            }
+        }
+    }
+
+    @Test func supportsLogicalOperators() throws {
+        #expectSnapshot(
+            VStack {
+                let count = 4
+                let isHidden = false
+                let hasOverride = true
+
+                if count > 3 && !isHidden {
+                    Text("Primary")
+                }
+
+                if isHidden || hasOverride {
+                    Text("Override")
+                }
+            }
+        )
+    }
+
+    @Test func resolvesNilCoalescingExpressions() throws {
+        #expectSnapshot(
+            VStack {
+                let greeting: String? = nil
+                Text(greeting ?? "Guest")
+            }
+        )
+    }
+
+    @Test func supportsUnaryOperators() throws {
+        #expectSnapshot(
+            VStack {
+                let isHidden = false
+                if !isHidden {
+                    Text("Visible")
+                }
+
+                let baseOffset = 2
+                let offset = -baseOffset
+                Text("Offset \(offset)")
+            }
+        )
+    }
 }

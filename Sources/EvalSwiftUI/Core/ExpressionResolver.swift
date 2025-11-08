@@ -54,13 +54,30 @@ public final class ExpressionResolver {
             return try dictionaryValue(from: dictionaryLiteral, scope: scope, context: context)
         }
 
-        if let sequenceExpr = expression.as(SequenceExprSyntax.self),
-           let rangeValue = try resolveRangeExpression(
-               sequenceExpr,
-               scope: scope,
-               context: context
-           ) {
-            return .range(rangeValue)
+        if let sequenceExpr = expression.as(SequenceExprSyntax.self) {
+            if let rangeValue = try resolveRangeExpression(
+                sequenceExpr,
+                scope: scope,
+                context: context
+            ) {
+                return .range(rangeValue)
+            }
+
+            if let resolved = try resolveOperatorSequence(
+                sequenceExpr,
+                scope: scope,
+                context: context
+            ) {
+                return resolved
+            }
+        }
+
+        if let prefixOperator = expression.as(PrefixOperatorExprSyntax.self) {
+            return try resolvePrefixOperator(
+                prefixOperator,
+                scope: scope,
+                context: context
+            )
         }
 
         if let keyPathExpr = expression.as(KeyPathExprSyntax.self) {
@@ -86,6 +103,99 @@ public final class ExpressionResolver {
         }
 
         throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
+    }
+
+    private func resolveOperatorSequence(
+        _ sequence: SequenceExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue? {
+        let elements = Array(sequence.elements)
+        guard elements.count >= 3, !elements.count.isMultiple(of: 2) else {
+            return nil
+        }
+
+        var values: [SwiftValue] = []
+        var operators: [String] = []
+
+        for (index, element) in elements.enumerated() {
+            if index.isMultiple(of: 2) {
+                let resolved = try resolveExpression(
+                    element,
+                    scope: scope,
+                    context: context
+                )
+                values.append(resolved)
+            } else if let operatorExpr = element.as(BinaryOperatorExprSyntax.self) {
+                operators.append(operatorExpr.operator.text)
+            } else {
+                return nil
+            }
+        }
+
+        let precedenceGroups: [[String]] = [
+            ["*", "/", "%"],
+            ["+", "-"],
+            ["??"],
+            ["<", "<=", ">", ">=", "==", "!="],
+            ["&&"],
+            ["||"],
+        ]
+
+        for group in precedenceGroups {
+            var index = 0
+            while index < operators.count {
+                let symbol = operators[index]
+                if group.contains(symbol) {
+                    let lhs = values[index]
+                    let rhs = values[index + 1]
+                    let result = try applyBinaryOperator(
+                        symbol,
+                        lhs: lhs,
+                        rhs: rhs
+                    )
+                    values[index] = result
+                    values.remove(at: index + 1)
+                    operators.remove(at: index)
+                } else {
+                    index += 1
+                }
+            }
+        }
+
+        guard values.count == 1, operators.isEmpty else {
+            return nil
+        }
+
+        return values[0]
+    }
+
+    private func resolvePrefixOperator(
+        _ expression: PrefixOperatorExprSyntax,
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        let operatorToken = expression.`operator`
+
+        let operand = try resolveExpression(
+            ExprSyntax(expression.expression),
+            scope: scope,
+            context: context
+        )
+
+        switch operatorToken.text {
+        case "!":
+            let value = try boolValue(from: operand)
+            return .bool(!value)
+        case "-":
+            let value = try numberValue(from: operand)
+            return .number(-value)
+        case "+":
+            let value = try numberValue(from: operand)
+            return .number(value)
+        default:
+            throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
+        }
     }
 
     private func resolveRangeExpression(
@@ -150,6 +260,34 @@ public final class ExpressionResolver {
         }
     }
 
+    private func numberValue(from value: SwiftValue) throws -> Double {
+        switch value {
+        case .number(let number):
+            return number
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                throw SwiftUIEvaluatorError.invalidArguments("Expected numeric value, received nil.")
+            }
+            return try numberValue(from: unwrapped)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("Expected numeric value, received \(value.typeDescription).")
+        }
+    }
+
+    private func boolValue(from value: SwiftValue) throws -> Bool {
+        switch value {
+        case .bool(let flag):
+            return flag
+        case .optional(let wrapped):
+            guard let unwrapped = wrapped?.unwrappedOptional() else {
+                throw SwiftUIEvaluatorError.invalidArguments("Expected boolean value, received nil.")
+            }
+            return try boolValue(from: unwrapped)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("Expected boolean value, received \(value.typeDescription).")
+        }
+    }
+
     private func memberAccessPath(_ memberAccess: MemberAccessExprSyntax) throws -> [String] {
         var components: [String] = [memberAccess.declName.baseName.text]
         var currentBase = memberAccess.base
@@ -204,6 +342,96 @@ public final class ExpressionResolver {
                 storage[key] = resolvedValue
             }
             return .dictionary(storage)
+        }
+    }
+
+    private func isStringLike(_ value: SwiftValue) -> Bool {
+        guard let unwrapped = value.unwrappedOptional() else {
+            return false
+        }
+
+        if case .string = unwrapped {
+            return true
+        }
+
+        return false
+    }
+
+    private func applyBinaryOperator(
+        _ symbol: String,
+        lhs: SwiftValue,
+        rhs: SwiftValue
+    ) throws -> SwiftValue {
+        switch symbol {
+        case "+":
+            if isStringLike(lhs) || isStringLike(rhs) {
+                return .string(
+                    try stringValue(from: lhs) + stringValue(from: rhs)
+                )
+            }
+            return .number(try numberValue(from: lhs) + numberValue(from: rhs))
+        case "-":
+            return .number(try numberValue(from: lhs) - numberValue(from: rhs))
+        case "*":
+            return .number(try numberValue(from: lhs) * numberValue(from: rhs))
+        case "/":
+            return .number(try numberValue(from: lhs) / numberValue(from: rhs))
+        case "%":
+            let left = try numberValue(from: lhs)
+            let right = try numberValue(from: rhs)
+            return .number(left.truncatingRemainder(dividingBy: right))
+        case "<":
+            return .bool(try numberValue(from: lhs) < numberValue(from: rhs))
+        case "<=":
+            return .bool(try numberValue(from: lhs) <= numberValue(from: rhs))
+        case ">":
+            return .bool(try numberValue(from: lhs) > numberValue(from: rhs))
+        case ">=":
+            return .bool(try numberValue(from: lhs) >= numberValue(from: rhs))
+        case "==":
+            return .bool(valuesEqual(lhs, rhs))
+        case "!=":
+            return .bool(!valuesEqual(lhs, rhs))
+        case "&&":
+            return .bool(try boolValue(from: lhs) && boolValue(from: rhs))
+        case "||":
+            return .bool(try boolValue(from: lhs) || boolValue(from: rhs))
+        case "??":
+            if let unwrapped = lhs.unwrappedOptional() {
+                return unwrapped
+            }
+            return rhs
+        default:
+            throw SwiftUIEvaluatorError.unsupportedExpression(symbol)
+        }
+    }
+
+    private func valuesEqual(_ lhs: SwiftValue, _ rhs: SwiftValue) -> Bool {
+        switch (lhs, rhs) {
+        case (.string(let left), .string(let right)):
+            return left == right
+        case (.number(let left), .number(let right)):
+            return left == right
+        case (.bool(let left), .bool(let right)):
+            return left == right
+        case (.optional(let left), .optional(let right)):
+            switch (left?.unwrappedOptional(), right?.unwrappedOptional()) {
+            case (nil, nil):
+                return true
+            case let (lhsValue?, rhsValue?):
+                return valuesEqual(lhsValue, rhsValue)
+            default:
+                return false
+            }
+        case (.optional(let wrapped), _):
+            if let unwrapped = wrapped?.unwrappedOptional() {
+                return valuesEqual(unwrapped, rhs)
+            }
+            return false
+        case (_, .optional):
+            return valuesEqual(rhs, lhs)
+        default:
+            return false
         }
     }
 
