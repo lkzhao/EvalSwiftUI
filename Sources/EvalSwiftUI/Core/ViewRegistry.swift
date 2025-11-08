@@ -25,6 +25,7 @@ final class ViewRegistry {
             VStackViewBuilder(),
             HStackViewBuilder(),
             ZStackViewBuilder(),
+            SpacerViewBuilder(),
             ImageViewBuilder(),
             ForEachViewBuilder()
         ]

@@ -36,6 +36,19 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
         )
     }
 
+    @Test func rendersSpacerInsideHStack() throws {
+        #expectSnapshot(
+            HStack(spacing: 0) {
+                Text("Leading")
+                    .foregroundStyle(.blue)
+                Spacer(minLength: 8)
+                Text("Trailing")
+                    .foregroundStyle(.green)
+            }
+            .frame(width: 160)
+        )
+    }
+
     @Test func rendersNestedStacks() throws {
         #expectSnapshot(
             VStack(alignment: .leading, spacing: 8) {
