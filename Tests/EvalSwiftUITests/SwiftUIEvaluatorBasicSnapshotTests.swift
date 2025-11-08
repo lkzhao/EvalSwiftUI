@@ -87,4 +87,26 @@ struct SwiftUIEvaluatorBasicSnapshotTests {
             }
         )
     }
+
+    @Test func rendersBackgroundAndOverlayModifiers() throws {
+        #expectSnapshot(
+            Text("Decorated")
+                .padding(12)
+                .background(alignment: .bottomTrailing) {
+                    VStack(spacing: 2) {
+                        Text("BG Title")
+                            .font(.caption)
+                        Text("BG Detail")
+                            .font(.caption2)
+                    }
+                    .padding(4)
+                }
+                .overlay {
+                    VStack(spacing: 2) {
+                        Text("Overlay Top")
+                        Text("Overlay Bottom")
+                    }
+                }
+        )
+    }
 }

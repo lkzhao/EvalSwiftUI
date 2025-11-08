@@ -26,7 +26,9 @@ final class ModifierRegistry {
             PaddingModifierBuilder(),
             ImageScaleModifierBuilder(),
             ForegroundStyleModifierBuilder(),
-            FrameModifierBuilder()
+            FrameModifierBuilder(),
+            BackgroundModifierBuilder(),
+            OverlayModifierBuilder()
         ]
     }
 
