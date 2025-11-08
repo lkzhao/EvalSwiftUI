@@ -25,6 +25,6 @@
 - [x] Allow `SwiftUIEvaluator` to process leading statements (e.g. `@State var count = 0`) before the root view expression so state declarations are captured instead of rejected.
 - [x] Introduce a runtime state store (likely an `ObservableObject`) that exposes identifier lookups/mutations and update `SwiftValue` to represent bindings/mutable references.
 - [x] Teach `ExpressionResolver` and `ViewNodeBuilder` to recognize assignment operators (`=`, `+=`, etc.) and route writes through the new state store rather than treating every expression as immutable.
-- [ ] Differentiate between view-producing closures and action closures so builders like `Button` can run imperative statements inside trailing closures.
-- [ ] Add a `ButtonViewBuilder` that wires label/content closures plus actions into a real `SwiftUI.Button`, using bindings from the runtime store when needed.
-- [ ] Wrap evaluations in a SwiftUI container view that re-renders when the state store changes, and cover the stateful counter scenario in tests (success + snapshot).
+- [x] Differentiate between view-producing closures and action closures so builders like `Button` can run imperative statements inside trailing closures.
+- [x] Add a `ButtonViewBuilder` that wires label/content closures plus actions into a real `SwiftUI.Button`, using bindings from the runtime store when needed.
+- [x] Wrap evaluations in a SwiftUI container view that re-renders when the state store changes, and cover the stateful counter scenario in tests (success + snapshot).

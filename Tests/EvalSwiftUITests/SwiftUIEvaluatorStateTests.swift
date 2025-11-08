@@ -62,4 +62,35 @@ struct SwiftUIEvaluatorStateTests {
 
         #expect(initialSnapshot != updatedSnapshot)
     }
+
+    @Test func multipleRootViewsMaintainOrderingAfterStateChange() throws {
+        let source = """
+        @State var count: Int = 0
+        Text("Count: \\(count)")
+        Text("Static")
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        guard let countSlot = store.reference(for: "count") else {
+            throw TestFailure.expected("Missing count state slot")
+        }
+
+        countSlot.write(.number(1))
+        let updatedView = try coordinator.render()
+        let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
+
+        let expectedView = VStack(spacing: 0) {
+            Text("Count: 1")
+            Text("Static")
+        }
+        let expectedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(expectedView))
+
+        #expect(updatedSnapshot == expectedSnapshot)
+    }
 }
