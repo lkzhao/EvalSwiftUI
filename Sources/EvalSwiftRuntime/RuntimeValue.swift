@@ -1,34 +1,33 @@
 import Foundation
+import EvalSwiftIR
 
 public enum RuntimeValue {
     case number(Double)
     case string(String)
     case bool(Bool)
-    case view(ViewDescription)
+    case viewDefinition(ViewDefinitionIR)
+    case array([RuntimeValue])
+    case function(CompiledFunction)
     case void
 }
 
-public struct ViewDescription: Hashable {
-    public let name: String
-    public let content: String
-
-    public init(name: String, content: String) {
-        self.name = name
-        self.content = content
-    }
-}
-
-extension RuntimeValue {
-    var asBool: Bool? {
+extension RuntimeValue: CustomStringConvertible {
+    public var description: String {
         switch self {
-        case .bool(let value):
-            return value
         case .number(let number):
-            return number != 0
+            return String(number)
         case .string(let string):
-            return !string.isEmpty
-        default:
-            return nil
+            return string
+        case .bool(let bool):
+            return String(bool)
+        case .viewDefinition(let definition):
+            return "<ViewDefinition: \(definition.name)>"
+        case .array(let values):
+            return values.map { "\($0)" }.joined(separator: ",")
+        case .function(let function):
+            return "<Function: \(function.ir.name)>"
+        case .void:
+            return "void"
         }
     }
 }

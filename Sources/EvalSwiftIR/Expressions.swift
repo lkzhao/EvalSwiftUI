@@ -3,6 +3,8 @@ public indirect enum ExprIR {
     case literal(String)
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
+    case function(FunctionIR)
+    case view(ViewDefinitionIR)
     case unknown(String)
 }
 

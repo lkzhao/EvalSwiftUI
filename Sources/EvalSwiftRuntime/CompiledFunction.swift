@@ -1,8 +1,8 @@
 import Foundation
 import EvalSwiftIR
 
-final class CompiledFunction {
-    let ir: FunctionIR
+public final class CompiledFunction {
+    public let ir: FunctionIR
     private unowned let module: RuntimeModule
 
     init(ir: FunctionIR, module: RuntimeModule) {

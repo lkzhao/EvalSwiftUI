@@ -1,7 +1,5 @@
 public struct ModuleIR {
     public let bindings: [BindingIR]
-    public let functions: [FunctionIR]
-    public let views: [ViewDefinitionIR]
     public let statements: [StatementIR]
 }
 

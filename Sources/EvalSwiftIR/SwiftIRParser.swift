@@ -6,8 +6,6 @@ public struct SwiftIRParser {
 
     public func parseModule(source: String) -> ModuleIR {
         let syntax = Parser.parse(source: source)
-        var views: [ViewDefinitionIR] = []
-        var functions: [FunctionIR] = []
         var bindings: [BindingIR] = []
         var statements: [StatementIR] = []
 
@@ -16,18 +14,24 @@ public struct SwiftIRParser {
 
             if let structDecl = node.as(StructDeclSyntax.self),
                let view = makeViewDefinition(from: structDecl) {
-                views.append(view)
+                bindings.append(BindingIR(name: view.name, typeAnnotation: nil, initializer: .view(view)))
                 continue
             }
 
             if let classDecl = node.as(ClassDeclSyntax.self),
                let view = makeViewDefinition(from: classDecl) {
-                views.append(view)
+                bindings.append(BindingIR(name: view.name, typeAnnotation: nil, initializer: .view(view)))
                 continue
             }
 
             if let functionDecl = node.as(FunctionDeclSyntax.self) {
-                functions.append(makeFunctionIR(from: functionDecl))
+                let functionIR = makeFunctionIR(from: functionDecl)
+                let binding = BindingIR(
+                    name: functionIR.name,
+                    typeAnnotation: nil,
+                    initializer: .function(functionIR)
+                )
+                bindings.append(binding)
                 continue
             }
 
@@ -44,8 +48,6 @@ public struct SwiftIRParser {
 
         return ModuleIR(
             bindings: bindings,
-            functions: functions,
-            views: views,
             statements: statements
         )
     }
@@ -152,6 +154,10 @@ public struct SwiftIRParser {
 
             if let exprStmt = statement.item.as(ExpressionStmtSyntax.self) {
                 return .expression(makeExpr(exprStmt.expression))
+            }
+
+            if let expr = statement.item.as(ExprSyntax.self) {
+                return .expression(makeExpr(expr))
             }
 
             return .unhandled(statement.item.trimmedDescription)
