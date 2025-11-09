@@ -20,11 +20,11 @@ struct ShadowModifierHandler: MemberFunctionHandler {
 
     private func decodeRadius(from arguments: [ResolvedArgument], colorProvided: Bool) throws -> CGFloat {
         if let labeled = arguments.first(where: { $0.label == "radius" }) {
-            return try labeled.value.asCGFloat(description: "shadow radius")
+            return try labeled.value.asCGFloat()
         }
 
         if let unlabeled = arguments.first(where: { $0.label == nil && $0.value.resolvedClosure == nil }) {
-            return try unlabeled.value.asCGFloat(description: "shadow radius")
+            return try unlabeled.value.asCGFloat()
         }
 
         if colorProvided {
@@ -38,7 +38,7 @@ struct ShadowModifierHandler: MemberFunctionHandler {
         guard let argument = arguments.first(where: { $0.label == name }) else {
             return 0
         }
-        return try argument.value.asCGFloat(description: "shadow \(name)")
+        return try argument.value.asCGFloat()
     }
 
     private func decodeColor(from value: SwiftValue?) throws -> Color? {

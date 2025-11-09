@@ -39,12 +39,6 @@ struct VStackViewBuilder: SwiftUIViewBuilder {
 
     private func decodeSpacing(from value: SwiftValue?) throws -> CGFloat? {
         guard let value else { return nil }
-
-        switch value.payload {
-        case let .number(number):
-            return CGFloat(number)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("spacing expects a numeric literal.")
-        }
+        return try value.asCGFloat()
     }
 }

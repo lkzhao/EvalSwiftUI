@@ -48,7 +48,7 @@ struct ScrollViewViewBuilder: SwiftUIViewBuilder {
 
     private func decodeShowsIndicators(from value: SwiftValue?) throws -> Bool {
         guard let value else { return true }
-        return try boolValue(from: value)
+        return try value.asBool()
     }
 
     private func makeContentContainer(for axis: Axis.Set, views: [AnyView]) -> AnyView {
@@ -75,17 +75,4 @@ struct ScrollViewViewBuilder: SwiftUIViewBuilder {
         )
     }
 
-    private func boolValue(from value: SwiftValue) throws -> Bool {
-        switch value.payload {
-        case .bool(let flag):
-            return flag
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                return true
-            }
-            return try boolValue(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("showsIndicators expects a boolean literal.")
-        }
-    }
 }

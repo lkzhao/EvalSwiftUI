@@ -153,20 +153,6 @@ extension SwiftValue {
         return false
     }
 
-    func asAnyView() -> AnyView? {
-        switch payload {
-        case .view(let view):
-            return view
-        case .optional(let wrapped):
-            guard let wrapped else {
-                return nil
-            }
-            return wrapped.asAnyView()
-        default:
-            return nil
-        }
-    }
-
     func equals(_ other: SwiftValue) -> Bool {
         switch (payload, other.payload) {
         case (.string(let left), .string(let right)):

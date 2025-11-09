@@ -24,13 +24,13 @@ struct CornerRadiusModifierHandler: MemberFunctionHandler {
         }) else {
             throw SwiftUIEvaluatorError.invalidArguments("cornerRadius received unsupported labeled arguments.")
         }
-        let radius = try radiusArgument.value.asCGFloat(description: "cornerRadius radius")
+        let radius = try radiusArgument.value.asCGFloat()
         let antialiased = try decodeAntialiased(from: arguments.first { $0.label == "antialiased" }?.value)
         return .view(AnyView(baseView.cornerRadius(radius, antialiased: antialiased)))
     }
 
     private func decodeAntialiased(from value: SwiftValue?) throws -> Bool {
         guard let value else { return true }
-        return try value.asBool(description: "cornerRadius antialiased")
+        return try value.asBool()
     }
 }

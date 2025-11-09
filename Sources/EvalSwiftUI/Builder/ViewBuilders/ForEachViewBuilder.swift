@@ -30,7 +30,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
         }
 
         let idStrategy = try makeIdentifierStrategy(from: arguments.first { $0.label == "id" }?.value)
-        let sequence = try sequenceValues(from: dataArgument.value)
+        let sequence = try dataArgument.value.asSequence()
         let rows = try sequence.enumerated().map { offset, element -> RenderedRow in
             var overrides: ExpressionScope = [:]
             overrides[parameterName] = element
@@ -55,22 +55,6 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
                 row.view
             }
         )
-    }
-
-    private func sequenceValues(from value: SwiftValue) throws -> [SwiftValue] {
-        switch value.payload {
-        case .array(let elements):
-            return elements
-        case .range(let rangeValue):
-            return rangeValue.elements().map { .number(Double($0)) }
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("ForEach data source cannot be nil.")
-            }
-            return try sequenceValues(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("ForEach supports array or range data sources.")
-        }
     }
 
     private func makeIdentifierStrategy(from value: SwiftValue?) throws -> IdentifierStrategy {

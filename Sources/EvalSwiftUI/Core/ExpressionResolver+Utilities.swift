@@ -242,48 +242,15 @@ extension ExpressionResolver {
     }
 
     func integerValue(from value: SwiftValue) throws -> Int {
-        switch value.payload {
-        case .number(let number):
-            guard number.truncatingRemainder(dividingBy: 1) == 0 else {
-                throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to whole numbers.")
-            }
-            return Int(number)
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("Integer expressions cannot resolve to nil.")
-            }
-            return try integerValue(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to numeric values.")
-        }
+        try value.asInt()
     }
 
     func numberValue(from value: SwiftValue) throws -> Double {
-        switch value.payload {
-        case .number(let number):
-            return number
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("Expected numeric value, received nil.")
-            }
-            return try numberValue(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("Expected numeric value, received \(value.typeDescription).")
-        }
+        try value.asDouble()
     }
 
     func boolValue(from value: SwiftValue) throws -> Bool {
-        switch value.payload {
-        case .bool(let flag):
-            return flag
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("Expected boolean value, received nil.")
-            }
-            return try boolValue(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("Expected boolean value, received \(value.typeDescription).")
-        }
+        try value.asBool()
     }
 
     func memberAccessPath(_ memberAccess: MemberAccessExprSyntax) throws -> [String] {
@@ -429,7 +396,9 @@ extension ExpressionResolver {
         case "+":
             let left = try lhs()
             let right = try rhs()
-            if left.isStringLike || right.isStringLike {
+            let leftIsString = (try? left.asString()) != nil
+            let rightIsString = (try? right.asString()) != nil
+            if leftIsString || rightIsString {
                 return .string(
                     try stringValue(from: left) + stringValue(from: right)
                 )
@@ -497,7 +466,7 @@ extension ExpressionResolver {
             }
             return elements[position]
         case .dictionary(let dictionary):
-            let key = try index.dictionaryKey()
+            let key = try index.asString()
             if let value = dictionary[key] {
                 return .optional(value)
             }

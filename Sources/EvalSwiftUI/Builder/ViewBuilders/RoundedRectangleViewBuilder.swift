@@ -11,11 +11,11 @@ struct RoundedRectangleViewBuilder: SwiftUIViewBuilder {
 
     private func decodeCornerRadius(from arguments: [ResolvedArgument]) throws -> CGFloat {
         if let labeled = arguments.first(where: { $0.label == "cornerRadius" }) {
-            return try labeled.value.asCGFloat(description: "RoundedRectangle cornerRadius")
+            return try labeled.value.asCGFloat()
         }
 
         if let unlabeled = arguments.first(where: { $0.label == nil && $0.value.resolvedClosure == nil }) {
-            return try unlabeled.value.asCGFloat(description: "RoundedRectangle cornerRadius")
+            return try unlabeled.value.asCGFloat()
         }
 
         throw SwiftUIEvaluatorError.invalidArguments("RoundedRectangle requires a cornerRadius argument.")

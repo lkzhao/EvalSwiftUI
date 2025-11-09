@@ -116,9 +116,6 @@ struct FontModifierHandler: MemberFunctionHandler {
     }
 
     private func number(from value: SwiftValue) throws -> Double {
-        guard case let .number(number) = value.payload else {
-            throw SwiftUIEvaluatorError.invalidArguments("Expected numeric literal.")
-        }
-        return number
+        try value.asDouble()
     }
 }

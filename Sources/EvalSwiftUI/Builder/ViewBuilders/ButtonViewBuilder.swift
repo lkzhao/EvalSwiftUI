@@ -58,14 +58,11 @@ struct ButtonViewBuilder: SwiftUIViewBuilder {
 
     private func decodeTitle(from arguments: [ResolvedArgument]) throws -> String? {
         guard let argument = arguments.first(where: { argument in
-            argument.label == nil && argument.value.isStringLike
+            argument.label == nil && (try? argument.value.asString()) != nil
         }) else {
             return nil
         }
-        guard case let .string(value) = argument.value.payload else {
-            throw SwiftUIEvaluatorError.invalidArguments("Button titles must be string literals.")
-        }
-        return value
+        return try argument.value.asString()
     }
 
     private func decodeRole(from value: SwiftValue?) throws -> ButtonRole? {

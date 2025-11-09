@@ -304,32 +304,32 @@ struct SwiftUIEvaluatorStateTests {
         #expect(updatedSnapshot == expectedOnSnapshot)
     }
 
-//    @Test func shuffleMutatesStateArray() throws {
-//        let source = """
-//        @State var numbers = [0, 1, 2, 3]
-//        numbers.shuffle()
-//        VStack {
-//            ForEach(numbers, id: \\.self) { value in
-//                Text("Value \\(value)")
-//            }
-//        }
-//        """
-//
-//        let store = RuntimeStateStore()
-//        let evaluator = SwiftUIEvaluator(stateStore: store)
-//        let syntax = Parser.parse(source: source)
-//        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
-//
-//        _ = try coordinator.render()
-//
-//        guard let numbersReference = store.reference(for: "numbers") else {
-//            throw TestFailure.expected("Missing numbers state slot")
-//        }
-//
-//        let values = try intArray(from: numbersReference.read())
-//        #expect(values.sorted() == [0, 1, 2, 3])
-//        #expect(values != [0, 1, 2, 3])
-//    }
+    @Test func shuffleMutatesStateArray() throws {
+        let source = """
+        @State var numbers = [0, 1, 2, 3]
+        numbers.shuffle()
+        VStack {
+            ForEach(numbers, id: \\.self) { value in
+                Text("Value \\(value)")
+            }
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        guard let numbersReference = store.reference(for: "numbers") else {
+            throw TestFailure.expected("Missing numbers state slot")
+        }
+
+        let values = try intArray(from: numbersReference.read())
+        #expect(values.sorted() == [0, 1, 2, 3])
+        #expect(values != [0, 1, 2, 3])
+    }
 
     @Test func shuffledProducesNewArrayWithoutMutatingOriginal() throws {
         let source = """

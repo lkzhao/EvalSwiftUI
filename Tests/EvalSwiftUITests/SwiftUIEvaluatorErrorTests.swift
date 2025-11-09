@@ -265,7 +265,7 @@ struct SwiftUIEvaluatorErrorTests {
             guard case .invalidArguments(let message) = error else {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
-            #expect(message.contains("Integer expressions must resolve"))
+            #expect(message.contains("numeric value"))
         }
     }
 
@@ -305,7 +305,7 @@ struct SwiftUIEvaluatorErrorTests {
             guard case .invalidArguments(let message) = error else {
                 throw TestFailure.expected("Unexpected error: \(error)")
             }
-            #expect(message.contains("string keys"))
+            #expect(message.contains("string value"))
         }
     }
 }

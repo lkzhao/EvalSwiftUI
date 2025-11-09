@@ -22,7 +22,7 @@ struct ContainsMemberFunctionHandler: MemberFunctionHandler {
                 candidate.equals(element)
             }
         case .range(let rangeValue):
-            let value = try element.asInt(description: "Range contains expressions")
+            let value = try element.asInt()
             return rangeValue.contains(value)
         case .optional(let wrapped):
             guard let unwrapped = wrapped?.unwrappedOptional() else {

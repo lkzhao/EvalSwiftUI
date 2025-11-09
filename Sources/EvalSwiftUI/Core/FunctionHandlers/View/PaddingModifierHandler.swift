@@ -29,8 +29,8 @@ struct PaddingModifierHandler: MemberFunctionHandler {
 
     private func applySingleArgument(_ argument: ResolvedArgument, to base: AnyView) throws -> AnyView {
         switch argument.value.payload {
-        case let .number(value):
-            return AnyView(base.padding(CGFloat(value)))
+        case .number, .optional:
+            return AnyView(base.padding(try argument.value.asCGFloat()))
         case .memberAccess:
             let edges = try decodeEdges(from: argument.value)
             return AnyView(base.padding(edges))
@@ -58,9 +58,10 @@ struct PaddingModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeAmount(from value: SwiftValue) throws -> CGFloat {
-        guard case let .number(number) = value.payload else {
+        do {
+            return try value.asCGFloat()
+        } catch {
             throw SwiftUIEvaluatorError.invalidArguments("Padding amount must be numeric.")
         }
-        return CGFloat(number)
     }
 }

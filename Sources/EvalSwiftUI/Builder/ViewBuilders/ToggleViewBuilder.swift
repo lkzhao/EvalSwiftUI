@@ -37,14 +37,11 @@ struct ToggleViewBuilder: SwiftUIViewBuilder {
 
     private func decodeTitle(from arguments: [ResolvedArgument]) throws -> String? {
         guard let argument = arguments.first(where: { argument in
-            argument.label == nil && argument.value.isStringLiteral
+            argument.label == nil && (try? argument.value.asString()) != nil
         }) else {
             return nil
         }
-        guard case let .string(value) = argument.value.payload else {
-            throw SwiftUIEvaluatorError.invalidArguments("Toggle titles must be string literals.")
-        }
-        return value
+        return try argument.value.asString()
     }
 
     private func makeSingleView(from closure: ResolvedClosure) throws -> AnyView {
@@ -57,11 +54,27 @@ struct ToggleViewBuilder: SwiftUIViewBuilder {
     }
 }
 
-private extension SwiftValue {
-    var isStringLiteral: Bool {
-        if case .string = payload {
-            return true
+extension SwiftValue {
+    func boolBinding(description: String) throws -> Binding<Bool> {
+        guard case .bool = unwrappedOptional()?.payload else {
+            throw SwiftUIEvaluatorError.invalidArguments("\(description) must be backed by a boolean @State variable.")
         }
-        return false
+        let writesOptional = isOptional
+        return Binding(
+            get: { [weak self] in
+                guard case let .bool(boolValue) = self?.unwrappedOptional()?.payload else {
+                    assertionFailure("Boolean binding resolved to a non-boolean value.")
+                    return false
+                }
+                return boolValue
+            },
+            set: { [weak self] (newValue: Bool) in
+                if writesOptional {
+                    self?.payload = .optional(.bool(newValue))
+                } else {
+                    self?.payload = .bool(newValue)
+                }
+            }
+        )
     }
 }
