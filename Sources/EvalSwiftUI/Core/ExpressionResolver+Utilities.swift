@@ -190,7 +190,7 @@ extension ExpressionResolver {
             let value = try numberValue(from: operand)
             return .number(value)
         case "$":
-            return try makeBinding(from: operand)
+            return operand
         default:
             throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
         }

@@ -19,7 +19,6 @@ public final class SwiftValue: @unchecked Sendable {
         case range(RangeValue)
         case keyPath(KeyPathValue)
         case dictionary([String: SwiftValue])
-        case binding(BindingValue)
         case closure(ResolvedClosure)
         case view(AnyView)
     }
@@ -130,8 +129,6 @@ extension SwiftValue {
             return "keyPath"
         case .dictionary:
             return "dictionary"
-        case .binding:
-            return "binding"
         case .closure:
             return "closure"
         case .view:
@@ -196,8 +193,6 @@ extension SwiftValue {
             return false
         case (_, .optional):
             return other.equals(self)
-        case (.binding(let left), .binding(let right)):
-            return left.identifier == right.identifier
         case (.closure, .closure):
             return false
         case (.view, .view):
@@ -249,8 +244,6 @@ extension SwiftValue.Payload {
                 copy[key] = value.copy()
             }
             return .dictionary(copy)
-        case .binding(let binding):
-            return .binding(binding)
         case .closure(let closure):
             return .closure(closure)
         case .view(let view):
@@ -270,7 +263,6 @@ extension SwiftValue {
     static func range(_ value: RangeValue) -> SwiftValue { SwiftValue(.range(value)) }
     static func keyPath(_ value: KeyPathValue) -> SwiftValue { SwiftValue(.keyPath(value)) }
     static func dictionary(_ value: [String: SwiftValue]) -> SwiftValue { SwiftValue(.dictionary(value)) }
-    static func binding(_ value: BindingValue) -> SwiftValue { SwiftValue(.binding(value)) }
     static func closure(_ value: ResolvedClosure) -> SwiftValue { SwiftValue(.closure(value)) }
     static func view(_ value: AnyView) -> SwiftValue { SwiftValue(.view(value)) }
 }

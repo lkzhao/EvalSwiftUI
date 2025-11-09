@@ -2,27 +2,23 @@ import SwiftUI
 
 extension SwiftValue {
     func boolBinding(description: String) throws -> Binding<Bool> {
-        guard case .binding(let bindingValue) = payload else {
-            throw SwiftUIEvaluatorError.invalidArguments("\(description) requires a binding value (use $ to reference @State), received \(typeDescription).")
-        }
-        let initialStorage = bindingValue.read()
-        guard let _ = initialStorage.boolStorageValue else {
+        guard let _ = boolStorageValue else {
             throw SwiftUIEvaluatorError.invalidArguments("\(description) must be backed by a boolean @State variable.")
         }
-        let writesOptional = initialStorage.isOptional
+        let writesOptional = isOptional
         return Binding(
-            get: {
-                guard let current = bindingValue.read().boolStorageValue else {
+            get: { [weak self] in
+                guard let current = self?.boolStorageValue else {
                     assertionFailure("Boolean binding resolved to a non-boolean value.")
                     return false
                 }
                 return current
             },
-            set: { newValue in
+            set: { [weak self] (newValue: Bool) in
                 if writesOptional {
-                    bindingValue.write(.optional(.bool(newValue)))
+                    self?.payload = .optional(.bool(newValue))
                 } else {
-                    bindingValue.write(.bool(newValue))
+                    self?.payload = .bool(newValue)
                 }
             }
         )

@@ -15,8 +15,6 @@ extension SwiftValue {
                     throw SwiftUIEvaluatorError.invalidArguments("Array operations cannot operate on nil optional values.")
                 }
                 return try wrapped.arrayProxy().elements()
-            case .binding(let binding):
-                return try binding.read().arrayProxy().elements()
             default:
                 throw SwiftUIEvaluatorError.invalidArguments("Array operations require an array value.")
             }
@@ -25,11 +23,6 @@ extension SwiftValue {
         @discardableResult
         func mutate(_ transform: (inout [SwiftValue]) throws -> Void) throws -> [SwiftValue] {
             switch owner.payload {
-            case .binding(let binding):
-                var values = try binding.read().arrayProxy().elements()
-                try transform(&values)
-                binding.write(.array(values))
-                return values
             case .optional(let wrapped):
                 guard let wrapped else {
                     throw SwiftUIEvaluatorError.invalidArguments("Array operations cannot operate on nil optional values.")

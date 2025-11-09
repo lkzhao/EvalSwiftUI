@@ -39,14 +39,6 @@ public final class ExpressionResolver {
         self.stateStore = stateStore
     }
 
-    func makeBinding(from value: SwiftValue) throws -> SwiftValue {
-        guard let identifier = value.stateIdentifierValue(),
-              let reference = stateStore?.reference(for: identifier) else {
-            throw SwiftUIEvaluatorError.invalidArguments("$ requires an @State-backed identifier.")
-        }
-        return .binding(BindingValue(reference: reference))
-    }
-
     func attach(stateStore: RuntimeStateStore) {
         self.stateStore = stateStore
     }

@@ -59,8 +59,6 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
 
     private func sequenceValues(from value: SwiftValue) throws -> [SwiftValue] {
         switch value.payload {
-        case .binding(let binding):
-            return try sequenceValues(from: binding.read())
         case .array(let elements):
             return elements
         case .range(let rangeValue):
