@@ -303,6 +303,65 @@ struct SwiftUIEvaluatorStateTests {
 
         #expect(updatedSnapshot == expectedOnSnapshot)
     }
+
+    @Test func shuffleMutatesStateArray() throws {
+        let source = """
+        @State var numbers = [0, 1, 2, 3]
+        numbers.shuffle()
+        VStack {
+            ForEach(numbers, id: \\.self) { value in
+                Text("Value \\(value)")
+            }
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        guard let numbersReference = store.reference(for: "numbers") else {
+            throw TestFailure.expected("Missing numbers state slot")
+        }
+
+        let values = try intArray(from: numbersReference.read())
+        #expect(values.sorted() == [0, 1, 2, 3])
+        #expect(values != [0, 1, 2, 3])
+    }
+
+    @Test func shuffledProducesNewArrayWithoutMutatingOriginal() throws {
+        let source = """
+        @State var numbers = [0, 1, 2, 3]
+        @State var randomized: [Int] = []
+        randomized = numbers.shuffled()
+        VStack {
+            ForEach(randomized, id: \\.self) { value in
+                Text("Randomized \\(value)")
+            }
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
+
+        _ = try coordinator.render()
+
+        guard let numbersReference = store.reference(for: "numbers"),
+              let randomizedReference = store.reference(for: "randomized") else {
+            throw TestFailure.expected("Missing state slots for shuffled verification")
+        }
+
+        let originalValues = try intArray(from: numbersReference.read())
+        let shuffledValues = try intArray(from: randomizedReference.read())
+
+        #expect(originalValues == [0, 1, 2, 3])
+        #expect(shuffledValues.sorted() == [0, 1, 2, 3])
+        #expect(shuffledValues != originalValues)
+    }
 }
 
 private struct ExpectedInlineStructContainer: View {
@@ -353,4 +412,38 @@ private func rowValueFromIdentifier(_ identifier: String) -> Int? {
     }
     let valueSubstring = remainder[..<endRange.lowerBound]
     return Int(valueSubstring)
+}
+
+private func intArray(from value: SwiftValue) throws -> [Int] {
+    switch value.resolvingStateReference() {
+    case .array(let elements):
+        return try elements.map { element in
+            try intValue(from: element)
+        }
+    case .optional(let wrapped):
+        guard let wrapped else {
+            throw TestFailure.expected("Expected array value, received nil.")
+        }
+        return try intArray(from: wrapped)
+    default:
+        throw TestFailure.expected("Expected array value from state store.")
+    }
+}
+
+private func intValue(from value: SwiftValue) throws -> Int {
+    let resolved = value.resolvingStateReference()
+    switch resolved {
+    case .number(let number):
+        guard number.truncatingRemainder(dividingBy: 1) == 0 else {
+            throw TestFailure.expected("Expected integer element in array.")
+        }
+        return Int(number)
+    case .optional(let wrapped):
+        guard let wrapped else {
+            throw TestFailure.expected("Expected integer element, received nil.")
+        }
+        return try intValue(from: wrapped)
+    default:
+        throw TestFailure.expected("Expected numeric element in array.")
+    }
 }

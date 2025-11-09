@@ -16,11 +16,15 @@ public final class SwiftUIEvaluator {
     public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
                 modifierBuilders: [any SwiftUIModifierBuilder] = [],
+                memberFunctionHandlers: [any MemberFunctionHandler] = [],
                 context: (any SwiftUIEvaluatorContext)? = nil,
                 stateStore: RuntimeStateStore? = nil) {
         self.context = context
         self.stateStore = stateStore ?? RuntimeStateStore()
-        let resolver = expressionResolver ?? ExpressionResolver(context: context)
+        let resolver = expressionResolver ?? ExpressionResolver(
+            context: context,
+            memberFunctionHandlers: memberFunctionHandlers
+        )
         self.expressionResolver = resolver
         viewNodeBuilder = ViewNodeBuilder(
             expressionResolver: resolver,

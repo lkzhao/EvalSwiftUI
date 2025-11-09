@@ -3,20 +3,25 @@ import SwiftSyntax
 public final class ExpressionResolver {
     private let defaultContext: (any SwiftUIEvaluatorContext)?
     private let layers: [any ExpressionResolutionLayer]
+    let memberFunctionRegistry: MemberFunctionRegistry
 
     public init(
-        context: (any SwiftUIEvaluatorContext)? = nil
+        context: (any SwiftUIEvaluatorContext)? = nil,
+        memberFunctionHandlers: [any MemberFunctionHandler] = []
     ) {
         self.defaultContext = context
         self.layers = ExpressionResolver.defaultLayers()
+        self.memberFunctionRegistry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
     }
 
     init(
         context: (any SwiftUIEvaluatorContext)? = nil,
-        layers: [any ExpressionResolutionLayer]
+        layers: [any ExpressionResolutionLayer],
+        memberFunctionHandlers: [any MemberFunctionHandler] = []
     ) {
         self.defaultContext = context
         self.layers = layers
+        self.memberFunctionRegistry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
     }
 
     func resolveExpression(

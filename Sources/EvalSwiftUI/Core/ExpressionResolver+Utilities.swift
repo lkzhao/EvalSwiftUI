@@ -492,7 +492,7 @@ extension ExpressionResolver {
     }
 }
 
-private extension ExpressionResolver {
+extension ExpressionResolver {
     func evaluateSubscript(base: SwiftValue, index: SwiftValue) throws -> SwiftValue {
         switch base.resolvingStateReference() {
         case .array(let elements):
@@ -549,6 +549,10 @@ private extension ExpressionResolver {
         scope: ExpressionScope,
         context: (any SwiftUIEvaluatorContext)?
     ) throws -> SwiftValue? {
+        guard let handler = memberFunctionRegistry.handler(named: memberAccess.declName.baseName.text) else {
+            return nil
+        }
+
         guard let baseExpression = memberAccess.base else {
             return nil
         }
@@ -559,17 +563,13 @@ private extension ExpressionResolver {
             context: context
         )
 
-        switch memberAccess.declName.baseName.text {
-        case "contains":
-            return try resolveContainsCall(
-                baseValue: baseValue,
-                arguments: call.arguments,
-                scope: scope,
-                context: context
-            )
-        default:
-            return nil
-        }
+        return try handler.call(
+            resolver: self,
+            baseValue: baseValue,
+            arguments: call.arguments,
+            scope: scope,
+            context: context
+        )
     }
 
     func resolveContainsCall(
@@ -589,6 +589,33 @@ private extension ExpressionResolver {
         )
 
         return .bool(try containsValue(base: baseValue, element: element))
+    }
+
+    func resolveShuffleCall(
+        baseValue: SwiftValue,
+        arguments: LabeledExprListSyntax
+    ) throws -> SwiftValue? {
+        guard arguments.isEmpty else {
+            throw SwiftUIEvaluatorError.invalidArguments("shuffle does not accept arguments.")
+        }
+
+        let target = try mutableArrayTarget(from: baseValue, functionName: "shuffle")
+        let shuffled = shuffleElements(target.elements)
+        target.writeBack?(shuffled)
+        return .array(shuffled)
+    }
+
+    func resolveShuffledCall(
+        baseValue: SwiftValue,
+        arguments: LabeledExprListSyntax
+    ) throws -> SwiftValue? {
+        guard arguments.isEmpty else {
+            throw SwiftUIEvaluatorError.invalidArguments("shuffled does not accept arguments.")
+        }
+
+        let elements = try arrayElements(from: baseValue, functionName: "shuffled")
+        let shuffled = shuffleElements(elements)
+        return .array(shuffled)
     }
 
     func resolveCallArguments(
@@ -627,5 +654,125 @@ private extension ExpressionResolver {
         default:
             throw SwiftUIEvaluatorError.invalidArguments("contains is only supported on arrays and ranges.")
         }
+    }
+}
+
+private extension ExpressionResolver {
+    struct MutableArrayTarget {
+        let elements: [SwiftValue]
+        let writeBack: (([SwiftValue]) -> Void)?
+    }
+
+    func mutableArrayTarget(
+        from baseValue: SwiftValue,
+        functionName: String
+    ) throws -> MutableArrayTarget {
+        switch baseValue {
+        case .state(let reference):
+            let storage = reference.read()
+            let elements = try extractArrayElements(from: storage, functionName: functionName)
+            return MutableArrayTarget(
+                elements: elements,
+                writeBack: { newElements in
+                    reference.write(self.wrapArrayValue(newElements, matching: storage))
+                }
+            )
+        case .binding(let binding):
+            let storage = binding.read()
+            let elements = try extractArrayElements(from: storage, functionName: functionName)
+            return MutableArrayTarget(
+                elements: elements,
+                writeBack: { newElements in
+                    binding.write(self.wrapArrayValue(newElements, matching: storage))
+                }
+            )
+        case .optional(let wrapped):
+            guard let wrapped else {
+                throw SwiftUIEvaluatorError.invalidArguments("\(functionName) cannot operate on nil optionals.")
+            }
+            return try mutableArrayTarget(from: wrapped, functionName: functionName)
+        default:
+            let elements = try arrayElements(from: baseValue, functionName: functionName)
+            return MutableArrayTarget(elements: elements, writeBack: nil)
+        }
+    }
+
+    func arrayElements(
+        from value: SwiftValue,
+        functionName: String
+    ) throws -> [SwiftValue] {
+        switch value {
+        case .binding(let binding):
+            return try extractArrayElements(from: binding.read(), functionName: functionName)
+        default:
+            return try extractArrayElements(
+                from: value.resolvingStateReference(),
+                functionName: functionName
+            )
+        }
+    }
+
+    func extractArrayElements(
+        from storage: SwiftValue,
+        functionName: String
+    ) throws -> [SwiftValue] {
+        switch storage {
+        case .array(let elements):
+            return elements
+        case .optional(let wrapped):
+            guard let wrapped else {
+                throw SwiftUIEvaluatorError.invalidArguments("\(functionName) cannot operate on nil optionals.")
+            }
+            return try extractArrayElements(from: wrapped, functionName: functionName)
+        default:
+            throw SwiftUIEvaluatorError.invalidArguments("\(functionName) is only supported on arrays.")
+        }
+    }
+
+    func wrapArrayValue(_ elements: [SwiftValue], matching template: SwiftValue) -> SwiftValue {
+        let arrayValue: SwiftValue = .array(elements)
+        switch template {
+        case .optional(let wrapped):
+            guard let wrapped else {
+                return .optional(arrayValue)
+            }
+            return .optional(wrapArrayValue(elements, matching: wrapped))
+        default:
+            return arrayValue
+        }
+    }
+
+    func shuffleElements(_ elements: [SwiftValue]) -> [SwiftValue] {
+        guard elements.count > 1 else {
+            return elements
+        }
+
+        var shuffled = elements
+        var generator = SystemRandomNumberGenerator()
+        for index in stride(from: shuffled.count - 1, through: 1, by: -1) {
+            let random = Int(generator.next() % UInt64(index + 1))
+            if index != random {
+                shuffled.swapAt(index, random)
+            }
+        }
+
+        if arraysEqual(shuffled, elements) {
+            let reversed = Array(elements.reversed())
+            if !arraysEqual(reversed, elements) {
+                return reversed
+            }
+        }
+
+        return shuffled
+    }
+
+    func arraysEqual(_ lhs: [SwiftValue], _ rhs: [SwiftValue]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        for (left, right) in zip(lhs, rhs) {
+            if !left.equals(right) {
+                return false
+            }
+        }
+        return true
     }
 }
