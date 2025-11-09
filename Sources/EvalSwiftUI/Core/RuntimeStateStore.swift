@@ -9,7 +9,6 @@ public final class RuntimeStateStore {
         init(value: SwiftValue, identifier: String, store: RuntimeStateStore) {
             self.value = value
             self.store = store
-            value.markAsState(identifier: identifier)
             observationToken = value.$payload.sink { [weak store] _ in
                 store?.stateDidMutate()
             }
@@ -23,7 +22,7 @@ public final class RuntimeStateStore {
         if let existing = slots[identifier] {
             return StateReference(identifier: identifier, slot: existing)
         }
-        let slotValue = initialValue.copy()
+        let slotValue = initialValue
         let slot = Slot(value: slotValue, identifier: identifier, store: self)
         slots[identifier] = slot
         return StateReference(identifier: identifier, slot: slot)

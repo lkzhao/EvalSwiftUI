@@ -23,11 +23,8 @@ public final class SwiftValue: @unchecked Sendable {
         case view(AnyView)
     }
 
-    private var stateIdentifier: String?
-
-    init(_ payload: Payload, stateIdentifier: String? = nil) {
+    init(_ payload: Payload) {
         self.payload = payload
-        self.stateIdentifier = stateIdentifier
     }
 
     @Published
@@ -37,20 +34,12 @@ public final class SwiftValue: @unchecked Sendable {
         transform(&payload)
     }
 
-    func copy(retainingState: Bool = false) -> SwiftValue {
-        SwiftValue(payload.deepCopy(), stateIdentifier: retainingState ? stateIdentifier : nil)
+    func copy() -> SwiftValue {
+        SwiftValue(payload.deepCopy())
     }
 
     func replace(with value: SwiftValue) {
         payload = value.payload.deepCopy()
-    }
-
-    func markAsState(identifier: String) {
-        stateIdentifier = identifier
-    }
-
-    func stateIdentifierValue() -> String? {
-        stateIdentifier
     }
 }
 

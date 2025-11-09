@@ -39,7 +39,7 @@ final class ViewNodeBuilder {
                     arguments: parseArguments(call, scope: scope)
                 ),
                 modifiers: [],
-                scope: scope.cloningForCapture()
+                scope: scope
             )
         }
 
@@ -469,7 +469,8 @@ final class ViewNodeBuilder {
             scope: scope,
             context: context
         )
-        try assignValue(rhsValue, to: identifier.baseName.text, scope: &scope)
+        let currentValue = try currentValue(for: identifier.baseName.text, scope: scope)
+        currentValue.replace(with: rhsValue)
         return true
     }
 
@@ -504,7 +505,7 @@ final class ViewNodeBuilder {
             lhs: currentValue,
             rhs: rhsValue
         )
-        try assignValue(newValue, to: identifier.baseName.text, scope: &scope)
+        currentValue.replace(with: newValue)
         return true
     }
 
@@ -531,19 +532,6 @@ final class ViewNodeBuilder {
             return scoped
         }
         throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
-    }
-
-    private func assignValue(_ value: SwiftValue, to identifier: String, scope: inout ExpressionScope) throws {
-        guard let existing = scope[identifier] else {
-            throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
-        }
-
-        if existing.stateIdentifierValue() != nil {
-            existing.replace(with: value)
-            return
-        }
-
-        scope[identifier] = value.copy()
     }
 
     private func isOptional(_ binding: PatternBindingSyntax) -> Bool {
