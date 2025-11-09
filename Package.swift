@@ -23,6 +23,10 @@ let package = Package(
             name: "EvalSwiftIR",
             targets: ["EvalSwiftIR"]
         ),
+        .library(
+            name: "EvalSwiftRuntime",
+            targets: ["EvalSwiftRuntime"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0-latest"),
@@ -35,6 +39,12 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftParser", package: "swift-syntax"),
                 .product(name: "SwiftSyntax", package: "swift-syntax")
+            ]
+        ),
+        .target(
+            name: "EvalSwiftRuntime",
+            dependencies: [
+                "EvalSwiftIR"
             ]
         ),
         .target(
