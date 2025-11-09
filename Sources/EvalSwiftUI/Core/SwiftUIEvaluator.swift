@@ -13,34 +13,23 @@ public final class SwiftUIEvaluator {
     private var inlineInstanceTracker: [InlineInstanceKey: Int] = [:]
     private var inlineInstanceNamespace: [String] = []
 
-    public init(expressionResolver: ExpressionResolver? = nil,
-                viewBuilders: [any SwiftUIViewBuilder] = [],
+    public init(viewBuilders: [any SwiftUIViewBuilder] = [],
                 memberFunctionHandlers: [any MemberFunctionHandler] = [],
                 context: (any SwiftUIEvaluatorContext)? = nil,
                 stateStore: RuntimeStateStore? = nil) {
         self.context = context
         self.stateStore = stateStore ?? RuntimeStateStore()
-        if let resolver = expressionResolver {
-            self.expressionResolver = resolver
-            self.memberFunctionRegistry = resolver.memberFunctionRegistry
-            for handler in memberFunctionHandlers {
-                self.memberFunctionRegistry.register(handler: handler)
-            }
-        } else {
-            let registry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
-            self.memberFunctionRegistry = registry
-            self.expressionResolver = ExpressionResolver(
-                context: context,
-                memberFunctionRegistry: registry,
-                stateStore: self.stateStore
-            )
-        }
+        let registry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
+        memberFunctionRegistry = registry
+        expressionResolver = ExpressionResolver(
+            context: context,
+            memberFunctionRegistry: registry,
+            stateStore: self.stateStore
+        )
+        expressionResolver.attach(stateStore: self.stateStore)
 
-        self.expressionResolver.attach(stateStore: self.stateStore)
-
-        let resolver = self.expressionResolver
         viewNodeBuilder = ViewNodeBuilder(
-            expressionResolver: resolver,
+            expressionResolver: expressionResolver,
             context: context,
             stateStore: self.stateStore
         )
