@@ -45,4 +45,4 @@
 - [x] Migrate the existing `ModifierRegistry` builders into adaptor handlers that operate over the unified function interface, proving a modifier is just a member function whose base is a `.view` value.
 - [x] Update `ExpressionResolver` + `ViewNodeBuilder` so member/global function syntax (including modifiers emitted as member calls) route through the new registry, deleting bespoke modifier wiring once parity is achieved.
 - [x] Add regression tests that cover view construction, modifier chains, `contains`, `shuffled`, and a representative global helper to ensure the shared architecture handles all call styles (covered by the existing `swift test` suite after the refactor).
-- [ ] Write migration docs describing how downstream integrators register new handlers/builders under the single registry so future function support (e.g. custom helpers) is straightforward.
+- [x] Write migration docs describing how downstream integrators register new handlers/builders under the single registry so future function support (e.g. custom helpers) is straightforward.
