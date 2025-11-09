@@ -8,7 +8,18 @@ public final class SwiftUIEvaluator {
     private let viewNodeBuilder: ViewNodeBuilder
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
-    private let memberFunctionRegistry: MemberFunctionRegistry
+    private lazy var viewRenderer: ViewRendering = {
+        SwiftUIViewRenderer(
+            viewRegistry: viewRegistry,
+            memberFunctionRegistry: expressionResolver.memberFunctionRegistry,
+            expressionEvaluator: expressionResolver,
+            evaluator: self,
+            context: context
+        )
+    }()
+    private lazy var inlineStructProcessor: InlineStructProcessor = {
+        InlineStructProcessor(viewRegistry: viewRegistry, evaluator: self)
+    }()
     private let context: (any SwiftUIEvaluatorContext)?
     private var inlineInstanceTracker: [InlineInstanceKey: Int] = [:]
     private var inlineInstanceNamespace: [String] = []
@@ -19,20 +30,24 @@ public final class SwiftUIEvaluator {
                 stateStore: RuntimeStateStore? = nil) {
         self.context = context
         self.stateStore = stateStore ?? RuntimeStateStore()
-        let registry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
-        memberFunctionRegistry = registry
         expressionResolver = ExpressionResolver(
             context: context,
-            memberFunctionRegistry: registry,
-            stateStore: self.stateStore
+            memberFunctionHandlers: memberFunctionHandlers
         )
-        expressionResolver.attach(stateStore: self.stateStore)
 
-        viewNodeBuilder = ViewNodeBuilder(
+        let mutationEvaluator = StatementMutationEvaluator(
             expressionResolver: expressionResolver,
             context: context,
-            stateStore: self.stateStore
+            stateRegistry: self.stateStore,
+            modifierDispatcher: expressionResolver.memberFunctionRegistry
         )
+
+        let builder = ViewNodeBuilder(
+            expressionResolver: expressionResolver,
+            context: context,
+            mutationEvaluator: mutationEvaluator
+        )
+        viewNodeBuilder = builder
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
     }
 
@@ -54,58 +69,16 @@ public final class SwiftUIEvaluator {
         )
     }
 
-    private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
-        let mergedScope = node.scope.merging(scopeOverrides) { _, new in new }
-        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: mergedScope)
-        let view = try viewRegistry.makeView(
-            from: node.constructor,
-            arguments: resolvedConstructorArguments
-        )
-        var viewValue = SwiftValue.view(view)
-        for modifier in node.modifiers {
-            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: mergedScope)
-            viewValue = try memberFunctionRegistry.call(
-                name: modifier.name,
-                baseValue: viewValue,
-                arguments: resolvedModifierArguments,
-                context: DictionaryContext(values: mergedScope)
-            )
-        }
-
-        guard let finalView = viewValue.asAnyView() else {
-            throw SwiftUIEvaluatorError.invalidArguments("Modifier chain did not resolve to a view value.")
-        }
-        return finalView
-    }
-
-    private func resolveArguments(_ arguments: [ArgumentNode], scope: ExpressionScope) throws -> [ResolvedArgument] {
-        try arguments.map { argument in
-            switch argument.value {
-            case .expression(let expression):
-                let value = try expressionResolver.resolveExpression(
-                    expression,
-                    scope: scope,
-                    context: context
-                )
-                return ResolvedArgument(label: argument.label, value: value)
-            case .closure(let closure, let capturedScope):
-                let mergedScope = capturedScope.merging(scope) { _, new in new }
-                let resolvedClosure = ResolvedClosure(
-                    evaluator: self,
-                    closure: closure,
-                    scope: mergedScope
-                )
-                return ResolvedArgument(label: argument.label, value: .closure(resolvedClosure))
-            }
-        }
-    }
-
     func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
-        let nodes = try viewNodeBuilder.buildViewNodes(in: closure.statements, scope: scope)
+        let nodes = try viewNodeBuilder.lower(
+            statements: closure.statements,
+            scope: scope,
+            allowStateDeclarations: false
+        )
         let parameterNames = closureParameterNames(closure)
         let renderers = nodes.map { node in
             { overrides in
-                try self.buildView(from: node, scopeOverrides: overrides)
+                try self.viewRenderer.render(node: node, overrides: overrides)
             }
         }
         return ViewContent(renderers: renderers, parameters: parameterNames)
@@ -115,8 +88,8 @@ public final class SwiftUIEvaluator {
                        scope: ExpressionScope,
                        overrides: ExpressionScope = [:]) throws {
         let mergedScope = scope.merging(overrides) { _, new in new }
-        _ = try viewNodeBuilder.buildViewNodes(
-            in: closure.statements,
+        _ = try viewNodeBuilder.lower(
+            statements: closure.statements,
             scope: mergedScope,
             allowStateDeclarations: false
         )
@@ -125,22 +98,13 @@ public final class SwiftUIEvaluator {
     func renderSyntax(from syntax: SourceFileSyntax) throws -> AnyView {
         inlineInstanceTracker = [:]
         inlineInstanceNamespace = []
-        let filteredStatements = try filteredTopLevelStatements(from: syntax.statements)
-        let result = try viewNodeBuilder.buildViewNodes(
-            in: filteredStatements,
+        let filteredStatements = try inlineStructProcessor.filter(statements: syntax.statements)
+        let nodes = try viewNodeBuilder.lower(
+            statements: filteredStatements,
             scope: [:],
             allowStateDeclarations: true
         )
-        guard let viewNode = result.last else {
-            throw SwiftUIEvaluatorError.missingRootExpression
-        }
-
-        if result.count > 1 {
-            let views = try result.map { try buildView(from: $0) }
-            return wrapInStack(views)
-        }
-
-        return try buildView(from: viewNode)
+        return try viewRenderer.render(nodes: nodes)
     }
 
     private func closureParameterNames(_ closure: ClosureExprSyntax) -> [String] {
@@ -161,19 +125,112 @@ public final class SwiftUIEvaluator {
         }
     }
 
-    private func wrapInStack(_ views: [AnyView]) -> AnyView {
-        AnyView(
-            VStack(alignment: .center, spacing: 0) {
-                ForEach(Array(views.enumerated()), id: \.0) { _, view in
-                    view
-                }
-            }
-        )
+    func resolveExpression(
+        _ expression: ExprSyntax,
+        scope: ExpressionScope
+    ) throws -> SwiftValue {
+        try expressionResolver.resolveExpression(expression, scope: scope, context: context)
     }
 
-    private func filteredTopLevelStatements(
-        from statements: CodeBlockItemListSyntax
-    ) throws -> CodeBlockItemListSyntax {
+    func makeStateValue(named identifier: String, initialValue: SwiftValue) -> SwiftValue {
+        let reference = stateStore.makeState(identifier: identifier, initialValue: initialValue)
+        return reference.read()
+    }
+
+    func nextInlineInstanceIdentifier(for name: String) -> String {
+        let key = InlineInstanceKey(namespace: inlineInstanceNamespace, name: name)
+        let next = inlineInstanceTracker[key, default: 0]
+        inlineInstanceTracker[key] = next + 1
+        guard inlineInstanceNamespace.isEmpty else {
+            let prefix = inlineInstanceNamespace.joined(separator: ".")
+            return "\(prefix).\(name)#\(next)"
+        }
+        return "\(name)#\(next)"
+    }
+
+    func withInlineInstanceNamespace<T>(_ components: [String], perform: () throws -> T) rethrows -> T {
+        guard !components.isEmpty else { return try perform() }
+        inlineInstanceNamespace.append(contentsOf: components)
+        defer { inlineInstanceNamespace.removeLast(components.count) }
+        return try perform()
+    }
+
+    func renderStructBody(
+        statements: CodeBlockItemListSyntax,
+        scope: ExpressionScope
+    ) throws -> AnyView {
+        let result = try viewNodeBuilder.lower(
+            statements: statements,
+            scope: scope,
+            allowStateDeclarations: false
+        )
+        guard !result.isEmpty else {
+            throw SwiftUIEvaluatorError.missingRootExpression
+        }
+
+        return try viewRenderer.render(nodes: result)
+    }
+
+}
+
+private struct InlineInstanceKey: Hashable {
+    let namespace: [String]
+    let name: String
+}
+
+private struct InlineStructDefinition {
+    struct StateProperty {
+        let name: String
+        let initializer: ExprSyntax
+    }
+
+    let name: String
+    let bodyStatements: CodeBlockItemListSyntax
+    let stateProperties: [StateProperty]
+}
+
+private final class InlineStructViewBuilder: SwiftUIViewBuilder {
+    let name: String
+    private unowned let evaluator: SwiftUIEvaluator
+    private let definition: InlineStructDefinition
+
+    init(definition: InlineStructDefinition, evaluator: SwiftUIEvaluator) {
+        self.name = definition.name
+        self.definition = definition
+        self.evaluator = evaluator
+    }
+
+    func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
+        var scope: ExpressionScope = [:]
+        let instanceIdentifier = evaluator.nextInlineInstanceIdentifier(for: definition.name)
+        for property in definition.stateProperties {
+            let initialValue = try evaluator.resolveExpression(property.initializer, scope: [:])
+            let namespacedIdentifier = "\(instanceIdentifier).\(property.name)"
+            scope[property.name] = evaluator.makeStateValue(named: namespacedIdentifier, initialValue: initialValue)
+        }
+        return try evaluator.renderStructBody(statements: definition.bodyStatements, scope: scope)
+    }
+}
+
+private extension StructDeclSyntax {
+    var conformsToView: Bool {
+        guard let inherited = inheritanceClause else { return false }
+        return inherited.inheritedTypes.contains { inheritedType in
+            inheritedType.type.trimmedDescription == "View"
+        }
+    }
+}
+
+private final class InlineStructProcessor {
+    private let viewRegistry: ViewRegistry
+    private unowned let evaluator: SwiftUIEvaluator
+
+    init(viewRegistry: ViewRegistry, evaluator: SwiftUIEvaluator) {
+        self.viewRegistry = viewRegistry
+        self.evaluator = evaluator
+    }
+
+    func filter(statements: CodeBlockItemListSyntax) throws -> CodeBlockItemListSyntax {
         var retainedItems: [CodeBlockItemSyntax] = []
         for item in statements {
             if let structDecl = item.item.as(StructDeclSyntax.self) {
@@ -200,7 +257,7 @@ public final class SwiftUIEvaluator {
             bodyStatements: bodyStatements,
             stateProperties: stateProperties
         )
-        let builder = InlineStructViewBuilder(definition: definition, evaluator: self)
+        let builder = InlineStructViewBuilder(definition: definition, evaluator: evaluator)
         viewRegistry.register(builder: builder)
     }
 
@@ -252,105 +309,5 @@ public final class SwiftUIEvaluator {
             }
         }
         return properties
-    }
-
-    func resolveExpression(
-        _ expression: ExprSyntax,
-        scope: ExpressionScope
-    ) throws -> SwiftValue {
-        try expressionResolver.resolveExpression(expression, scope: scope, context: context)
-    }
-
-    func makeStateValue(named identifier: String, initialValue: SwiftValue) -> SwiftValue {
-        let reference = stateStore.makeState(identifier: identifier, initialValue: initialValue)
-        return reference.read()
-    }
-
-    func nextInlineInstanceIdentifier(for name: String) -> String {
-        let key = InlineInstanceKey(namespace: inlineInstanceNamespace, name: name)
-        let next = inlineInstanceTracker[key, default: 0]
-        inlineInstanceTracker[key] = next + 1
-        guard inlineInstanceNamespace.isEmpty else {
-            let prefix = inlineInstanceNamespace.joined(separator: ".")
-            return "\(prefix).\(name)#\(next)"
-        }
-        return "\(name)#\(next)"
-    }
-
-    func withInlineInstanceNamespace<T>(_ components: [String], perform: () throws -> T) rethrows -> T {
-        guard !components.isEmpty else { return try perform() }
-        inlineInstanceNamespace.append(contentsOf: components)
-        defer { inlineInstanceNamespace.removeLast(components.count) }
-        return try perform()
-    }
-
-    func renderStructBody(
-        statements: CodeBlockItemListSyntax,
-        scope: ExpressionScope
-    ) throws -> AnyView {
-        let result = try viewNodeBuilder.buildViewNodes(
-            in: statements,
-            scope: scope,
-            allowStateDeclarations: false
-        )
-        guard !result.isEmpty else {
-            throw SwiftUIEvaluatorError.missingRootExpression
-        }
-
-        if result.count == 1 {
-            return try buildView(from: result[0])
-        }
-
-        let views = try result.map { try buildView(from: $0) }
-        return wrapInStack(views)
-    }
-
-}
-
-private struct InlineInstanceKey: Hashable {
-    let namespace: [String]
-    let name: String
-}
-
-private struct InlineStructDefinition {
-    struct StateProperty {
-        let name: String
-        let initializer: ExprSyntax
-    }
-
-    let name: String
-    let bodyStatements: CodeBlockItemListSyntax
-    let stateProperties: [StateProperty]
-}
-
-private final class InlineStructViewBuilder: SwiftUIViewBuilder {
-    let name: String
-    private unowned let evaluator: SwiftUIEvaluator
-    private let definition: InlineStructDefinition
-
-    init(definition: InlineStructDefinition, evaluator: SwiftUIEvaluator) {
-        self.name = definition.name
-        self.definition = definition
-        self.evaluator = evaluator
-    }
-
-    func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
-        var scope: ExpressionScope = [:]
-        let instanceIdentifier = evaluator.nextInlineInstanceIdentifier(for: definition.name)
-        for property in definition.stateProperties {
-            let initialValue = try evaluator.resolveExpression(property.initializer, scope: [:])
-            let namespacedIdentifier = "\(instanceIdentifier).\(property.name)"
-            scope[property.name] = evaluator.makeStateValue(named: namespacedIdentifier, initialValue: initialValue)
-        }
-        return try evaluator.renderStructBody(statements: definition.bodyStatements, scope: scope)
-    }
-}
-
-private extension StructDeclSyntax {
-    var conformsToView: Bool {
-        guard let inherited = inheritanceClause else { return false }
-        return inherited.inheritedTypes.contains { inheritedType in
-            inheritedType.type.trimmedDescription == "View"
-        }
     }
 }

@@ -508,7 +508,7 @@ extension ExpressionResolver {
             context: context
         )
 
-        let handlerContext = ChainContext(contexts: [DictionaryContext(values: scope), context].compactMap { $0 })
+        let handlerContext = ChainContext(contexts: [DictionaryContext(scope: scope), context].compactMap { $0 })
 
         return try memberFunctionRegistry.call(
             name: functionName,

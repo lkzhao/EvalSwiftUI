@@ -52,6 +52,12 @@ public final class RuntimeStateStore {
     }
 }
 
+extension RuntimeStateStore: StateRegistry {
+    func registerState(identifier: String, initialValue: SwiftValue) -> SwiftValue {
+        makeState(identifier: identifier, initialValue: initialValue).read()
+    }
+}
+
 public struct StateReference {
     let identifier: String
     fileprivate let slot: RuntimeStateStore.Slot

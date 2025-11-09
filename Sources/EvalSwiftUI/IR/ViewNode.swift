@@ -33,8 +33,6 @@ public struct ResolvedArgument {
     public let value: SwiftValue
 }
 
-typealias ExpressionScope = [String: SwiftValue]
-
 public struct ResolvedClosure {
     private unowned let evaluator: SwiftUIEvaluator
     private let closure: ClosureExprSyntax

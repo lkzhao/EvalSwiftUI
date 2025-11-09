@@ -9,7 +9,7 @@ public protocol MemberFunctionHandler {
     ) throws -> SwiftValue
 }
 
-final class MemberFunctionRegistry {
+final class MemberFunctionRegistry: ModifierDispatching {
     private var handlers: [String: any MemberFunctionHandler]
 
     init(additionalHandlers: [any MemberFunctionHandler] = []) {
@@ -68,5 +68,8 @@ final class MemberFunctionRegistry {
             ShuffleMemberFunctionHandler(),
             ShuffledMemberFunctionHandler()
         ]
+    }
+    func hasHandler(named name: String) -> Bool {
+        handler(named: name) != nil
     }
 }

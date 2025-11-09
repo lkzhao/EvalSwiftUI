@@ -15,6 +15,10 @@ public struct DictionaryContext: SwiftUIEvaluatorContext {
         self.values = values
     }
 
+    init(scope: ExpressionScope) {
+        self.values = scope.asDictionary()
+    }
+
     public func value(for identifier: String) -> SwiftValue? {
         values[identifier]
     }

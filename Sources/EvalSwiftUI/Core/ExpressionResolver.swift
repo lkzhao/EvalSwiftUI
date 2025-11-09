@@ -1,46 +1,17 @@
 import SwiftSyntax
 
-public final class ExpressionResolver {
+public final class ExpressionResolver: ExpressionEvaluating {
     private let defaultContext: (any SwiftUIEvaluatorContext)?
     private let layers: [any ExpressionResolutionLayer]
     let memberFunctionRegistry: MemberFunctionRegistry
-    private var stateStore: RuntimeStateStore?
 
     public init(
         context: (any SwiftUIEvaluatorContext)? = nil,
-        stateStore: RuntimeStateStore? = nil
+        memberFunctionHandlers: [any MemberFunctionHandler] = []
     ) {
         self.defaultContext = context
         self.layers = ExpressionResolver.defaultLayers()
-        self.memberFunctionRegistry = MemberFunctionRegistry()
-        self.stateStore = stateStore
-    }
-
-    init(
-        context: (any SwiftUIEvaluatorContext)? = nil,
-        layers: [any ExpressionResolutionLayer],
-        memberFunctionRegistry: MemberFunctionRegistry = MemberFunctionRegistry(),
-        stateStore: RuntimeStateStore? = nil
-    ) {
-        self.defaultContext = context
-        self.layers = layers
-        self.memberFunctionRegistry = memberFunctionRegistry
-        self.stateStore = stateStore
-    }
-
-    init(
-        context: (any SwiftUIEvaluatorContext)? = nil,
-        memberFunctionRegistry: MemberFunctionRegistry,
-        stateStore: RuntimeStateStore? = nil
-    ) {
-        self.defaultContext = context
-        self.layers = ExpressionResolver.defaultLayers()
-        self.memberFunctionRegistry = memberFunctionRegistry
-        self.stateStore = stateStore
-    }
-
-    func attach(stateStore: RuntimeStateStore) {
-        self.stateStore = stateStore
+        self.memberFunctionRegistry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
     }
 
     func resolveExpression(
