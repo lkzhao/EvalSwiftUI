@@ -46,15 +46,11 @@ final class ViewNodeBuilder {
         throw SwiftUIEvaluatorError.unsupportedExpression(call.description)
     }
 
-    func buildViewNodes(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
-        try buildViewNodes(in: closure.statements, scope: scope, allowStateDeclarations: false).nodes
-    }
-
     func buildViewNodes(
         in statements: CodeBlockItemListSyntax,
         scope: ExpressionScope,
-        allowStateDeclarations: Bool
-    ) throws -> (nodes: [ViewNode], scope: ExpressionScope) {
+        allowStateDeclarations: Bool = false
+    ) throws -> [ViewNode] {
         var children: [ViewNode] = []
         var currentScope = scope
 
@@ -93,7 +89,7 @@ final class ViewNodeBuilder {
             throw SwiftUIEvaluatorError.unsupportedExpression(statement.description)
         }
 
-        return (children, currentScope)
+        return children
     }
 
     private func processSwitchExpression(_ switchExpr: SwitchExprSyntax, scope: ExpressionScope) throws -> [ViewNode] {
@@ -116,14 +112,14 @@ final class ViewNodeBuilder {
                         in: switchCase.statements,
                         scope: caseScope,
                         allowStateDeclarations: false
-                    ).nodes
+                    )
                 }
             case .default:
                 return try buildViewNodes(
                     in: switchCase.statements,
                     scope: scope,
                     allowStateDeclarations: false
-                ).nodes
+                )
             }
         }
 
@@ -253,7 +249,7 @@ final class ViewNodeBuilder {
                     in: ifExpr.body.statements,
                     scope: scope,
                     allowStateDeclarations: false
-                ).nodes
+                )
             }
 
             return try buildElseBody(ifExpr.elseBody, scope: scope)
@@ -304,7 +300,7 @@ final class ViewNodeBuilder {
             in: body.statements,
             scope: boundScope,
             allowStateDeclarations: false
-        ).nodes
+        )
     }
 
     private func buildElseBody(_ elseBody: IfExprSyntax.ElseBody?, scope: ExpressionScope) throws -> [ViewNode] {
@@ -320,7 +316,7 @@ final class ViewNodeBuilder {
                 in: block.statements,
                 scope: scope,
                 allowStateDeclarations: false
-            ).nodes
+            )
         }
     }
 

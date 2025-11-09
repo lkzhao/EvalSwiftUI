@@ -101,7 +101,7 @@ public final class SwiftUIEvaluator {
     }
 
     func makeViewContent(from closure: ClosureExprSyntax, scope: ExpressionScope) throws -> ViewContent {
-        let nodes = try viewNodeBuilder.buildViewNodes(from: closure, scope: scope)
+        let nodes = try viewNodeBuilder.buildViewNodes(in: closure.statements, scope: scope)
         let parameterNames = closureParameterNames(closure)
         let renderers = nodes.map { node in
             { overrides in
@@ -131,12 +131,12 @@ public final class SwiftUIEvaluator {
             scope: [:],
             allowStateDeclarations: true
         )
-        guard let viewNode = result.nodes.last else {
+        guard let viewNode = result.last else {
             throw SwiftUIEvaluatorError.missingRootExpression
         }
 
-        if result.nodes.count > 1 {
-            let views = try result.nodes.map { try buildView(from: $0) }
+        if result.count > 1 {
+            let views = try result.map { try buildView(from: $0) }
             return wrapInStack(views)
         }
 
@@ -293,15 +293,15 @@ public final class SwiftUIEvaluator {
             scope: scope,
             allowStateDeclarations: false
         )
-        guard !result.nodes.isEmpty else {
+        guard !result.isEmpty else {
             throw SwiftUIEvaluatorError.missingRootExpression
         }
 
-        if result.nodes.count == 1 {
-            return try buildView(from: result.nodes[0])
+        if result.count == 1 {
+            return try buildView(from: result[0])
         }
 
-        let views = try result.nodes.map { try buildView(from: $0) }
+        let views = try result.map { try buildView(from: $0) }
         return wrapInStack(views)
     }
 
