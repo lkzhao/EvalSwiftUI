@@ -45,11 +45,11 @@ public final class SwiftUIEvaluator {
     @MainActor
     private func evaluate(syntax: SourceFileSyntax) throws -> some View {
         stateStore.reset()
-        let coordinator = RuntimeRenderCoordinator(evaluator: self, syntax: syntax)
-        let initialView = try coordinator.render()
+        let initialView = try renderSyntax(from: syntax)
         return RuntimeRenderedView(
             initialView: initialView,
-            coordinator: coordinator,
+            evaluator: self,
+            syntax: syntax,
             stateStore: stateStore
         )
     }

@@ -17,9 +17,8 @@ struct SwiftUIEvaluatorStateTests {
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
         store.reset()
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        let initialView = try coordinator.render()
+        let initialView = try evaluator.renderSyntax(from: syntax)
         let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: initialView)
 
         guard let reference = store.reference(for: "count") else {
@@ -27,7 +26,7 @@ struct SwiftUIEvaluatorStateTests {
         }
         reference.write(.number(1))
 
-        let updatedView = try coordinator.render()
+        let updatedView = try evaluator.renderSyntax(from: syntax)
         let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: updatedView)
 
         #expect(initialSnapshot != updatedSnapshot)
@@ -47,9 +46,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        let initialView = try coordinator.render()
+        let initialView = try evaluator.renderSyntax(from: syntax)
         let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(initialView))
 
         guard let countState = store.reference(for: "count") else {
@@ -57,7 +55,7 @@ struct SwiftUIEvaluatorStateTests {
         }
 
         countState.write(.number(1))
-        let updatedView = try coordinator.render()
+        let updatedView = try evaluator.renderSyntax(from: syntax)
         let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
 
         #expect(initialSnapshot != updatedSnapshot)
@@ -73,16 +71,15 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         guard let countSlot = store.reference(for: "count") else {
             throw TestFailure.expected("Missing count state slot")
         }
 
         countSlot.write(.number(1))
-        let updatedView = try coordinator.render()
+        let updatedView = try evaluator.renderSyntax(from: syntax)
         let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
 
         let expectedView = VStack(spacing: 0) {
@@ -107,9 +104,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        let renderedView = try coordinator.render()
+        let renderedView = try evaluator.renderSyntax(from: syntax)
         let renderedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(renderedView))
 
         let expected = VStack {
@@ -146,9 +142,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        let renderedView = try coordinator.render()
+        let renderedView = try evaluator.renderSyntax(from: syntax)
         let renderedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(renderedView))
 
         let expected = ForEach([0, 1, 2], id: \.self) { value in
@@ -192,9 +187,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         guard let first = store.reference(for: "CountView#0.count"),
               let second = store.reference(for: "CountView#1.count") else {
@@ -207,7 +201,7 @@ struct SwiftUIEvaluatorStateTests {
         second.write(.number(2))
         #expect(first.read().equals(.number(1)))
 
-        let updatedView = try coordinator.render()
+        let updatedView = try evaluator.renderSyntax(from: syntax)
         let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
 
         let expected = ExpectedInlineStructContainer(counts: [1, 2])
@@ -244,9 +238,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         let countReferences = try rowStateReferences(in: store)
         for (row, reference) in countReferences {
@@ -259,7 +252,7 @@ struct SwiftUIEvaluatorStateTests {
         }
         idsReference.write(.array([.number(2), .number(1), .number(0)]))
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         for (row, reference) in countReferences {
             #expect(reference.read().equals(.number(Double(row + 10))))
@@ -275,9 +268,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        let initialView = try coordinator.render()
+        let initialView = try evaluator.renderSyntax(from: syntax)
         let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(initialView))
 
         let expectedOff = Toggle(isOn: .constant(false)) {
@@ -293,7 +285,7 @@ struct SwiftUIEvaluatorStateTests {
 
         isOnReference.write(.bool(true))
 
-        let updatedView = try coordinator.render()
+        let updatedView = try evaluator.renderSyntax(from: syntax)
         let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: AnyView(updatedView))
 
         let expectedOn = Toggle(isOn: .constant(true)) {
@@ -318,9 +310,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         guard let numbersReference = store.reference(for: "numbers") else {
             throw TestFailure.expected("Missing numbers state slot")
@@ -346,9 +337,8 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        let coordinator = RuntimeRenderCoordinator(evaluator: evaluator, syntax: syntax)
 
-        _ = try coordinator.render()
+        _ = try evaluator.renderSyntax(from: syntax)
 
         guard let numbersReference = store.reference(for: "numbers"),
               let randomizedReference = store.reference(for: "randomized") else {

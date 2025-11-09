@@ -5,14 +5,17 @@ struct RuntimeRenderedView: View {
     @State private var version: UInt = 0
     @State private var renderedView: AnyView
 
-    private let coordinator: RuntimeRenderCoordinator
+    private let evaluator: SwiftUIEvaluator
+    private let syntax: SourceFileSyntax
     private let stateStore: RuntimeStateStore
 
     init(initialView: AnyView,
-         coordinator: RuntimeRenderCoordinator,
+         evaluator: SwiftUIEvaluator,
+         syntax: SourceFileSyntax,
          stateStore: RuntimeStateStore) {
         _renderedView = State(initialValue: initialView)
-        self.coordinator = coordinator
+        self.evaluator = evaluator
+        self.syntax = syntax
         self.stateStore = stateStore
     }
 
@@ -35,7 +38,7 @@ struct RuntimeRenderedView: View {
 
     private func updateRenderedView() {
         do {
-            renderedView = try coordinator.render()
+            renderedView = try evaluator.renderSyntax(from: syntax)
         } catch {
             renderedView = AnyView(
                 VStack(spacing: 8) {
@@ -46,19 +49,5 @@ struct RuntimeRenderedView: View {
                 }
             )
         }
-    }
-}
-
-final class RuntimeRenderCoordinator {
-    private let evaluator: SwiftUIEvaluator
-    private let syntax: SourceFileSyntax
-
-    init(evaluator: SwiftUIEvaluator, syntax: SourceFileSyntax) {
-        self.evaluator = evaluator
-        self.syntax = syntax
-    }
-
-    func render() throws -> AnyView {
-        try evaluator.renderSyntax(from: syntax)
     }
 }
