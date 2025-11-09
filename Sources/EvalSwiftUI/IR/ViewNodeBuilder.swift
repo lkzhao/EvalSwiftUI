@@ -411,7 +411,7 @@ final class ViewNodeBuilder {
 
     private func processMutationExpression(_ expression: ExprSyntax, scope: inout ExpressionScope) throws -> Bool {
         guard let sequence = expression.as(SequenceExprSyntax.self) else {
-            return false
+            return try processStatefulMemberFunctionCall(expression, scope: scope)
         }
 
         if try processAssignmentSequence(sequence, scope: &scope) {
@@ -423,6 +423,29 @@ final class ViewNodeBuilder {
         }
 
         return false
+    }
+
+    private func processStatefulMemberFunctionCall(
+        _ expression: ExprSyntax,
+        scope: ExpressionScope
+    ) throws -> Bool {
+        guard let callExpr = expression.as(FunctionCallExprSyntax.self),
+              let memberAccess = callExpr.calledExpression.as(MemberAccessExprSyntax.self),
+              expressionResolver.memberFunctionRegistry.handler(named: memberAccess.declName.baseName.text) != nil else {
+            return false
+        }
+
+        // Skip view modifier chains such as Text(...).padding() by ensuring the base is not another call.
+        guard memberAccess.base?.as(FunctionCallExprSyntax.self) == nil else {
+            return false
+        }
+
+        _ = try expressionResolver.resolveExpression(
+            expression,
+            scope: scope,
+            context: context
+        )
+        return true
     }
 
     private func processAssignmentSequence(_ sequence: SequenceExprSyntax, scope: inout ExpressionScope) throws -> Bool {
