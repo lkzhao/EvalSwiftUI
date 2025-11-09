@@ -31,9 +31,12 @@ public final class SwiftUIEvaluator {
             self.memberFunctionRegistry = registry
             self.expressionResolver = ExpressionResolver(
                 context: context,
-                memberFunctionRegistry: registry
+                memberFunctionRegistry: registry,
+                stateStore: self.stateStore
             )
         }
+
+        self.expressionResolver.attach(stateStore: self.stateStore)
 
         let resolver = self.expressionResolver
         viewNodeBuilder = ViewNodeBuilder(
@@ -63,7 +66,8 @@ public final class SwiftUIEvaluator {
     }
 
     private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
-        let scopeBox = ScopeBox(storage: node.scope.merging(scopeOverrides) { _, new in new }, isMutable: true)
+        let mergedScope = node.scope.merging(scopeOverrides) { _, new in new }.cloningForCapture()
+        let scopeBox = ScopeBox(storage: mergedScope, isMutable: true)
         let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: scopeBox.storage)
         let view = try viewRegistry.makeView(
             from: node.constructor,
@@ -98,7 +102,7 @@ public final class SwiftUIEvaluator {
                 )
                 return ResolvedArgument(label: argument.label, value: value)
             case .closure(let closure, let capturedScope):
-                let mergedScope = capturedScope.merging(scope) { _, new in new }
+                let mergedScope = capturedScope.merging(scope) { _, new in new }.cloningForCapture()
                 let resolvedClosure = ResolvedClosure(
                     evaluator: self,
                     closure: closure,
@@ -271,7 +275,8 @@ public final class SwiftUIEvaluator {
     }
 
     func makeStateValue(named identifier: String, initialValue: SwiftValue) -> SwiftValue {
-        .state(stateStore.makeState(identifier: identifier, initialValue: initialValue))
+        let reference = stateStore.makeState(identifier: identifier, initialValue: initialValue)
+        return reference.read()
     }
 
     func nextInlineInstanceIdentifier(for name: String) -> String {

@@ -24,7 +24,7 @@ struct HStackViewBuilder: SwiftUIViewBuilder {
     private func decodeAlignment(from value: SwiftValue?) throws -> VerticalAlignment {
         guard let value else { return .center }
 
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("alignment expects a VerticalAlignment member.")
         }
 
@@ -40,7 +40,7 @@ struct HStackViewBuilder: SwiftUIViewBuilder {
     private func decodeSpacing(from value: SwiftValue?) throws -> CGFloat? {
         guard let value else { return nil }
 
-        switch value {
+        switch value.payload {
         case let .number(number):
             return CGFloat(number)
         default:

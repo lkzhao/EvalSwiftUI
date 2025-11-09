@@ -46,3 +46,22 @@
 - [x] Update `ExpressionResolver` + `ViewNodeBuilder` so member/global function syntax (including modifiers emitted as member calls) route through the new registry, deleting bespoke modifier wiring once parity is achieved.
 - [x] Add regression tests that cover view construction, modifier chains, `contains`, `shuffled`, and a representative global helper to ensure the shared architecture handles all call styles (covered by the existing `swift test` suite after the refactor).
 - [x] Write migration docs describing how downstream integrators register new handlers/builders under the single registry so future function support (e.g. custom helpers) is straightforward.
+
+## SwiftValue reference semantics + runtime cleanup
+
+- [ ] **Phase 1 – Core storage + identity**
+  - Replace the indirect `SwiftValue` enum with a `final class SwiftValue` whose stored `Payload` enum mirrors the current cases except `.state`/`.binding` (those become indirection helpers). Expose identity, basic observers, and factory helpers so new instances can broadcast change events.
+  - Create a lightweight `SwiftValueReference` (or reuse the class itself) that can be shared by scopes, bindings, and runtime state; all reads/mutations flow through this reference instead of copying payloads around.
+- [ ] **Phase 2 – Runtime store + resolver plumbing**
+  - Update `RuntimeStateStore` to vend shared references (one per identifier), register store-level observation tokens, and ensure `stateDidMutate` fires whenever any referenced `SwiftValue` mutates.
+  - Migrate `ViewNodeBuilder` scopes and `ExpressionResolver` layers so identifier lookups return the shared reference, `$` binding lookups hand out a thin binding adapter, and numeric/bool decoding uses unified coercion helpers that already dereference state/bindings.
+  - Simplify mutation sites (`assignValue`, compound assignments, action closures) to mutate references in place rather than allocate new enum values.
+- [ ] **Phase 3 – Collection/optional proxy API**
+  - Introduce proxy types (`SwiftValue.ArrayProxy`, `OptionalProxy`, `DictionaryProxy`) that expose strongly-typed read/write operations while handling optionals and observer notification internally.
+  - Port `SwiftValue+Collections`, `ForEachViewBuilder.sequenceValues`, and collection member-function handlers to operate entirely through the proxy layer so they no longer switch over `.state`/`.binding` manually.
+- [ ] **Phase 4 – Deterministic shuffle + ergonomics**
+  - Reimplement the `shuffle`/`shuffled` handlers using the proxy mutation API with deterministic fallbacks (seeded RNG or namespace-based hashing) instead of the current reverse-array hack to guarantee visual diffs change.
+  - Audit other mutation-heavy helpers (dictionary subscripts, bindings, modifier decoders) to ensure they lean on the proxy/observer stack and delete redundant unwrap helpers (`resolvingStateReference`, `wrappingArrayValue`, etc.).
+- [ ] **Phase 5 – Testing + docs**
+  - Add focused tests that cover shared-reference mutation, binding writes without reassignment, shuffle determinism, and optional proxy edge cases.
+  - Document the new data flow (scopes hold references, bindings wrap references, runtime store observes all references) so contributors understand how to extend the system safely.

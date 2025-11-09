@@ -1,3 +1,4 @@
+import Foundation
 import SwiftSyntax
 import SwiftUI
 
@@ -32,21 +33,52 @@ public struct ResolvedArgument {
     public let value: SwiftValue
 }
 
-public indirect enum SwiftValue {
-    case string(String)
-    case memberAccess([String])
-    case number(Double)
-    case functionCall(FunctionCallValue)
-    case bool(Bool)
-    case optional(SwiftValue?)
-    case array([SwiftValue])
-    case range(RangeValue)
-    case keyPath(KeyPathValue)
-    case dictionary([String: SwiftValue])
-    case state(StateReference)
-    case binding(BindingValue)
-    case closure(ResolvedClosure)
-    case view(AnyView)
+public final class SwiftValue: @unchecked Sendable {
+    public enum Payload {
+        case string(String)
+        case memberAccess([String])
+        case number(Double)
+        case functionCall(FunctionCallValue)
+        case bool(Bool)
+        case optional(SwiftValue?)
+        case array([SwiftValue])
+        case range(RangeValue)
+        case keyPath(KeyPathValue)
+        case dictionary([String: SwiftValue])
+        case binding(BindingValue)
+        case closure(ResolvedClosure)
+        case view(AnyView)
+    }
+
+    private var stateIdentifier: String?
+
+    init(_ payload: Payload, stateIdentifier: String? = nil) {
+        self.payload = payload
+        self.stateIdentifier = stateIdentifier
+    }
+
+    @Published
+    var payload: Payload
+
+    func mutatePayload(_ transform: (inout Payload) -> Void) {
+        transform(&payload)
+    }
+
+    func copy(retainingState: Bool = false) -> SwiftValue {
+        SwiftValue(payload.deepCopy(), stateIdentifier: retainingState ? stateIdentifier : nil)
+    }
+
+    func replace(with value: SwiftValue) {
+        payload = value.payload.deepCopy()
+    }
+
+    func markAsState(identifier: String) {
+        stateIdentifier = identifier
+    }
+
+    func stateIdentifierValue() -> String? {
+        stateIdentifier
+    }
 }
 
 public struct FunctionCallValue {
@@ -96,7 +128,7 @@ typealias ExpressionScope = [String: SwiftValue]
 
 extension SwiftValue {
     var typeDescription: String {
-        switch self {
+        switch payload {
         case .string:
             return "string"
         case .memberAccess:
@@ -117,8 +149,6 @@ extension SwiftValue {
             return "keyPath"
         case .dictionary:
             return "dictionary"
-        case .state:
-            return "state"
         case .binding:
             return "binding"
         case .closure:
@@ -129,29 +159,24 @@ extension SwiftValue {
     }
 
     func unwrappedOptional() -> SwiftValue? {
-        switch self {
+        switch payload {
         case .optional(let wrapped):
             guard let wrapped else { return nil }
             return wrapped.unwrappedOptional()
-        case .state(let reference):
-            return reference.read().unwrappedOptional()
         default:
             return self
         }
     }
 
     var isOptional: Bool {
-        if case .optional = self {
+        if case .optional = payload {
             return true
-        }
-        if case .state(let reference) = self {
-            return reference.read().isOptional
         }
         return false
     }
 
     func asAnyView() -> AnyView? {
-        switch resolvingStateReference() {
+        switch payload {
         case .view(let view):
             return view
         case .optional(let wrapped):
@@ -165,7 +190,7 @@ extension SwiftValue {
     }
 
     func equals(_ other: SwiftValue) -> Bool {
-        switch (self, other) {
+        switch (payload, other.payload) {
         case (.string(let left), .string(let right)):
             return left == right
         case (.number(let left), .number(let right)):
@@ -190,14 +215,8 @@ extension SwiftValue {
             return false
         case (_, .optional):
             return other.equals(self)
-        case (.state(let left), .state(let right)):
-            return left.read().equals(right.read())
-        case (.state, _):
-            return resolvingStateReference().equals(other)
-        case (_, .state):
-            return equals(other.resolvingStateReference())
         case (.binding(let left), .binding(let right)):
-            return left.reference.identifier == right.reference.identifier
+            return left.identifier == right.identifier
         case (.closure, .closure):
             return false
         case (.view, .view):
@@ -207,13 +226,9 @@ extension SwiftValue {
         }
     }
 
-    func resolvingStateReference() -> SwiftValue {
-        if case .state(let reference) = self {
-            return reference.read()
-        }
-        return self
-    }
 }
+
+
 
 private func memberPathsEqual(_ lhs: [String], _ rhs: [String]) -> Bool {
     if lhs == rhs {
@@ -283,9 +298,61 @@ public struct ActionContent: @unchecked Sendable {
 
 extension SwiftValue {
     var resolvedClosure: ResolvedClosure? {
-        if case let .closure(value) = self {
+        if case let .closure(value) = payload {
             return value
         }
         return nil
     }
+}
+extension SwiftValue.Payload {
+    fileprivate func deepCopy() -> SwiftValue.Payload {
+        switch self {
+        case .string(let string):
+            return .string(string)
+        case .memberAccess(let path):
+            return .memberAccess(path)
+        case .number(let number):
+            return .number(number)
+        case .functionCall(let value):
+            return .functionCall(value)
+        case .bool(let flag):
+            return .bool(flag)
+        case .optional(let wrapped):
+            return .optional(wrapped?.copy())
+        case .array(let values):
+            return .array(values.map { $0.copy() })
+        case .range(let range):
+            return .range(range)
+        case .keyPath(let keyPath):
+            return .keyPath(keyPath)
+        case .dictionary(let dictionary):
+            var copy: [String: SwiftValue] = [:]
+            for (key, value) in dictionary {
+                copy[key] = value.copy()
+            }
+            return .dictionary(copy)
+        case .binding(let binding):
+            return .binding(binding)
+        case .closure(let closure):
+            return .closure(closure)
+        case .view(let view):
+            return .view(view)
+        }
+    }
+}
+
+extension SwiftValue {
+    static func string(_ value: String) -> SwiftValue { SwiftValue(.string(value)) }
+    static func memberAccess(_ value: [String]) -> SwiftValue { SwiftValue(.memberAccess(value)) }
+    static func number(_ value: Double) -> SwiftValue { SwiftValue(.number(value)) }
+    static func functionCall(_ value: FunctionCallValue) -> SwiftValue { SwiftValue(.functionCall(value)) }
+    static func bool(_ value: Bool) -> SwiftValue { SwiftValue(.bool(value)) }
+    static func optional(_ value: SwiftValue?) -> SwiftValue { SwiftValue(.optional(value)) }
+    static func array(_ value: [SwiftValue]) -> SwiftValue { SwiftValue(.array(value)) }
+    static func range(_ value: RangeValue) -> SwiftValue { SwiftValue(.range(value)) }
+    static func keyPath(_ value: KeyPathValue) -> SwiftValue { SwiftValue(.keyPath(value)) }
+    static func dictionary(_ value: [String: SwiftValue]) -> SwiftValue { SwiftValue(.dictionary(value)) }
+    static func binding(_ value: BindingValue) -> SwiftValue { SwiftValue(.binding(value)) }
+    static func closure(_ value: ResolvedClosure) -> SwiftValue { SwiftValue(.closure(value)) }
+    static func view(_ value: AnyView) -> SwiftValue { SwiftValue(.view(value)) }
 }

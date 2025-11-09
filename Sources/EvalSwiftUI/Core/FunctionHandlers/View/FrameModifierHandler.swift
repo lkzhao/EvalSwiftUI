@@ -82,7 +82,7 @@ struct FrameModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeDimension(from value: SwiftValue) throws -> CGFloat? {
-        switch value {
+        switch value.payload {
         case let .number(number):
             return CGFloat(number)
         case let .memberAccess(path):
@@ -96,7 +96,7 @@ struct FrameModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeAlignment(from value: SwiftValue) throws -> Alignment {
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("Alignment must be an Alignment member.")
         }
 

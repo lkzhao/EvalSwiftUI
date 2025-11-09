@@ -190,10 +190,7 @@ extension ExpressionResolver {
             let value = try numberValue(from: operand)
             return .number(value)
         case "$":
-            guard case .state(let reference) = operand else {
-                throw SwiftUIEvaluatorError.invalidArguments("$ requires an @State-backed identifier.")
-            }
-            return .binding(BindingValue(reference: reference))
+            return try makeBinding(from: operand)
         default:
             throw SwiftUIEvaluatorError.unsupportedExpression(expression.description)
         }
@@ -245,8 +242,7 @@ extension ExpressionResolver {
     }
 
     func integerValue(from value: SwiftValue) throws -> Int {
-        let resolved = value.resolvingStateReference()
-        switch resolved {
+        switch value.payload {
         case .number(let number):
             guard number.truncatingRemainder(dividingBy: 1) == 0 else {
                 throw SwiftUIEvaluatorError.invalidArguments("Integer expressions must resolve to whole numbers.")
@@ -263,8 +259,7 @@ extension ExpressionResolver {
     }
 
     func numberValue(from value: SwiftValue) throws -> Double {
-        let resolved = value.resolvingStateReference()
-        switch resolved {
+        switch value.payload {
         case .number(let number):
             return number
         case .optional(let wrapped):
@@ -278,8 +273,7 @@ extension ExpressionResolver {
     }
 
     func boolValue(from value: SwiftValue) throws -> Bool {
-        let resolved = value.resolvingStateReference()
-        switch resolved {
+        switch value.payload {
         case .bool(let flag):
             return flag
         case .optional(let wrapped):
@@ -405,8 +399,7 @@ extension ExpressionResolver {
     }
 
     func stringValue(from value: SwiftValue) throws -> String {
-        let resolved = value.resolvingStateReference()
-        switch resolved {
+        switch value.payload {
         case .string(let string):
             return string
         case .number(let number):
@@ -494,7 +487,7 @@ extension ExpressionResolver {
 
 extension ExpressionResolver {
     func evaluateSubscript(base: SwiftValue, index: SwiftValue) throws -> SwiftValue {
-        switch base.resolvingStateReference() {
+        switch base.payload {
         case .array(let elements):
             let position = try integerValue(from: index)
             guard elements.indices.contains(position) else {

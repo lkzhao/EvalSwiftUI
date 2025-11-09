@@ -5,7 +5,7 @@ struct ImageViewBuilder: SwiftUIViewBuilder {
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
         guard let argument = arguments.first,
-              case let .string(value) = argument.value else {
+              case let .string(value) = argument.value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Image expects a string literal argument.")
         }
 

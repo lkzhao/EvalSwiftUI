@@ -34,7 +34,7 @@ struct BadgeViewBuilder: SwiftUIViewBuilder {
     let name = "Badge"
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
-        guard let first = arguments.first, case let .string(label) = first.value else {
+        guard let first = arguments.first, case let .string(label) = first.value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Badge expects a leading string label.")
         }
 

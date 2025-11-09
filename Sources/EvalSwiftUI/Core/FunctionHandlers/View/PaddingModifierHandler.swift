@@ -28,7 +28,7 @@ struct PaddingModifierHandler: MemberFunctionHandler {
     }
 
     private func applySingleArgument(_ argument: ResolvedArgument, to base: AnyView) throws -> AnyView {
-        switch argument.value {
+        switch argument.value.payload {
         case let .number(value):
             return AnyView(base.padding(CGFloat(value)))
         case .memberAccess:
@@ -40,7 +40,7 @@ struct PaddingModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeEdges(from value: SwiftValue) throws -> Edge.Set {
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("padding edges must be Edge.Set members.")
         }
 
@@ -58,7 +58,7 @@ struct PaddingModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeAmount(from value: SwiftValue) throws -> CGFloat {
-        guard case let .number(number) = value else {
+        guard case let .number(number) = value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Padding amount must be numeric.")
         }
         return CGFloat(number)

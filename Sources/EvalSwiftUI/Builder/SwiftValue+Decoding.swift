@@ -2,7 +2,7 @@ import SwiftUI
 
 extension SwiftValue {
     func asCGFloat(description: String) throws -> CGFloat {
-        switch resolvingStateReference() {
+        switch payload {
         case .number(let number):
             return CGFloat(number)
         case .optional(let wrapped):
@@ -16,7 +16,7 @@ extension SwiftValue {
     }
 
     func asDouble(description: String) throws -> Double {
-        switch resolvingStateReference() {
+        switch payload {
         case .number(let number):
             return number
         case .optional(let wrapped):
@@ -30,7 +30,7 @@ extension SwiftValue {
     }
 
     func asBool(description: String) throws -> Bool {
-        switch resolvingStateReference() {
+        switch payload {
         case .bool(let flag):
             return flag
         case .optional(let wrapped):
@@ -44,7 +44,7 @@ extension SwiftValue {
     }
 
     func asInt(description: String) throws -> Int {
-        switch resolvingStateReference() {
+        switch payload {
         case .number(let number):
             guard number.truncatingRemainder(dividingBy: 1) == 0 else {
                 throw SwiftUIEvaluatorError.invalidArguments("\(description) must resolve to whole numbers.")

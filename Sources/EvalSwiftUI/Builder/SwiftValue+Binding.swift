@@ -2,7 +2,7 @@ import SwiftUI
 
 extension SwiftValue {
     func boolBinding(description: String) throws -> Binding<Bool> {
-        guard case .binding(let bindingValue) = self else {
+        guard case .binding(let bindingValue) = payload else {
             throw SwiftUIEvaluatorError.invalidArguments("\(description) requires a binding value (use $ to reference @State), received \(typeDescription).")
         }
         let initialStorage = bindingValue.read()
@@ -31,7 +31,7 @@ extension SwiftValue {
 
 private extension SwiftValue {
     var boolStorageValue: Bool? {
-        switch resolvingStateReference() {
+        switch payload {
         case .bool(let value):
             return value
         case .optional(let wrapped):

@@ -34,7 +34,7 @@ extension ScopedEvaluatorContext {
         scope: ExpressionScope,
         base: (any SwiftUIEvaluatorContext)?
     ) -> ScopedEvaluatorContext {
-        let box = ScopeBox(storage: scope, isMutable: false)
+        let box = ScopeBox(storage: scope.cloningForCapture(), isMutable: false)
         return ScopedEvaluatorContext(scopeBox: box, base: base)
     }
 }
@@ -52,7 +52,15 @@ final class ScopeBox {
         guard isMutable, storage.keys.contains(identifier) else {
             return false
         }
-        storage[identifier] = value
+        if let value {
+            if value.stateIdentifierValue() != nil {
+                storage[identifier] = value
+            } else {
+                storage[identifier] = value.copy()
+            }
+        } else {
+            storage[identifier] = nil
+        }
         return true
     }
 }

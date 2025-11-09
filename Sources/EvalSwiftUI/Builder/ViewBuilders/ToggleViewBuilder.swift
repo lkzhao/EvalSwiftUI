@@ -41,7 +41,7 @@ struct ToggleViewBuilder: SwiftUIViewBuilder {
         }) else {
             return nil
         }
-        guard case let .string(value) = argument.value.resolvingStateReference() else {
+        guard case let .string(value) = argument.value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Toggle titles must be string literals.")
         }
         return value
@@ -59,7 +59,7 @@ struct ToggleViewBuilder: SwiftUIViewBuilder {
 
 private extension SwiftValue {
     var isStringLiteral: Bool {
-        if case .string = resolvingStateReference() {
+        if case .string = payload {
             return true
         }
         return false

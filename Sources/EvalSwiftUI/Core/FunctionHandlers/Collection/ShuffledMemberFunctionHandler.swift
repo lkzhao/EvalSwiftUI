@@ -13,8 +13,8 @@ struct ShuffledMemberFunctionHandler: MemberFunctionHandler {
             throw SwiftUIEvaluatorError.invalidArguments("shuffled does not accept arguments.")
         }
 
-        let elements = try baseValue.arrayElements(functionName: "shuffled")
-        let shuffled = SwiftValue.shuffleElements(elements)
+        let elements = try baseValue.arrayProxy().elements()
+        let shuffled = elements.shuffled()
         return .array(shuffled)
     }
 }

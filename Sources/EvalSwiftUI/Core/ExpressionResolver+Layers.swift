@@ -220,9 +220,8 @@ struct DeclReferenceExpressionLayer: ExpressionResolutionLayer {
         }
 
         if identifier.hasPrefix("$"),
-           let bindingTarget = scope[String(identifier.dropFirst())],
-           case .state(let reference) = bindingTarget {
-            return .binding(BindingValue(reference: reference))
+           let bindingTarget = scope[String(identifier.dropFirst())] {
+            return try resolver.makeBinding(from: bindingTarget)
         }
 
         if let externalValue = context?.value(for: identifier) {

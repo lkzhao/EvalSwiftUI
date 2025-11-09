@@ -39,7 +39,7 @@ final class ViewNodeBuilder {
                     arguments: parseArguments(call, scope: scope)
                 ),
                 modifiers: [],
-                scope: scope
+                scope: scope.cloningForCapture()
             )
         }
 
@@ -148,7 +148,7 @@ final class ViewNodeBuilder {
                 scope: mergedScope,
                 context: context
             )
-            guard case .bool(let isTrue) = conditionValue else {
+            guard case .bool(let isTrue) = conditionValue.payload else {
                 throw SwiftUIEvaluatorError.invalidArguments("switch case where clauses must resolve to a boolean value.")
             }
             guard isTrue else { return nil }
@@ -224,7 +224,7 @@ final class ViewNodeBuilder {
     }
 
     private func bindOptionalValue(named identifier: String, subject: SwiftValue) throws -> ExpressionScope? {
-        guard case .optional(let wrapped) = subject,
+        guard case .optional(let wrapped) = subject.payload,
               let unwrapped = wrapped?.unwrappedOptional() else {
             return nil
         }
@@ -244,7 +244,7 @@ final class ViewNodeBuilder {
                 context: context
             )
 
-            guard case .bool(let isTrue) = value else {
+            guard case .bool(let isTrue) = value.payload else {
                 throw SwiftUIEvaluatorError.invalidArguments("if conditions must resolve to a boolean value.")
             }
 
@@ -290,7 +290,7 @@ final class ViewNodeBuilder {
             throw SwiftUIEvaluatorError.invalidArguments("if let requires an initializer or an existing optional identifier.")
         }
 
-        guard case .optional(let wrapped) = resolvedValue else {
+        guard case .optional(let wrapped) = resolvedValue.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("if let requires an optional value.")
         }
 
@@ -384,7 +384,7 @@ final class ViewNodeBuilder {
                 context: context
             )
             if !hasStateAttribute {
-                value = value.resolvingStateReference()
+                value = value.copy()
             }
             if isOptional(binding) && !value.isOptional {
                 value = .optional(value)
@@ -405,9 +405,8 @@ final class ViewNodeBuilder {
     }
 
     private func registerStateVariable(named identifier: String, initialValue: SwiftValue) -> SwiftValue {
-        let resolvedValue = initialValue.resolvingStateReference()
-        let reference = stateStore.makeState(identifier: identifier, initialValue: resolvedValue)
-        return .state(reference)
+        let reference = stateStore.makeState(identifier: identifier, initialValue: initialValue)
+        return reference.read()
     }
 
     private func processMutationExpression(_ expression: ExprSyntax, scope: inout ExpressionScope) throws -> Bool {
@@ -506,23 +505,22 @@ final class ViewNodeBuilder {
 
     private func currentValue(for identifier: String, scope: ExpressionScope) throws -> SwiftValue {
         if let scoped = scope[identifier] {
-            return scoped.resolvingStateReference()
+            return scoped
         }
         throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
     }
 
     private func assignValue(_ value: SwiftValue, to identifier: String, scope: inout ExpressionScope) throws {
-        let resolvedValue = value.resolvingStateReference()
         guard let existing = scope[identifier] else {
             throw SwiftUIEvaluatorError.invalidArguments("Identifier \(identifier) is not defined in this scope.")
         }
 
-        if case .state(let reference) = existing {
-            reference.write(resolvedValue)
+        if existing.stateIdentifierValue() != nil {
+            existing.replace(with: value)
             return
         }
 
-        scope[identifier] = resolvedValue
+        scope[identifier] = value.copy()
     }
 
     private func isOptional(_ binding: PatternBindingSyntax) -> Bool {

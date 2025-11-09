@@ -62,7 +62,7 @@ struct ButtonViewBuilder: SwiftUIViewBuilder {
         }) else {
             return nil
         }
-        guard case let .string(value) = argument.value.resolvingStateReference() else {
+        guard case let .string(value) = argument.value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Button titles must be string literals.")
         }
         return value
@@ -70,7 +70,7 @@ struct ButtonViewBuilder: SwiftUIViewBuilder {
 
     private func decodeRole(from value: SwiftValue?) throws -> ButtonRole? {
         guard let value else { return nil }
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("Button roles must be specified using ButtonRole members.")
         }
 

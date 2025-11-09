@@ -20,7 +20,7 @@ struct ImageScaleModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeScale(from value: SwiftValue) throws -> Image.Scale {
-        guard case let .memberAccess(path) = value,
+        guard case let .memberAccess(path) = value.payload,
               let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("imageScale expects a member like .small/.medium/.large.")
         }

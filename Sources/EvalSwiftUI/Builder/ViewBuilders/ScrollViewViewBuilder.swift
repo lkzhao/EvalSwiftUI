@@ -30,7 +30,7 @@ struct ScrollViewViewBuilder: SwiftUIViewBuilder {
 
     private func decodeAxis(from value: SwiftValue?) throws -> Axis.Set {
         guard let value else { return .vertical }
-        guard case .memberAccess(let path) = value, let last = path.last else {
+        guard case .memberAccess(let path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("ScrollView axis argument expects Axis.Set members (e.g. .horizontal).")
         }
 
@@ -76,7 +76,7 @@ struct ScrollViewViewBuilder: SwiftUIViewBuilder {
     }
 
     private func boolValue(from value: SwiftValue) throws -> Bool {
-        switch value.resolvingStateReference() {
+        switch value.payload {
         case .bool(let flag):
             return flag
         case .optional(let wrapped):

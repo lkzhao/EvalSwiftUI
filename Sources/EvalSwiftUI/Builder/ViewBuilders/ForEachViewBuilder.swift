@@ -6,7 +6,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
 
     func makeView(arguments: [ResolvedArgument]) throws -> AnyView {
         guard let dataArgument = arguments.first(where: { argument in
-            if case .closure = argument.value { return false }
+            if argument.value.resolvedClosure != nil { return false }
             return argument.label == nil
         }) else {
             throw SwiftUIEvaluatorError.invalidArguments("ForEach requires an unlabeled data argument.")
@@ -58,9 +58,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
     }
 
     private func sequenceValues(from value: SwiftValue) throws -> [SwiftValue] {
-        switch value {
-        case .state(let reference):
-            return try sequenceValues(from: reference.read())
+        switch value.payload {
         case .binding(let binding):
             return try sequenceValues(from: binding.read())
         case .array(let elements):
@@ -79,7 +77,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
 
     private func makeIdentifierStrategy(from value: SwiftValue?) throws -> IdentifierStrategy {
         guard let value else { return .index }
-        guard case .keyPath(let keyPath) = value else {
+        guard case .keyPath(let keyPath) = value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("id: expects a key path literal such as \\.self.")
         }
         return .keyPath(keyPath)
@@ -100,7 +98,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
         }
 
         private func hashableValue(from value: SwiftValue) throws -> AnyHashable {
-            switch value {
+            switch value.payload {
             case .string(let string):
                 return AnyHashable(string)
             case .number(let number):
@@ -130,7 +128,7 @@ struct ForEachViewBuilder: SwiftUIViewBuilder {
             }
 
             let remaining = keyPath.dropFirst()
-            switch element {
+            switch element.payload {
             case .dictionary(let dictionary):
                 guard let next = dictionary[head] else {
                     throw SwiftUIEvaluatorError.invalidArguments("id: key path component \(head) was not found.")

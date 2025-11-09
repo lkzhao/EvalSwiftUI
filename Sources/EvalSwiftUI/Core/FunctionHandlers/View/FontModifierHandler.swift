@@ -19,7 +19,7 @@ struct FontModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeFont(from value: SwiftValue) throws -> Font {
-        switch value {
+        switch value.payload {
         case let .memberAccess(path):
             return try decodePresetFont(path)
         case let .functionCall(call):
@@ -81,7 +81,7 @@ struct FontModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeWeight(from value: SwiftValue) throws -> Font.Weight {
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("Font weight expects a Font.Weight member.")
         }
 
@@ -101,7 +101,7 @@ struct FontModifierHandler: MemberFunctionHandler {
     }
 
     private func decodeDesign(from value: SwiftValue) throws -> Font.Design {
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("Font design expects a Font.Design member.")
         }
 
@@ -116,7 +116,7 @@ struct FontModifierHandler: MemberFunctionHandler {
     }
 
     private func number(from value: SwiftValue) throws -> Double {
-        guard case let .number(number) = value else {
+        guard case let .number(number) = value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Expected numeric literal.")
         }
         return number

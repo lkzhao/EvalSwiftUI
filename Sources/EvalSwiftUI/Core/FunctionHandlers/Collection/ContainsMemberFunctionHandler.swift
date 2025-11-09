@@ -16,8 +16,7 @@ struct ContainsMemberFunctionHandler: MemberFunctionHandler {
     }
 
     private func containsValue(base: SwiftValue, element: SwiftValue) throws -> Bool {
-        let resolvedBase = base.resolvingStateReference()
-        switch resolvedBase {
+        switch base.payload {
         case .array(let elements):
             return elements.contains { candidate in
                 candidate.equals(element)

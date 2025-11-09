@@ -415,7 +415,7 @@ private func rowValueFromIdentifier(_ identifier: String) -> Int? {
 }
 
 private func intArray(from value: SwiftValue) throws -> [Int] {
-    switch value.resolvingStateReference() {
+    switch value.payload {
     case .array(let elements):
         return try elements.map { element in
             try intValue(from: element)
@@ -431,8 +431,7 @@ private func intArray(from value: SwiftValue) throws -> [Int] {
 }
 
 private func intValue(from value: SwiftValue) throws -> Int {
-    let resolved = value.resolvingStateReference()
-    switch resolved {
+    switch value.payload {
     case .number(let number):
         guard number.truncatingRemainder(dividingBy: 1) == 0 else {
             throw TestFailure.expected("Expected integer element in array.")

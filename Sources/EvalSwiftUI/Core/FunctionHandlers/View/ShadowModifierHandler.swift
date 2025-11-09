@@ -43,7 +43,7 @@ struct ShadowModifierHandler: MemberFunctionHandler {
 
     private func decodeColor(from value: SwiftValue?) throws -> Color? {
         guard let value else { return nil }
-        guard case .memberAccess(let path) = value, let last = path.last else {
+        guard case .memberAccess(let path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("shadow color expects Color members.")
         }
         guard let color = color(from: last) else {

@@ -1,11 +1,18 @@
-import Foundation
+import Combine
 
 public final class RuntimeStateStore {
     final class Slot {
-        var value: SwiftValue
+        let value: SwiftValue
+        private weak var store: RuntimeStateStore?
+        private var observationToken: AnyCancellable?
 
-        init(value: SwiftValue) {
+        init(value: SwiftValue, identifier: String, store: RuntimeStateStore) {
             self.value = value
+            self.store = store
+            value.markAsState(identifier: identifier)
+            observationToken = value.$payload.sink { [weak store] _ in
+                store?.stateDidMutate()
+            }
         }
     }
 
@@ -14,18 +21,19 @@ public final class RuntimeStateStore {
 
     func makeState(identifier: String, initialValue: SwiftValue) -> StateReference {
         if let existing = slots[identifier] {
-            return StateReference(identifier: identifier, slot: existing, store: self)
+            return StateReference(identifier: identifier, slot: existing)
         }
-        let slot = Slot(value: initialValue)
+        let slotValue = initialValue.copy()
+        let slot = Slot(value: slotValue, identifier: identifier, store: self)
         slots[identifier] = slot
-        return StateReference(identifier: identifier, slot: slot, store: self)
+        return StateReference(identifier: identifier, slot: slot)
     }
 
     func reference(for identifier: String) -> StateReference? {
         guard let slot = slots[identifier] else {
             return nil
         }
-        return StateReference(identifier: identifier, slot: slot, store: self)
+        return StateReference(identifier: identifier, slot: slot)
     }
 
     func reset() {
@@ -48,26 +56,40 @@ public final class RuntimeStateStore {
 public struct StateReference {
     let identifier: String
     fileprivate let slot: RuntimeStateStore.Slot
-    fileprivate unowned let store: RuntimeStateStore
 
     func read() -> SwiftValue {
         slot.value
     }
 
     func write(_ value: SwiftValue) {
-        slot.value = value
-        store.stateDidMutate()
+        slot.value.replace(with: value)
     }
+
+    func mutate(_ mutate: (SwiftValue) -> Void) {
+        mutate(slot.value)
+    }
+
+    fileprivate var storage: SwiftValue { slot.value }
 }
 
 public struct BindingValue: @unchecked Sendable {
-    let reference: StateReference
+    let identifier: String
+    private let storage: SwiftValue
+
+    init(reference: StateReference) {
+        self.identifier = reference.identifier
+        self.storage = reference.storage
+    }
 
     func read() -> SwiftValue {
-        reference.read()
+        storage
     }
 
     func write(_ value: SwiftValue) {
-        reference.write(value)
+        storage.replace(with: value)
+    }
+
+    func mutate(_ mutate: (SwiftValue) -> Void) {
+        mutate(storage)
     }
 }

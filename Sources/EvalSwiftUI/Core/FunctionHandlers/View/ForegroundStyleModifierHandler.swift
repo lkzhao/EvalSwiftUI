@@ -15,7 +15,7 @@ struct ForegroundStyleModifierHandler: MemberFunctionHandler {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle requires at least one argument.")
         }
 
-        guard case let .memberAccess(path) = argument.value,
+        guard case let .memberAccess(path) = argument.value.payload,
               let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle expects a known style or Color.")
         }

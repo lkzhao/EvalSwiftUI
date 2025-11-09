@@ -23,7 +23,7 @@ struct RoundedRectangleViewBuilder: SwiftUIViewBuilder {
 
     private func decodeStyle(from value: SwiftValue?) throws -> RoundedCornerStyle {
         guard let value else { return .circular }
-        guard case .memberAccess(let path) = value, let last = path.last else {
+        guard case .memberAccess(let path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("style expects RoundedCornerStyle members (e.g. .continuous).")
         }
 

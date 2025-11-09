@@ -4,32 +4,51 @@ public final class ExpressionResolver {
     private let defaultContext: (any SwiftUIEvaluatorContext)?
     private let layers: [any ExpressionResolutionLayer]
     let memberFunctionRegistry: MemberFunctionRegistry
+    private var stateStore: RuntimeStateStore?
 
     public init(
-        context: (any SwiftUIEvaluatorContext)? = nil
+        context: (any SwiftUIEvaluatorContext)? = nil,
+        stateStore: RuntimeStateStore? = nil
     ) {
         self.defaultContext = context
         self.layers = ExpressionResolver.defaultLayers()
         self.memberFunctionRegistry = MemberFunctionRegistry()
+        self.stateStore = stateStore
     }
 
     init(
         context: (any SwiftUIEvaluatorContext)? = nil,
         layers: [any ExpressionResolutionLayer],
-        memberFunctionRegistry: MemberFunctionRegistry = MemberFunctionRegistry()
+        memberFunctionRegistry: MemberFunctionRegistry = MemberFunctionRegistry(),
+        stateStore: RuntimeStateStore? = nil
     ) {
         self.defaultContext = context
         self.layers = layers
         self.memberFunctionRegistry = memberFunctionRegistry
+        self.stateStore = stateStore
     }
 
     init(
         context: (any SwiftUIEvaluatorContext)? = nil,
-        memberFunctionRegistry: MemberFunctionRegistry
+        memberFunctionRegistry: MemberFunctionRegistry,
+        stateStore: RuntimeStateStore? = nil
     ) {
         self.defaultContext = context
         self.layers = ExpressionResolver.defaultLayers()
         self.memberFunctionRegistry = memberFunctionRegistry
+        self.stateStore = stateStore
+    }
+
+    func makeBinding(from value: SwiftValue) throws -> SwiftValue {
+        guard let identifier = value.stateIdentifierValue(),
+              let reference = stateStore?.reference(for: identifier) else {
+            throw SwiftUIEvaluatorError.invalidArguments("$ requires an @State-backed identifier.")
+        }
+        return .binding(BindingValue(reference: reference))
+    }
+
+    func attach(stateStore: RuntimeStateStore) {
+        self.stateStore = stateStore
     }
 
     func resolveExpression(

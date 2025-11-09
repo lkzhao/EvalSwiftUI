@@ -23,7 +23,7 @@ struct SpacerViewBuilder: SwiftUIViewBuilder {
     }
 
     private func decodeLength(from value: SwiftValue) throws -> CGFloat? {
-        guard case let .number(number) = value else {
+        guard case let .number(number) = value.payload else {
             throw SwiftUIEvaluatorError.invalidArguments("Spacer minLength expects a numeric literal.")
         }
         return CGFloat(number)

@@ -54,7 +54,7 @@ struct OverlayModifierHandler: MemberFunctionHandler {
 
     private func decodeAlignment(from value: SwiftValue?) throws -> Alignment {
         guard let value else { return .center }
-        guard case let .memberAccess(path) = value, let last = path.last else {
+        guard case let .memberAccess(path) = value.payload, let last = path.last else {
             throw SwiftUIEvaluatorError.invalidArguments("Alignment must be specified using Alignment members.")
         }
 
