@@ -5,6 +5,27 @@ import Testing
 
 @MainActor
 struct SwiftUIEvaluatorStateTests {
+    @Test func stateNoMutationSameRender() throws {
+        let source = """
+        @State var count: Int = 0
+        VStack(spacing: 8) {
+            Text("Count: \\(count)")
+        }
+        """
+
+        let store = RuntimeStateStore()
+        let evaluator = SwiftUIEvaluator(stateStore: store)
+        let syntax = Parser.parse(source: source)
+
+        let initialView = try evaluator.renderSyntax(from: syntax)
+        let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: initialView)
+
+        let updatedView = try evaluator.renderSyntax(from: syntax)
+        let updatedSnapshot = try ViewSnapshotRenderer.snapshot(from: updatedView)
+
+        #expect(initialSnapshot == updatedSnapshot)
+    }
+
     @Test func stateMutationTriggersDifferentRender() throws {
         let source = """
         @State var count: Int = 0
@@ -16,7 +37,6 @@ struct SwiftUIEvaluatorStateTests {
         let store = RuntimeStateStore()
         let evaluator = SwiftUIEvaluator(stateStore: store)
         let syntax = Parser.parse(source: source)
-        store.reset()
 
         let initialView = try evaluator.renderSyntax(from: syntax)
         let initialSnapshot = try ViewSnapshotRenderer.snapshot(from: initialView)
