@@ -1,18 +1,6 @@
 import SwiftUI
 @testable import EvalSwiftUI
 
-struct DictionaryContext: SwiftUIEvaluatorContext {
-    var values: [String: SwiftValue]
-
-    func value(for identifier: String) -> SwiftValue? {
-        values[identifier]
-    }
-
-    func setValue(_ value: SwiftValue?, for identifier: String) {
-        // Immutable test context; ignore writes.
-    }
-}
-
 struct Badge: View {
     let label: String
 

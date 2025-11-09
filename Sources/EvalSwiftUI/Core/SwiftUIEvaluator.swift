@@ -66,22 +66,20 @@ public final class SwiftUIEvaluator {
     }
 
     private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
-        let mergedScope = node.scope.merging(scopeOverrides) { _, new in new }.cloningForCapture()
-        let scopeBox = ScopeBox(storage: mergedScope, isMutable: true)
-        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: scopeBox.storage)
+        let mergedScope = node.scope.merging(scopeOverrides) { _, new in new }
+        let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: mergedScope)
         let view = try viewRegistry.makeView(
             from: node.constructor,
             arguments: resolvedConstructorArguments
         )
         var viewValue = SwiftValue.view(view)
         for modifier in node.modifiers {
-            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: scopeBox.storage)
-            let handlerContext = ScopedEvaluatorContext.withMutableScope(scopeBox, base: self.context)
+            let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: mergedScope)
             viewValue = try memberFunctionRegistry.call(
                 name: modifier.name,
                 baseValue: viewValue,
                 arguments: resolvedModifierArguments,
-                context: handlerContext
+                context: DictionaryContext(values: mergedScope)
             )
         }
 
