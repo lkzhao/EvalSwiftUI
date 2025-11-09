@@ -1,14 +1,23 @@
 import SwiftUI
 
-struct ShadowModifierBuilder: SwiftUIModifierBuilder {
+struct ShadowModifierHandler: MemberFunctionHandler {
     let name = "shadow"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("shadow modifier requires a view receiver.")
+        }
         let color = try decodeColor(from: arguments.first { $0.label == "color" }?.value)
         let radius = try decodeRadius(from: arguments, colorProvided: color != nil)
         let x = try decodeOffset(named: "x", in: arguments)
         let y = try decodeOffset(named: "y", in: arguments)
-        return AnyView(base.shadow(color: color ?? defaultShadowColor, radius: radius, x: x, y: y))
+        return .view(AnyView(baseView.shadow(color: color ?? defaultShadowColor, radius: radius, x: x, y: y)))
     }
 
     private func decodeRadius(from arguments: [ResolvedArgument], colorProvided: Bool) throws -> CGFloat {

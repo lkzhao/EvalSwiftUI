@@ -46,6 +46,7 @@ public indirect enum SwiftValue {
     case state(StateReference)
     case binding(BindingValue)
     case closure(ResolvedClosure)
+    case view(AnyView)
 }
 
 public struct FunctionCallValue {
@@ -122,6 +123,8 @@ extension SwiftValue {
             return "binding"
         case .closure:
             return "closure"
+        case .view:
+            return "view"
         }
     }
 
@@ -145,6 +148,20 @@ extension SwiftValue {
             return reference.read().isOptional
         }
         return false
+    }
+
+    func asAnyView() -> AnyView? {
+        switch resolvingStateReference() {
+        case .view(let view):
+            return view
+        case .optional(let wrapped):
+            guard let wrapped else {
+                return nil
+            }
+            return wrapped.asAnyView()
+        default:
+            return nil
+        }
     }
 
     func equals(_ other: SwiftValue) -> Bool {
@@ -182,6 +199,8 @@ extension SwiftValue {
         case (.binding(let left), .binding(let right)):
             return left.reference.identifier == right.reference.identifier
         case (.closure, .closure):
+            return false
+        case (.view, .view):
             return false
         default:
             return false

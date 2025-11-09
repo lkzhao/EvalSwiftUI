@@ -1,9 +1,18 @@
 import SwiftUI
 
-struct CornerRadiusModifierBuilder: SwiftUIModifierBuilder {
+struct CornerRadiusModifierHandler: MemberFunctionHandler {
     let name = "cornerRadius"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("cornerRadius modifier requires a view receiver.")
+        }
         guard let radiusArgument = arguments.first(where: { $0.label == nil }) ?? arguments.first(where: { $0.label == "radius" }) else {
             throw SwiftUIEvaluatorError.invalidArguments("cornerRadius requires a radius argument.")
         }
@@ -19,7 +28,7 @@ struct CornerRadiusModifierBuilder: SwiftUIModifierBuilder {
         }
         let radius = try radiusArgument.value.asCGFloat(description: "cornerRadius radius")
         let antialiased = try decodeAntialiased(from: arguments.first { $0.label == "antialiased" }?.value)
-        return AnyView(base.cornerRadius(radius, antialiased: antialiased))
+        return .view(AnyView(baseView.cornerRadius(radius, antialiased: antialiased)))
     }
 
     private func decodeAntialiased(from value: SwiftValue?) throws -> Bool {

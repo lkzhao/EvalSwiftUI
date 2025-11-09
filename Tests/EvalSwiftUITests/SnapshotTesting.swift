@@ -73,12 +73,10 @@ func assertSnapshotsMatch<V: View>(
     source: String,
     context: (any SwiftUIEvaluatorContext)? = nil,
     viewBuilders: [any SwiftUIViewBuilder] = [],
-    modifierBuilders: [any SwiftUIModifierBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let evaluator = SwiftUIEvaluator(
         viewBuilders: viewBuilders,
-        modifierBuilders: modifierBuilders,
         context: context
     )
     let evaluated = try evaluator.evaluate(source: source)

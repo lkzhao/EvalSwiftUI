@@ -6,22 +6,30 @@ public final class ExpressionResolver {
     let memberFunctionRegistry: MemberFunctionRegistry
 
     public init(
-        context: (any SwiftUIEvaluatorContext)? = nil,
-        memberFunctionHandlers: [any MemberFunctionHandler] = []
+        context: (any SwiftUIEvaluatorContext)? = nil
     ) {
         self.defaultContext = context
         self.layers = ExpressionResolver.defaultLayers()
-        self.memberFunctionRegistry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
+        self.memberFunctionRegistry = MemberFunctionRegistry()
     }
 
     init(
         context: (any SwiftUIEvaluatorContext)? = nil,
         layers: [any ExpressionResolutionLayer],
-        memberFunctionHandlers: [any MemberFunctionHandler] = []
+        memberFunctionRegistry: MemberFunctionRegistry = MemberFunctionRegistry()
     ) {
         self.defaultContext = context
         self.layers = layers
-        self.memberFunctionRegistry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
+        self.memberFunctionRegistry = memberFunctionRegistry
+    }
+
+    init(
+        context: (any SwiftUIEvaluatorContext)? = nil,
+        memberFunctionRegistry: MemberFunctionRegistry
+    ) {
+        self.defaultContext = context
+        self.layers = ExpressionResolver.defaultLayers()
+        self.memberFunctionRegistry = memberFunctionRegistry
     }
 
     func resolveExpression(

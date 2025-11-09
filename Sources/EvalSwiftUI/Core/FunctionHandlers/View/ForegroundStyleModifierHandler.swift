@@ -1,9 +1,18 @@
 import SwiftUI
 
-struct ForegroundStyleModifierBuilder: SwiftUIModifierBuilder {
+struct ForegroundStyleModifierHandler: MemberFunctionHandler {
     let name = "foregroundStyle"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle modifier requires a view receiver.")
+        }
         guard let argument = arguments.first else {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle requires at least one argument.")
         }
@@ -15,17 +24,17 @@ struct ForegroundStyleModifierBuilder: SwiftUIModifierBuilder {
 
         switch last.lowercased() {
         case "tint":
-            return AnyView(base.foregroundStyle(.tint))
+            return .view(AnyView(baseView.foregroundStyle(.tint)))
         case "primary":
-            return AnyView(base.foregroundStyle(Color.primary))
+            return .view(AnyView(baseView.foregroundStyle(Color.primary)))
         case "secondary":
-            return AnyView(base.foregroundStyle(Color.secondary))
+            return .view(AnyView(baseView.foregroundStyle(Color.secondary)))
         default:
             break
         }
 
         if let color = color(from: last) {
-            return AnyView(base.foregroundStyle(color))
+            return .view(AnyView(baseView.foregroundStyle(color)))
         }
 
         throw SwiftUIEvaluatorError.invalidArguments("Unsupported foreground style \(last).")

@@ -1,14 +1,23 @@
 import SwiftUI
 
-struct FontModifierBuilder: SwiftUIModifierBuilder {
+struct FontModifierHandler: MemberFunctionHandler {
     let name = "font"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("font modifier requires a view receiver.")
+        }
         guard let argument = arguments.first else {
             throw SwiftUIEvaluatorError.invalidArguments("font modifier expects a Font value.")
         }
         let font = try decodeFont(from: argument.value)
-        return AnyView(base.font(font))
+        return .view(AnyView(baseView.font(font)))
     }
 
     private func decodeFont(from value: SwiftValue) throws -> Font {

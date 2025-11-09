@@ -1,21 +1,32 @@
 import SwiftUI
 
-struct PaddingModifierBuilder: SwiftUIModifierBuilder {
+struct PaddingModifierHandler: MemberFunctionHandler {
     let name = "padding"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("padding modifier requires a view receiver.")
+        }
+        let transformed: AnyView
         switch arguments.count {
         case 0:
-            return AnyView(base.padding())
+            transformed = AnyView(baseView.padding())
         case 1:
-            return try applySingleArgument(arguments[0], to: base)
+            transformed = try applySingleArgument(arguments[0], to: baseView)
         case 2:
             let edges = try decodeEdges(from: arguments[0].value)
             let amount = try decodeAmount(from: arguments[1].value)
-            return AnyView(base.padding(edges, amount))
+            transformed = AnyView(baseView.padding(edges, amount))
         default:
             throw SwiftUIEvaluatorError.invalidArguments("Unsupported padding signature.")
         }
+        return .view(transformed)
     }
 
     private func applySingleArgument(_ argument: ResolvedArgument, to base: AnyView) throws -> AnyView {

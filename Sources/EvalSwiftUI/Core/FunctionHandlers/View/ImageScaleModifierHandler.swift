@@ -1,15 +1,24 @@
 import SwiftUI
 
-struct ImageScaleModifierBuilder: SwiftUIModifierBuilder {
+struct ImageScaleModifierHandler: MemberFunctionHandler {
     let name = "imageScale"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("imageScale modifier requires a view receiver.")
+        }
         guard let argument = arguments.first else {
             throw SwiftUIEvaluatorError.invalidArguments("imageScale requires one argument.")
         }
 
         let scale = try decodeScale(from: argument.value)
-        return AnyView(base.imageScale(scale))
+        return .view(AnyView(baseView.imageScale(scale)))
     }
 
     private func decodeScale(from value: SwiftValue) throws -> Image.Scale {

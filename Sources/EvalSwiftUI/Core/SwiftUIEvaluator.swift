@@ -8,31 +8,40 @@ public final class SwiftUIEvaluator {
     private let viewNodeBuilder: ViewNodeBuilder
     private let expressionResolver: ExpressionResolver
     private let viewRegistry: ViewRegistry
-    private let modifierRegistry: ModifierRegistry
+    private let memberFunctionRegistry: MemberFunctionRegistry
     private let context: (any SwiftUIEvaluatorContext)?
     private var inlineInstanceTracker: [InlineInstanceKey: Int] = [:]
     private var inlineInstanceNamespace: [String] = []
 
     public init(expressionResolver: ExpressionResolver? = nil,
                 viewBuilders: [any SwiftUIViewBuilder] = [],
-                modifierBuilders: [any SwiftUIModifierBuilder] = [],
                 memberFunctionHandlers: [any MemberFunctionHandler] = [],
                 context: (any SwiftUIEvaluatorContext)? = nil,
                 stateStore: RuntimeStateStore? = nil) {
         self.context = context
         self.stateStore = stateStore ?? RuntimeStateStore()
-        let resolver = expressionResolver ?? ExpressionResolver(
-            context: context,
-            memberFunctionHandlers: memberFunctionHandlers
-        )
-        self.expressionResolver = resolver
+        if let resolver = expressionResolver {
+            self.expressionResolver = resolver
+            self.memberFunctionRegistry = resolver.memberFunctionRegistry
+            for handler in memberFunctionHandlers {
+                self.memberFunctionRegistry.register(handler: handler)
+            }
+        } else {
+            let registry = MemberFunctionRegistry(additionalHandlers: memberFunctionHandlers)
+            self.memberFunctionRegistry = registry
+            self.expressionResolver = ExpressionResolver(
+                context: context,
+                memberFunctionRegistry: registry
+            )
+        }
+
+        let resolver = self.expressionResolver
         viewNodeBuilder = ViewNodeBuilder(
             expressionResolver: resolver,
             context: context,
             stateStore: self.stateStore
         )
         viewRegistry = ViewRegistry(additionalBuilders: viewBuilders)
-        modifierRegistry = ModifierRegistry(additionalBuilders: modifierBuilders)
     }
 
     @MainActor
@@ -56,19 +65,27 @@ public final class SwiftUIEvaluator {
     private func buildView(from node: ViewNode, scopeOverrides: ExpressionScope = [:]) throws -> AnyView {
         let scope = node.scope.merging(scopeOverrides) { _, new in new }
         let resolvedConstructorArguments = try resolveArguments(node.constructor.arguments, scope: scope)
-        var view = try viewRegistry.makeView(
+        let view = try viewRegistry.makeView(
             from: node.constructor,
             arguments: resolvedConstructorArguments
         )
+        var viewValue = SwiftValue.view(view)
         for modifier in node.modifiers {
             let resolvedModifierArguments = try resolveArguments(modifier.arguments, scope: scope)
-            view = try modifierRegistry.applyModifier(
-                modifier,
+            viewValue = try memberFunctionRegistry.call(
+                name: modifier.name,
+                baseValue: viewValue,
                 arguments: resolvedModifierArguments,
-                to: view
+                resolver: expressionResolver,
+                scope: scope,
+                context: context
             )
         }
-        return view
+
+        guard let finalView = viewValue.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("Modifier chain did not resolve to a view value.")
+        }
+        return finalView
     }
 
     private func resolveArguments(_ arguments: [ArgumentNode], scope: ExpressionScope) throws -> [ResolvedArgument] {
@@ -296,6 +313,7 @@ public final class SwiftUIEvaluator {
         let views = try result.nodes.map { try buildView(from: $0) }
         return wrapInStack(views)
     }
+
 }
 
 private struct InlineInstanceKey: Hashable {

@@ -1,99 +1,78 @@
-import SwiftSyntax
+import SwiftUI
 
 public protocol MemberFunctionHandler {
     var name: String { get }
     func call(
         resolver: ExpressionResolver,
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
         scope: [String: SwiftValue],
         context: (any SwiftUIEvaluatorContext)?
-    ) throws -> SwiftValue?
+    ) throws -> SwiftValue
 }
 
 final class MemberFunctionRegistry {
     private var handlers: [String: any MemberFunctionHandler]
 
     init(additionalHandlers: [any MemberFunctionHandler] = []) {
-        handlers = Self.makeLookup(
-            defaults: Self.defaultHandlers,
-            additional: additionalHandlers
-        )
+        handlers = [:]
+        for handler in Self.defaultHandlers + additionalHandlers {
+            handlers[handler.name] = handler
+        }
     }
 
     func handler(named name: String) -> (any MemberFunctionHandler)? {
         handlers[name]
     }
 
-    private static var defaultHandlers: [any MemberFunctionHandler] {
-        [
-            ContainsMemberFunctionHandler(),
-            ShuffleMemberFunctionHandler(),
-            ShuffledMemberFunctionHandler()
-        ]
+    func register(handler: any MemberFunctionHandler) {
+        handlers[handler.name] = handler
     }
-
-    private static func makeLookup(
-        defaults: [any MemberFunctionHandler],
-        additional: [any MemberFunctionHandler]
-    ) -> [String: any MemberFunctionHandler] {
-        var lookup: [String: any MemberFunctionHandler] = [:]
-        for handler in defaults + additional {
-            lookup[handler.name] = handler
-        }
-        return lookup
-    }
-}
-
-private struct ContainsMemberFunctionHandler: MemberFunctionHandler {
-    let name = "contains"
 
     func call(
+        name: String,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
         resolver: ExpressionResolver,
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax,
         scope: [String: SwiftValue],
         context: (any SwiftUIEvaluatorContext)?
-    ) throws -> SwiftValue? {
-        try resolver.resolveContainsCall(
+    ) throws -> SwiftValue {
+        guard let handler = handler(named: name) else {
+            throw SwiftUIEvaluatorError.unsupportedExpression("Unsupported member function \(name)")
+        }
+        return try handler.call(
+            resolver: resolver,
             baseValue: baseValue,
             arguments: arguments,
             scope: scope,
             context: context
         )
     }
-}
 
-private struct ShuffleMemberFunctionHandler: MemberFunctionHandler {
-    let name = "shuffle"
-
-    func call(
-        resolver: ExpressionResolver,
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax,
-        scope: [String: SwiftValue],
-        context: (any SwiftUIEvaluatorContext)?
-    ) throws -> SwiftValue? {
-        try resolver.resolveShuffleCall(
-            baseValue: baseValue,
-            arguments: arguments
-        )
+    private static var defaultHandlers: [any MemberFunctionHandler] {
+        modifierHandlers + collectionHandlers
     }
-}
 
-private struct ShuffledMemberFunctionHandler: MemberFunctionHandler {
-    let name = "shuffled"
+    private static var modifierHandlers: [any MemberFunctionHandler] {
+        [
+            BackgroundModifierHandler(),
+            CornerRadiusModifierHandler(),
+            FontModifierHandler(),
+            ForegroundStyleModifierHandler(),
+            FrameModifierHandler(),
+            ImageScaleModifierHandler(),
+            OpacityModifierHandler(),
+            OverlayModifierHandler(),
+            PaddingModifierHandler(),
+            ShadowModifierHandler()
+        ]
+    }
 
-    func call(
-        resolver: ExpressionResolver,
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax,
-        scope: [String: SwiftValue],
-        context: (any SwiftUIEvaluatorContext)?
-    ) throws -> SwiftValue? {
-        try resolver.resolveShuffledCall(
-            baseValue: baseValue,
-            arguments: arguments
-        )
+    private static var collectionHandlers: [any MemberFunctionHandler] {
+        [
+            ContainsMemberFunctionHandler(),
+            ShuffleMemberFunctionHandler(),
+            ShuffledMemberFunctionHandler()
+        ]
     }
 }

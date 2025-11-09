@@ -1,33 +1,43 @@
 import SwiftUI
 
-struct BackgroundModifierBuilder: SwiftUIModifierBuilder {
-    let name = "background"
+struct OverlayModifierHandler: MemberFunctionHandler {
+    let name = "overlay"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("overlay modifier requires a view receiver.")
+        }
         let alignment = try decodeAlignment(from: arguments.first { $0.label == "alignment" }?.value)
         let content = try viewContent(from: arguments)
         let renderedViews = try content.renderViews()
-        let backgroundView = try makeCompositeView(from: renderedViews)
+        let overlayView = try makeCompositeView(from: renderedViews)
 
-        return AnyView(
-            base.background(alignment: alignment) {
-                backgroundView
+        let transformed = AnyView(
+            baseView.overlay(alignment: alignment) {
+                overlayView
             }
         )
+        return .view(transformed)
     }
 
     private func viewContent(from arguments: [ResolvedArgument]) throws -> ViewContent {
         guard let closure = arguments.first(where: { argument in
             argument.value.resolvedClosure != nil
         })?.value.resolvedClosure else {
-            throw SwiftUIEvaluatorError.invalidArguments("background requires a trailing content closure.")
+            throw SwiftUIEvaluatorError.invalidArguments("overlay requires a trailing content closure.")
         }
         return try closure.makeViewContent()
     }
 
     private func makeCompositeView(from views: [AnyView]) throws -> AnyView {
         guard !views.isEmpty else {
-            throw SwiftUIEvaluatorError.invalidArguments("background closures must return at least one view.")
+            throw SwiftUIEvaluatorError.invalidArguments("overlay closures must return at least one view.")
         }
 
         if views.count == 1, let first = views.first {

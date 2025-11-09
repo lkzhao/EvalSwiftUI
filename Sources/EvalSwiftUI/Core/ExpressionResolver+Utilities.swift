@@ -549,7 +549,8 @@ extension ExpressionResolver {
         scope: ExpressionScope,
         context: (any SwiftUIEvaluatorContext)?
     ) throws -> SwiftValue? {
-        guard let handler = memberFunctionRegistry.handler(named: memberAccess.declName.baseName.text) else {
+        let functionName = memberAccess.declName.baseName.text
+        guard memberFunctionRegistry.handler(named: functionName) != nil else {
             return nil
         }
 
@@ -563,59 +564,20 @@ extension ExpressionResolver {
             context: context
         )
 
-        return try handler.call(
-            resolver: self,
+        let arguments = try resolveCallArguments(
+            call.arguments,
+            scope: scope,
+            context: context
+        )
+
+        return try memberFunctionRegistry.call(
+            name: functionName,
             baseValue: baseValue,
-            arguments: call.arguments,
+            arguments: arguments,
+            resolver: self,
             scope: scope,
             context: context
         )
-    }
-
-    func resolveContainsCall(
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax,
-        scope: ExpressionScope,
-        context: (any SwiftUIEvaluatorContext)?
-    ) throws -> SwiftValue? {
-        guard let argument = arguments.first, arguments.count == 1 else {
-            throw SwiftUIEvaluatorError.invalidArguments("contains expects exactly one argument.")
-        }
-
-        let element = try resolveExpression(
-            ExprSyntax(argument.expression),
-            scope: scope,
-            context: context
-        )
-
-        return .bool(try containsValue(base: baseValue, element: element))
-    }
-
-    func resolveShuffleCall(
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax
-    ) throws -> SwiftValue? {
-        guard arguments.isEmpty else {
-            throw SwiftUIEvaluatorError.invalidArguments("shuffle does not accept arguments.")
-        }
-
-        let target = try mutableArrayTarget(from: baseValue, functionName: "shuffle")
-        let shuffled = shuffleElements(target.elements)
-        target.writeBack?(shuffled)
-        return .array(shuffled)
-    }
-
-    func resolveShuffledCall(
-        baseValue: SwiftValue,
-        arguments: LabeledExprListSyntax
-    ) throws -> SwiftValue? {
-        guard arguments.isEmpty else {
-            throw SwiftUIEvaluatorError.invalidArguments("shuffled does not accept arguments.")
-        }
-
-        let elements = try arrayElements(from: baseValue, functionName: "shuffled")
-        let shuffled = shuffleElements(elements)
-        return .array(shuffled)
     }
 
     func resolveCallArguments(
@@ -657,7 +619,7 @@ extension ExpressionResolver {
     }
 }
 
-private extension ExpressionResolver {
+extension ExpressionResolver {
     struct MutableArrayTarget {
         let elements: [SwiftValue]
         let writeBack: (([SwiftValue]) -> Void)?

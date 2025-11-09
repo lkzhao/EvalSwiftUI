@@ -1,9 +1,18 @@
 import SwiftUI
 
-struct FrameModifierBuilder: SwiftUIModifierBuilder {
+struct FrameModifierHandler: MemberFunctionHandler {
     let name = "frame"
 
-    func apply(arguments: [ResolvedArgument], to base: AnyView) throws -> AnyView {
+    func call(
+        resolver: ExpressionResolver,
+        baseValue: SwiftValue?,
+        arguments: [ResolvedArgument],
+        scope: ExpressionScope,
+        context: (any SwiftUIEvaluatorContext)?
+    ) throws -> SwiftValue {
+        guard let baseView = baseValue?.asAnyView() else {
+            throw SwiftUIEvaluatorError.invalidArguments("frame modifier requires a view receiver.")
+        }
         var width: CGFloat?
         var height: CGFloat?
         var minWidth: CGFloat?
@@ -55,9 +64,10 @@ struct FrameModifierBuilder: SwiftUIModifierBuilder {
             }
         }
 
+        let transformed: AnyView
         if usesFlexibleSignature {
-            return AnyView(
-                base.frame(
+            transformed = AnyView(
+                baseView.frame(
                     minWidth: minWidth,
                     idealWidth: idealWidth,
                     maxWidth: maxWidth,
@@ -68,8 +78,9 @@ struct FrameModifierBuilder: SwiftUIModifierBuilder {
                 )
             )
         } else {
-            return AnyView(base.frame(width: width, height: height, alignment: alignment))
+            transformed = AnyView(baseView.frame(width: width, height: height, alignment: alignment))
         }
+        return .view(transformed)
     }
 
     private func decodeDimension(from value: SwiftValue) throws -> CGFloat? {
