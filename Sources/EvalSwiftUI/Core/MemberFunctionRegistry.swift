@@ -3,11 +3,9 @@ import SwiftUI
 public protocol MemberFunctionHandler {
     var name: String { get }
     func call(
-        resolver: ExpressionResolver,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        scope: [String: SwiftValue],
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue
 }
 
@@ -33,18 +31,14 @@ final class MemberFunctionRegistry {
         name: String,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        resolver: ExpressionResolver,
-        scope: [String: SwiftValue],
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue {
         guard let handler = handler(named: name) else {
             throw SwiftUIEvaluatorError.unsupportedExpression("Unsupported member function \(name)")
         }
         return try handler.call(
-            resolver: resolver,
             baseValue: baseValue,
             arguments: arguments,
-            scope: scope,
             context: context
         )
     }

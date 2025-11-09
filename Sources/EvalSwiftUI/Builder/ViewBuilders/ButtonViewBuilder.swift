@@ -82,10 +82,3 @@ struct ButtonViewBuilder: SwiftUIViewBuilder {
         }
     }
 }
-
-private extension SwiftValue {
-    var isStringLike: Bool {
-        if case .string = self { return true }
-        return false
-    }
-}

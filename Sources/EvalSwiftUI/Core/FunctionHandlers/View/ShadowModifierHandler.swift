@@ -4,11 +4,9 @@ struct ShadowModifierHandler: MemberFunctionHandler {
     let name = "shadow"
 
     func call(
-        resolver: ExpressionResolver,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        scope: ExpressionScope,
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue {
         guard let baseView = baseValue?.asAnyView() else {
             throw SwiftUIEvaluatorError.invalidArguments("shadow modifier requires a view receiver.")

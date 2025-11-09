@@ -2,11 +2,9 @@ struct ShuffleMemberFunctionHandler: MemberFunctionHandler {
     let name = "shuffle"
 
     func call(
-        resolver: ExpressionResolver,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        scope: ExpressionScope,
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue {
         guard let baseValue else {
             throw SwiftUIEvaluatorError.invalidArguments("shuffle must be called on an array value.")
@@ -15,9 +13,8 @@ struct ShuffleMemberFunctionHandler: MemberFunctionHandler {
             throw SwiftUIEvaluatorError.invalidArguments("shuffle does not accept arguments.")
         }
 
-        let target = try resolver.mutableArrayTarget(from: baseValue, functionName: "shuffle")
-        let shuffled = resolver.shuffleElements(target.elements)
-        target.writeBack?(shuffled)
-        return .array(shuffled)
+        return try baseValue.mutatingArrayValue(functionName: "shuffle") { elements in
+            SwiftValue.shuffleElements(elements)
+        }
     }
 }

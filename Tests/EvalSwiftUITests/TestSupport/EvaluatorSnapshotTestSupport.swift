@@ -2,10 +2,14 @@ import SwiftUI
 @testable import EvalSwiftUI
 
 struct DictionaryContext: SwiftUIEvaluatorContext {
-    let values: [String: SwiftValue]
+    var values: [String: SwiftValue]
 
     func value(for identifier: String) -> SwiftValue? {
         values[identifier]
+    }
+
+    func setValue(_ value: SwiftValue?, for identifier: String) {
+        // Immutable test context; ignore writes.
     }
 }
 

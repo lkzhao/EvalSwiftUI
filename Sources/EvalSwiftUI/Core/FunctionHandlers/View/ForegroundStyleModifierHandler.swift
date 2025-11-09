@@ -4,11 +4,9 @@ struct ForegroundStyleModifierHandler: MemberFunctionHandler {
     let name = "foregroundStyle"
 
     func call(
-        resolver: ExpressionResolver,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        scope: ExpressionScope,
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue {
         guard let baseView = baseValue?.asAnyView() else {
             throw SwiftUIEvaluatorError.invalidArguments("foregroundStyle modifier requires a view receiver.")

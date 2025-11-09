@@ -436,7 +436,7 @@ extension ExpressionResolver {
         case "+":
             let left = try lhs()
             let right = try rhs()
-            if isStringLike(left) || isStringLike(right) {
+            if left.isStringLike || right.isStringLike {
                 return .string(
                     try stringValue(from: left) + stringValue(from: right)
                 )
@@ -504,7 +504,7 @@ extension ExpressionResolver {
             }
             return elements[position]
         case .dictionary(let dictionary):
-            let key = try dictionaryKey(from: index)
+            let key = try index.dictionaryKey()
             if let value = dictionary[key] {
                 return .optional(value)
             }
@@ -517,30 +517,6 @@ extension ExpressionResolver {
         default:
             throw SwiftUIEvaluatorError.invalidArguments("Subscripts are only supported on arrays and dictionaries.")
         }
-    }
-
-    func dictionaryKey(from value: SwiftValue) throws -> String {
-        switch value.resolvingStateReference() {
-        case .string(let string):
-            return string
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                throw SwiftUIEvaluatorError.invalidArguments("Dictionary subscripts cannot use nil keys.")
-            }
-            return try dictionaryKey(from: unwrapped)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("Dictionary subscripts require string keys.")
-        }
-    }
-
-    func isStringLike(_ value: SwiftValue) -> Bool {
-        guard let unwrapped = value.unwrappedOptional() else {
-            return false
-        }
-        if case .string = unwrapped {
-            return true
-        }
-        return false
     }
 
     func resolveMemberFunctionCall(
@@ -570,13 +546,16 @@ extension ExpressionResolver {
             context: context
         )
 
+        let handlerContext = ScopedEvaluatorContext.readOnlyScope(
+            scope: scope,
+            base: context
+        )
+
         return try memberFunctionRegistry.call(
             name: functionName,
             baseValue: baseValue,
             arguments: arguments,
-            resolver: self,
-            scope: scope,
-            context: context
+            context: handlerContext
         )
     }
 
@@ -595,146 +574,4 @@ extension ExpressionResolver {
         }
     }
 
-    func containsValue(
-        base: SwiftValue,
-        element: SwiftValue
-    ) throws -> Bool {
-        let resolvedBase = base.resolvingStateReference()
-        switch resolvedBase {
-        case .array(let elements):
-            return elements.contains { candidate in
-                candidate.equals(element)
-            }
-        case .range(let rangeValue):
-            let value = try integerValue(from: element)
-            return rangeValue.contains(value)
-        case .optional(let wrapped):
-            guard let unwrapped = wrapped?.unwrappedOptional() else {
-                return false
-            }
-            return try containsValue(base: unwrapped, element: element)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("contains is only supported on arrays and ranges.")
-        }
-    }
-}
-
-extension ExpressionResolver {
-    struct MutableArrayTarget {
-        let elements: [SwiftValue]
-        let writeBack: (([SwiftValue]) -> Void)?
-    }
-
-    func mutableArrayTarget(
-        from baseValue: SwiftValue,
-        functionName: String
-    ) throws -> MutableArrayTarget {
-        switch baseValue {
-        case .state(let reference):
-            let storage = reference.read()
-            let elements = try extractArrayElements(from: storage, functionName: functionName)
-            return MutableArrayTarget(
-                elements: elements,
-                writeBack: { newElements in
-                    reference.write(self.wrapArrayValue(newElements, matching: storage))
-                }
-            )
-        case .binding(let binding):
-            let storage = binding.read()
-            let elements = try extractArrayElements(from: storage, functionName: functionName)
-            return MutableArrayTarget(
-                elements: elements,
-                writeBack: { newElements in
-                    binding.write(self.wrapArrayValue(newElements, matching: storage))
-                }
-            )
-        case .optional(let wrapped):
-            guard let wrapped else {
-                throw SwiftUIEvaluatorError.invalidArguments("\(functionName) cannot operate on nil optionals.")
-            }
-            return try mutableArrayTarget(from: wrapped, functionName: functionName)
-        default:
-            let elements = try arrayElements(from: baseValue, functionName: functionName)
-            return MutableArrayTarget(elements: elements, writeBack: nil)
-        }
-    }
-
-    func arrayElements(
-        from value: SwiftValue,
-        functionName: String
-    ) throws -> [SwiftValue] {
-        switch value {
-        case .binding(let binding):
-            return try extractArrayElements(from: binding.read(), functionName: functionName)
-        default:
-            return try extractArrayElements(
-                from: value.resolvingStateReference(),
-                functionName: functionName
-            )
-        }
-    }
-
-    func extractArrayElements(
-        from storage: SwiftValue,
-        functionName: String
-    ) throws -> [SwiftValue] {
-        switch storage {
-        case .array(let elements):
-            return elements
-        case .optional(let wrapped):
-            guard let wrapped else {
-                throw SwiftUIEvaluatorError.invalidArguments("\(functionName) cannot operate on nil optionals.")
-            }
-            return try extractArrayElements(from: wrapped, functionName: functionName)
-        default:
-            throw SwiftUIEvaluatorError.invalidArguments("\(functionName) is only supported on arrays.")
-        }
-    }
-
-    func wrapArrayValue(_ elements: [SwiftValue], matching template: SwiftValue) -> SwiftValue {
-        let arrayValue: SwiftValue = .array(elements)
-        switch template {
-        case .optional(let wrapped):
-            guard let wrapped else {
-                return .optional(arrayValue)
-            }
-            return .optional(wrapArrayValue(elements, matching: wrapped))
-        default:
-            return arrayValue
-        }
-    }
-
-    func shuffleElements(_ elements: [SwiftValue]) -> [SwiftValue] {
-        guard elements.count > 1 else {
-            return elements
-        }
-
-        var shuffled = elements
-        var generator = SystemRandomNumberGenerator()
-        for index in stride(from: shuffled.count - 1, through: 1, by: -1) {
-            let random = Int(generator.next() % UInt64(index + 1))
-            if index != random {
-                shuffled.swapAt(index, random)
-            }
-        }
-
-        if arraysEqual(shuffled, elements) {
-            let reversed = Array(elements.reversed())
-            if !arraysEqual(reversed, elements) {
-                return reversed
-            }
-        }
-
-        return shuffled
-    }
-
-    func arraysEqual(_ lhs: [SwiftValue], _ rhs: [SwiftValue]) -> Bool {
-        guard lhs.count == rhs.count else { return false }
-        for (left, right) in zip(lhs, rhs) {
-            if !left.equals(right) {
-                return false
-            }
-        }
-        return true
-    }
 }

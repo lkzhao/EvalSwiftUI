@@ -4,11 +4,9 @@ struct ImageScaleModifierHandler: MemberFunctionHandler {
     let name = "imageScale"
 
     func call(
-        resolver: ExpressionResolver,
         baseValue: SwiftValue?,
         arguments: [ResolvedArgument],
-        scope: ExpressionScope,
-        context: (any SwiftUIEvaluatorContext)?
+        context: any SwiftUIEvaluatorContext
     ) throws -> SwiftValue {
         guard let baseView = baseValue?.asAnyView() else {
             throw SwiftUIEvaluatorError.invalidArguments("imageScale modifier requires a view receiver.")
