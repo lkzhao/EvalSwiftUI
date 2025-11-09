@@ -19,6 +19,10 @@ let package = Package(
             name: "EvalSwiftUI",
             targets: ["EvalSwiftUI"]
         ),
+        .library(
+            name: "EvalSwiftIR",
+            targets: ["EvalSwiftIR"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0-latest"),
@@ -26,6 +30,13 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
+        .target(
+            name: "EvalSwiftIR",
+            dependencies: [
+                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax")
+            ]
+        ),
         .target(
             name: "EvalSwiftUI",
             dependencies: [

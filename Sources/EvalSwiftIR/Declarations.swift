@@ -1,0 +1,38 @@
+public struct ModuleIR {
+    public let bindings: [BindingIR]
+    public let functions: [FunctionIR]
+    public let views: [ViewDefinitionIR]
+    public let statements: [StatementIR]
+}
+
+public struct ViewDefinitionIR {
+    public let name: String
+    public let properties: [PropertyIR]
+    public let methods: [FunctionIR]
+    public let bodyStatements: [StatementIR]
+}
+
+public struct PropertyIR {
+    public let name: String
+    public let typeAnnotation: String?
+    public let initializer: ExprIR?
+}
+
+public struct BindingIR {
+    public let name: String
+    public let typeAnnotation: String?
+    public let initializer: ExprIR?
+}
+
+public struct FunctionIR {
+    public let name: String
+    public let parameters: [FunctionParameterIR]
+    public let returnType: String?
+    public let body: [StatementIR]
+}
+
+public struct FunctionParameterIR {
+    public let externalName: String?
+    public let internalName: String
+    public let typeAnnotation: String?
+}
