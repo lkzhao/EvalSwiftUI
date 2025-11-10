@@ -9,6 +9,8 @@ public final class RuntimeModule {
 
     public init(ir: ModuleIR) {
         self.ir = ir
+        registerViewBuilder(TextRuntimeViewBuilder())
+        registerViewBuilder(VStackRuntimeViewBuilder())
         compileBindings()
     }
 
