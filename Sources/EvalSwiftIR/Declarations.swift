@@ -22,6 +22,7 @@ public struct FunctionIR {
 }
 
 public struct FunctionParameterIR {
+    public let label: String?
     public let name: String
 }
 

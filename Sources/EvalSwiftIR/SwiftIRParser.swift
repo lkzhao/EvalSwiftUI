@@ -88,7 +88,9 @@ public struct SwiftIRParser {
 
     private func makeParameter(_ parameter: FunctionParameterSyntax) -> FunctionParameterIR {
         let firstName = parameter.firstName.text
-        return FunctionParameterIR(name: parameter.secondName?.text ?? firstName)
+        let label = firstName == "_" ? nil : firstName
+        let name = parameter.secondName?.text ?? firstName
+        return FunctionParameterIR(label: label, name: name)
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
