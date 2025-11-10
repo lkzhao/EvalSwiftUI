@@ -29,11 +29,17 @@ public struct FunctionParameterIR {
 public indirect enum ExprIR {
     case identifier(String)
     case literal(String)
+    case stringInterpolation([StringInterpolationSegmentIR])
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
     case function(FunctionIR)
     case view(ViewDefinitionIR)
     case unknown(String)
+}
+
+public enum StringInterpolationSegmentIR {
+    case literal(String)
+    case expression(ExprIR)
 }
 
 public struct FunctionCallArgumentIR {

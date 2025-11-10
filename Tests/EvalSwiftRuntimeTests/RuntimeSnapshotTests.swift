@@ -18,6 +18,50 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersInterpolatedTextLiteral() throws {
+        let source = """
+        struct GreetingView: View {
+            var name: String = "World"
+
+            var body: some View {
+                Text("Hello, \\(name)!")
+            }
+        }
+
+        GreetingView()
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            Text("Hello, World!")
+        }
+    }
+
+    @Test func rendersStatefulCountView() throws {
+        let source = """
+        struct CountView: View {
+            @State var count: Int = 0
+
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text("Count: \\(count)")
+                    Button("Increase") {
+                        count = count + 1
+                    }
+                }
+            }
+        }
+
+        CountView()
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("Count: 0")
+                Button("Increase") {}
+            }
+        }
+    }
+
     @Test func wrapsMultipleTopLevelViewsInVStack() throws {
         let source = """
         Text("First")

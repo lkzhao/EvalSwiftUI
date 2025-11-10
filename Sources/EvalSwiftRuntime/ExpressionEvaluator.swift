@@ -26,6 +26,19 @@ struct ExpressionEvaluator {
                 return .array(values)
             }
             return .string(raw.trimmingCharacters(in: CharacterSet(charactersIn: "\"")))
+        case .stringInterpolation(let segments):
+            let resolved = try segments.map { segment -> String in
+                switch segment {
+                case .literal(let literal):
+                    return literal
+                case .expression(let expr):
+                    guard let value = try evaluate(expression: expr) else {
+                        return ""
+                    }
+                    return stringValue(from: value)
+                }
+            }.joined()
+            return .string(resolved)
         case .view(let definition):
             let compiled = CompiledViewDefinition(ir: definition, module: module)
             return .viewDefinition(compiled)
@@ -71,5 +84,12 @@ struct ExpressionEvaluator {
     private func identifierName(from expr: ExprIR) -> String? {
         if case .identifier(let name) = expr { return name }
         return nil
+    }
+
+    private func stringValue(from value: RuntimeValue) -> String {
+        if let string = value.asString {
+            return string
+        }
+        return value.description
     }
 }

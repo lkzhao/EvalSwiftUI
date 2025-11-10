@@ -186,7 +186,33 @@ public struct SwiftIRParser {
         }
 
         if let literal = expr.as(StringLiteralExprSyntax.self) {
-            return .literal(literal.segments.description)
+            let containsInterpolation = literal.segments.contains(where: { $0.as(ExpressionSegmentSyntax.self) != nil })
+
+            if !containsInterpolation {
+                let text = literal.segments.compactMap { segment -> String? in
+                    segment.as(StringSegmentSyntax.self)?.content.text
+                }.joined()
+                return .literal(text)
+            }
+
+            var segments: [StringInterpolationSegmentIR] = []
+            for segment in literal.segments {
+                if let stringSegment = segment.as(StringSegmentSyntax.self) {
+                    segments.append(.literal(stringSegment.content.text))
+                    continue
+                }
+
+                if let interpolation = segment.as(ExpressionSegmentSyntax.self) {
+                    guard interpolation.expressions.count == 1,
+                          let expression = interpolation.expressions.first else {
+                        return .unknown(literal.trimmedDescription)
+                    }
+                    segments.append(.expression(makeExpr(expression.expression)))
+                    continue
+                }
+            }
+
+            return .stringInterpolation(segments)
         }
 
         if let literal = expr.as(BooleanLiteralExprSyntax.self) {

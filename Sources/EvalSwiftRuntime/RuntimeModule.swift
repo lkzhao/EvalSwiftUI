@@ -11,6 +11,7 @@ public final class RuntimeModule {
         self.ir = ir
         registerViewBuilder(TextRuntimeViewBuilder())
         registerViewBuilder(VStackRuntimeViewBuilder())
+        registerViewBuilder(ButtonRuntimeViewBuilder())
         compileBindings()
     }
 
