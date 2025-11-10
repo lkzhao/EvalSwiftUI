@@ -4,47 +4,37 @@ import EvalSwiftIR
 public final class CompiledViewDefinition {
     public let ir: ViewDefinitionIR
     private unowned let module: RuntimeModule
-    private let parameters: [FunctionParameterIR]
 
     init(ir: ViewDefinitionIR, module: RuntimeModule) {
         self.ir = ir
         self.module = module
-        self.parameters = CompiledViewDefinition.makeParameters(from: ir.bindings)
     }
 
     public func instantiate(scope: RuntimeScope, parameters: [RuntimeParameter] = []) throws -> RuntimeValue {
         let localScope = RuntimeScope(parent: scope)
-        try initializeBindings(in: localScope, arguments: parameters)
-        let interpreter = StatementInterpreter(module: module, scope: localScope)
-        return try interpreter.execute(statements: ir.body)
+        try initializeInstanceBindings(in: localScope)
+        try runInitializer(in: localScope, arguments: parameters)
+        guard let bodyValue = localScope.get("body"), case .function(let bodyFunction) =  bodyValue else {
+            throw RuntimeError.unsupportedExpression("View definitions must provide a body binding")
+        }
+        return try bodyFunction.invoke(arguments: [], scope: localScope)
     }
 
-    private func initializeBindings(in localScope: RuntimeScope, arguments: [RuntimeParameter]) throws {
-        let parser = ArgumentParser(parameters: parameters)
-        let parameterNames = Set(parameters.map { $0.name })
-
-        try parser.bind(arguments: arguments, into: localScope, module: module)
-
-        for binding in ir.bindings where !parameterNames.contains(binding.name) {
-            guard let initializer = binding.initializer else { continue }
-            let value = try module.evaluate(expression: initializer, scope: localScope) ?? .void
-            localScope.set(binding.name, value: value)
+    private func runInitializer(in scope: RuntimeScope, arguments: [RuntimeParameter]) throws {
+        guard case .function(let initializer) = scope.get("init") else {
+            throw RuntimeError.noInitializer
         }
+        _ = try initializer.invoke(arguments: arguments, scope: scope)
     }
 
-    private static func makeParameters(from bindings: [BindingIR]) -> [FunctionParameterIR] {
-        bindings.compactMap { binding in
-            guard !binding.isFunctionBinding else { return nil }
-            return FunctionParameterIR(label: binding.name, name: binding.name, defaultValue: binding.initializer)
+    private func initializeInstanceBindings(in scope: RuntimeScope) throws {
+        for binding in ir.bindings {
+            if let initializer = binding.initializer {
+                let value = try module.evaluate(expression: initializer, scope: scope) ?? .void
+                scope.set(binding.name, value: value)
+            } else {
+                scope.set(binding.name, value: .void)
+            }
         }
-    }
-}
-
-private extension BindingIR {
-    var isFunctionBinding: Bool {
-        if case .some(.function) = initializer {
-            return true
-        }
-        return false
     }
 }

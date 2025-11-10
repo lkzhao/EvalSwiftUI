@@ -71,31 +71,14 @@ public final class RuntimeModule {
 
     public func runtimeViews(from function: CompiledFunction, scope: RuntimeScope) throws -> [RuntimeView] {
         let closureScope = RuntimeScope(parent: scope)
-        let evaluator = ExpressionEvaluator(module: self, scope: closureScope)
         var collected: [RuntimeView] = []
 
-        func handleValue(_ value: RuntimeValue?) {
-            guard let value else { return }
+        let interpreter = StatementInterpreter(module: self, scope: closureScope)
+        _ = try interpreter.execute(statements: function.ir.body) { value in
             if case .view(let view) = value {
                 collected.append(view)
             }
         }
-
-        for statement in function.ir.body {
-            switch statement {
-            case .binding(let binding):
-                let value = try evaluator.evaluate(expression: binding.initializer) ?? .void
-                closureScope.set(binding.name, value: value)
-            case .expression(let expression):
-                handleValue(try evaluator.evaluate(expression: expression))
-            case .return(let returnStmt):
-                handleValue(try evaluator.evaluate(expression: returnStmt.value))
-                return collected
-            case .unhandled(let raw):
-                throw RuntimeError.unsupportedExpression(raw)
-            }
-        }
-
         return collected
     }
 

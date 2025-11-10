@@ -51,28 +51,41 @@ public struct SwiftIRParser {
 
         let members: MemberBlockItemListSyntax = node.memberBlock.members
 
-        var bindings: [BindingIR] = []
-        var bodyStatements: [StatementIR] = []
+        var instanceBindings: [BindingIR] = []
+        var storedProperties: [BindingIR] = []
+        var hasExplicitInitializer = false
 
         for member in members {
             if let variable = member.decl.as(VariableDeclSyntax.self) {
-                if let body = makeBodyStatements(from: variable) {
-                    bodyStatements = body
+                if let computedBinding = makeComputedBinding(from: variable) {
+                    instanceBindings.append(computedBinding)
                     continue
                 }
-                bindings.append(contentsOf: makeBindingList(from: variable))
+
+                let bindings = makeBindingList(from: variable)
+                storedProperties.append(contentsOf: bindings)
+                instanceBindings.append(contentsOf: bindings)
                 continue
             }
 
             if let functionDecl = member.decl.as(FunctionDeclSyntax.self) {
-                bindings.append(makeFunctionBinding(from: functionDecl))
+                let binding = makeFunctionBinding(from: functionDecl)
+                instanceBindings.append(binding)
+                continue
+            }
+
+            if let initializerDecl = member.decl.as(InitializerDeclSyntax.self) {
+                instanceBindings.append(makeInitializerBinding(from: initializerDecl))
+                hasExplicitInitializer = true
+                continue
             }
         }
 
-        return ViewDefinitionIR(
-            bindings: bindings,
-            body: bodyStatements
-        )
+        if !hasExplicitInitializer {
+            instanceBindings.insert(synthesizeInitializer(from: storedProperties), at: 0)
+        }
+
+        return ViewDefinitionIR(bindings: instanceBindings)
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
@@ -129,6 +142,10 @@ public struct SwiftIRParser {
             if let varDecl = statement.item.as(VariableDeclSyntax.self),
                let binding = makeBinding(from: varDecl) {
                 return .binding(binding)
+            }
+
+            if let assignment = makeAssignment(from: statement) {
+                return .assignment(assignment)
             }
 
             if let exprStmt = statement.item.as(ExpressionStmtSyntax.self) {
@@ -226,29 +243,80 @@ public struct SwiftIRParser {
         return inheritance.inheritedTypes.contains { $0.type.trimmedDescription == "View" }
     }
 
-    private func makeBodyStatements(from node: VariableDeclSyntax) -> [StatementIR]? {
+    private func makeComputedBinding(from node: VariableDeclSyntax) -> BindingIR? {
         guard node.bindings.count == 1,
               let binding = node.bindings.first,
-              let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
-              pattern.identifier.text == "body",
-              let accessorBlock = binding.accessorBlock else {
+              binding.accessorBlock != nil,
+              let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
             return nil
         }
-        let statements: [StatementIR]?
+
+        guard let getterStatements = makeAccessorStatements(from: binding) else {
+            return nil
+        }
+
+        let functionIR = FunctionIR(
+            parameters: [],
+            returnType: binding.typeAnnotation?.type.trimmedDescription,
+            body: getterStatements
+        )
+
+        return BindingIR(
+            name: pattern.identifier.text,
+            typeAnnotation: binding.typeAnnotation?.type.trimmedDescription,
+            initializer: .function(functionIR)
+        )
+    }
+
+    private func makeInitializerBinding(from node: InitializerDeclSyntax) -> BindingIR {
+        let params = node.signature.parameterClause.parameters.map(makeParameter)
+        let bodyStatements = node.body.map(makeStatements) ?? []
+        let functionIR = FunctionIR(parameters: params, returnType: nil, body: bodyStatements)
+        return BindingIR(name: "init", typeAnnotation: nil, initializer: .function(functionIR))
+    }
+
+    private func synthesizeInitializer(from properties: [BindingIR]) -> BindingIR {
+        let parameters = properties.map { property in
+            FunctionParameterIR(label: property.name, name: property.name, defaultValue: property.initializer)
+        }
+        let assignments: [StatementIR] = properties.map { property in
+            let target = ExprIR.member(base: .identifier("self"), name: property.name)
+            let value = ExprIR.identifier(property.name)
+            return .assignment(AssignmentIR(target: target, value: value))
+        }
+        let functionIR = FunctionIR(parameters: parameters, returnType: nil, body: assignments)
+        return BindingIR(name: "init", typeAnnotation: nil, initializer: .function(functionIR))
+    }
+
+    private func makeAccessorStatements(from binding: PatternBindingSyntax) -> [StatementIR]? {
+        guard let accessorBlock = binding.accessorBlock else { return nil }
 
         switch accessorBlock.accessors {
         case .getter(let getterStatements):
-            statements = makeStatements(from: getterStatements)
+            return makeStatements(from: getterStatements)
         case .accessors(let accessorList):
             if let getter = accessorList.first(where: { $0.accessorSpecifier.tokenKind == .keyword(.get) }),
                let body = getter.body {
-                statements = makeStatements(from: body.statements)
-            } else {
-                statements = nil
+                return makeStatements(from: body.statements)
             }
+            return nil
         }
-
-        return statements
     }
 
+    private func makeAssignment(from item: CodeBlockItemSyntax) -> AssignmentIR? {
+        guard let sequence = item.item.as(SequenceExprSyntax.self) else { return nil }
+        let elements = Array(sequence.elements)
+        guard elements.count == 3,
+              elements[1].as(AssignmentExprSyntax.self) != nil else {
+            return nil
+        }
+        return AssignmentIR(target: makeExpr(elements[0]), value: makeExpr(elements[2]))
+    }
+
+}
+
+private struct StoredProperty {
+    let name: String
+    let typeAnnotation: String?
+    let initializer: ExprIR?
 }

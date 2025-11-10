@@ -8,7 +8,9 @@ public enum RuntimeError: Error, CustomStringConvertible {
     case unsupportedExpression(String)
     case invalidViewResult(String)
     case invalidViewArgument(String)
+    case noInitializer
     case returnOutsideFunction
+    case unsupportedAssignment(String)
 
     public var description: String {
         switch self {
@@ -18,6 +20,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             return "Unknown function: \(name)"
         case .unknownView(let name):
             return "Unknown view: \(name)"
+        case .noInitializer:
+            return "No initializer"
         case .invalidArgumentCount(let expected, let got, let function):
             return "Function \(function) expected \(expected) arguments but received \(got)."
         case .unsupportedExpression(let description):
@@ -28,6 +32,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             return "Invalid view argument: \(description)"
         case .returnOutsideFunction:
             return "Return statement encountered outside of a function context."
+        case .unsupportedAssignment(let description):
+            return "Unsupported assignment: \(description)"
         }
     }
 }

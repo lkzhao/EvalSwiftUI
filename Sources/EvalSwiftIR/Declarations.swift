@@ -6,7 +6,6 @@ public struct ModuleIR {
 
 public struct ViewDefinitionIR {
     public let bindings: [BindingIR]
-    public let body: [StatementIR]
 }
 
 public struct BindingIR {
@@ -25,12 +24,6 @@ public struct FunctionParameterIR {
     public let label: String?
     public let name: String
     public let defaultValue: ExprIR?
-
-    public init(label: String?, name: String, defaultValue: ExprIR?) {
-        self.label = label
-        self.name = name
-        self.defaultValue = defaultValue
-    }
 }
 
 public indirect enum ExprIR {
@@ -52,9 +45,15 @@ public enum StatementIR {
     case binding(BindingIR)
     case expression(ExprIR)
     case `return`(ReturnIR)
+    case assignment(AssignmentIR)
     case unhandled(String)
 }
 
 public struct ReturnIR {
     public let value: ExprIR?
+}
+
+public struct AssignmentIR {
+    public let target: ExprIR
+    public let value: ExprIR
 }

@@ -167,6 +167,57 @@ struct RuntimeViewDefinitionTests {
         #expect(view.parameters.first?.value.asString == "Injected")
     }
 
+    @Test func explicitInitializerAssignsStoredProperties() throws {
+        let source = """
+        struct ExplicitInitView: View {
+            var title: String
+
+            init(title: String) {
+                self.title = title
+            }
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "ExplicitInitView", from: module)
+        let parameters = [RuntimeParameter(label: "title", value: .string("Initializer"))]
+        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Initializer")
+    }
+
+    @Test func synthesizedInitializerProvidesDefaultValues() throws {
+        let source = """
+        struct SynthesizedInitView: View {
+            var title: String = "Synthed"
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "SynthesizedInitView", from: module)
+        let rendered = try compiled.instantiate(scope: module.globalScope)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Synthed")
+    }
+
     @MainActor
     @Test func makeSwiftUIViewRendersText() throws {
         let source = """
