@@ -6,7 +6,7 @@ public struct ModuleIR {
 
 public struct ViewDefinitionIR {
     public let bindings: [BindingIR]
-    public let bodyStatements: [StatementIR]
+    public let body: [StatementIR]
 }
 
 public struct BindingIR {
@@ -23,4 +23,30 @@ public struct FunctionIR {
 
 public struct FunctionParameterIR {
     public let name: String
+}
+
+public indirect enum ExprIR {
+    case identifier(String)
+    case literal(String)
+    case member(base: ExprIR, name: String)
+    case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
+    case function(FunctionIR)
+    case view(ViewDefinitionIR)
+    case unknown(String)
+}
+
+public struct FunctionCallArgumentIR {
+    public let label: String?
+    public let value: ExprIR
+}
+
+public enum StatementIR {
+    case binding(BindingIR)
+    case expression(ExprIR)
+    case `return`(ReturnIR)
+    case unhandled(String)
+}
+
+public struct ReturnIR {
+    public let value: ExprIR?
 }

@@ -14,7 +14,7 @@ public final class CompiledViewDefinition {
         let localScope = RuntimeScope(parent: scope)
         try initializeBindings(in: localScope)
         let interpreter = StatementInterpreter(module: module, scope: localScope)
-        return try interpreter.execute(statements: ir.bodyStatements)
+        return try interpreter.execute(statements: ir.body)
     }
 
     private func initializeBindings(in localScope: RuntimeScope) throws {

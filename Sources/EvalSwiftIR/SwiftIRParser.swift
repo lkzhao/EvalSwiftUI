@@ -13,14 +13,8 @@ public struct SwiftIRParser {
             let node = item.item
 
             if let structDecl = node.as(StructDeclSyntax.self),
-               let entry = makeViewDefinition(from: structDecl) {
-                bindings.append(BindingIR(name: entry.name, typeAnnotation: nil, initializer: .view(entry.definition)))
-                continue
-            }
-
-            if let classDecl = node.as(ClassDeclSyntax.self),
-               let entry = makeViewDefinition(from: classDecl) {
-                bindings.append(BindingIR(name: entry.name, typeAnnotation: nil, initializer: .view(entry.definition)))
+               let definition = makeViewDefinition(from: structDecl) {
+                bindings.append(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .view(definition)))
                 continue
             }
 
@@ -52,22 +46,10 @@ public struct SwiftIRParser {
         )
     }
 
-    private func makeViewDefinition(from node: SyntaxProtocol) -> (name: String, definition: ViewDefinitionIR)? {
+    private func makeViewDefinition(from node: StructDeclSyntax) -> ViewDefinitionIR? {
         guard conformsToView(node) else { return nil }
 
-        let name: String
-        let members: MemberBlockItemListSyntax
-
-        switch node {
-        case let structDecl as StructDeclSyntax:
-            name = structDecl.name.text
-            members = structDecl.memberBlock.members
-        case let classDecl as ClassDeclSyntax:
-            name = classDecl.name.text
-            members = classDecl.memberBlock.members
-        default:
-            return nil
-        }
+        let members: MemberBlockItemListSyntax = node.memberBlock.members
 
         var bindings: [BindingIR] = []
         var bodyStatements: [StatementIR] = []
@@ -87,11 +69,10 @@ public struct SwiftIRParser {
             }
         }
 
-        let definition = ViewDefinitionIR(
+        return ViewDefinitionIR(
             bindings: bindings,
-            bodyStatements: bodyStatements
+            body: bodyStatements
         )
-        return (name: name, definition: definition)
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
