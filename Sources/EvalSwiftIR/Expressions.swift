@@ -8,12 +8,8 @@ public indirect enum ExprIR {
     case unknown(String)
 }
 
+@PublicMemberwiseInit
 public struct FunctionCallArgumentIR {
     public let label: String?
     public let value: ExprIR
-
-    public init(label: String?, value: ExprIR) {
-        self.label = label
-        self.value = value
-    }
 }

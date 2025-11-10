@@ -5,10 +5,7 @@ public enum StatementIR {
     case unhandled(String)
 }
 
+@PublicMemberwiseInit
 public struct ReturnIR {
     public let value: ExprIR?
-
-    public init(value: ExprIR?) {
-        self.value = value
-    }
 }

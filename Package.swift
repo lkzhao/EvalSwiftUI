@@ -38,7 +38,16 @@ let package = Package(
             name: "EvalSwiftIR",
             dependencies: [
                 .product(name: "SwiftParser", package: "swift-syntax"),
-                .product(name: "SwiftSyntax", package: "swift-syntax")
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                "Macros"
+            ]
+        ),
+        .macro(
+            name: "Macros",
+            dependencies: [
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
             ]
         ),
         .target(
@@ -54,19 +63,11 @@ let package = Package(
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
             ]
         ),
-        .macro(
-            name: "EvalSwiftUIMacros",
-            dependencies: [
-                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
-            ]
-        ),
         .testTarget(
             name: "EvalSwiftUITests",
             dependencies: [
                 "EvalSwiftUI",
-                "EvalSwiftUIMacros"
+                "Macros"
             ]
         ),
         .testTarget(
