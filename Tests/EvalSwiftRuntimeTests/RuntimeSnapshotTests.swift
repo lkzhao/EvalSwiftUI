@@ -4,6 +4,56 @@ import Testing
 
 @MainActor
 struct RuntimeSnapshotTests {
+    @Test func rendersTopLevelVStackExpression() throws {
+        let source = """
+        VStack {
+            Text("Hello world!")
+        }
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            VStack {
+                Text("Hello world!")
+            }
+        }
+    }
+
+    @Test func wrapsMultipleTopLevelViewsInVStack() throws {
+        let source = """
+        Text("First")
+        Text("Second")
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            VStack {
+                Text("First")
+                Text("Second")
+            }
+        }
+    }
+
+    @Test func rendersTopLevelStructInvocation() throws {
+        let source = """
+        struct CountView: View {
+            var count: Int = 0
+
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text("Count: \\(count)")
+                }
+            }
+        }
+
+        CountView()
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("Count: 0")
+            }
+        }
+    }
+
     @Test func rendersTextSnapshotMatchesExpectedView() throws {
         let source = """
         Text("Runtime Snapshot")

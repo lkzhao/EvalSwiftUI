@@ -73,14 +73,16 @@ enum RuntimeViewSnapshotRenderer {
 func assertSnapshotsMatch<V: View>(
     source: String,
     viewName: String = "SnapshotView",
-    configureModule: ((RuntimeModule) -> Void)? = nil,
+    viewBuilders: [any RuntimeViewBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let moduleSource = runtimeModuleSource(for: source, viewName: viewName)
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: moduleSource)
     let module = RuntimeModule(ir: moduleIR)
-    configureModule?(module)
+    for builder in viewBuilders {
+        module.registerViewBuilder(builder)
+    }
 
     let evaluatedView = try module.makeSwiftUIView(
         typeName: viewName,
@@ -88,6 +90,25 @@ func assertSnapshotsMatch<V: View>(
         scope: module.globalScope
     )
 
+    let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
+    let expectedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: expectedView())
+    #expect(evaluatedSnapshot == expectedSnapshot)
+}
+
+@MainActor
+func assertTopLevelSnapshotsMatch<V: View>(
+    source: String,
+    viewBuilders: [any RuntimeViewBuilder] = [],
+    @ViewBuilder expected expectedView: () -> V
+) throws {
+    let parser = SwiftIRParser()
+    let moduleIR = parser.parseModule(source: source)
+    let module = RuntimeModule(ir: moduleIR)
+    for builder in viewBuilders {
+        module.registerViewBuilder(builder)
+    }
+
+    let evaluatedView = try module.makeTopLevelSwiftUIViews()
     let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
     let expectedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: expectedView())
     #expect(evaluatedSnapshot == expectedSnapshot)

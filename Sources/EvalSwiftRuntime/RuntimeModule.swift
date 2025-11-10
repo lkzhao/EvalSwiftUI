@@ -56,6 +56,36 @@ public final class RuntimeModule {
         throw RuntimeError.unknownView(typeName)
     }
 
+    public func makeTopLevelSwiftUIViews() throws -> AnyView {
+        let statementScope = RuntimeScope(parent: globals)
+        var runtimeViews: [RuntimeView] = []
+
+        let interpreter = StatementInterpreter(module: self, scope: statementScope)
+        _ = try interpreter.execute(statements: ir.statements) { value in
+            if case .view(let runtimeView) = value {
+                runtimeViews.append(runtimeView)
+            }
+        }
+
+        guard !runtimeViews.isEmpty else {
+            throw RuntimeError.invalidViewResult("Top-level statements did not produce any SwiftUI views")
+        }
+
+        let swiftUIViews = try runtimeViews.map { runtimeView in
+            try makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, scope: statementScope)
+        }
+
+        if swiftUIViews.count == 1, let first = swiftUIViews.first {
+            return first
+        }
+
+        return AnyView(VStack {
+            ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
+                view
+            }
+        })
+    }
+
     // MARK: - Compilation
 
     private func compileBindings() {
