@@ -6,6 +6,7 @@ The Swift package root tracks dependencies in `Package.swift` and pins versions 
 ## Build, Test, and Development Commands
 - `swift build` — default debug build; add `-c release` before publishing binaries.
 - `swift test` — runs the `@Test` suites in `EvalSwiftUITests`.
+- Always run `swift test` outside of the sandbox to avoid SwiftPM manifest failures.
 - `swift test --filter SwiftUIEvaluatorSuccessTests/rendersTextLiteral` — scope runs while iterating on a scenario.
 - `swift package resolve` — refreshes dependency pins when upgrading `swift-syntax`.
 Use `swift build --target EvalSwiftUI` when validating individual modules, and run commands from the repo root to keep derived data tidy.

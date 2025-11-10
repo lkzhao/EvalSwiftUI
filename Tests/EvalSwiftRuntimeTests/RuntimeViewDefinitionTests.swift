@@ -169,7 +169,7 @@ struct RuntimeViewDefinitionTests {
 private struct TextRuntimeViewBuilder: RuntimeViewBuilder {
     let typeName = "Text"
 
-    func makeSwiftUIView(parameters: [RuntimeView.Parameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
+    func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
         guard let first = parameters.first, let string = first.value.asString else {
             throw RuntimeError.invalidViewArgument("Text expects a string parameter")
         }
@@ -180,7 +180,7 @@ private struct TextRuntimeViewBuilder: RuntimeViewBuilder {
 private struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
     let typeName = "VStack"
 
-    func makeSwiftUIView(parameters: [RuntimeView.Parameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
+    func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
         var spacing: CGFloat?
         var childViews: [AnyView] = []
 

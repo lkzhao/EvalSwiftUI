@@ -40,7 +40,7 @@ struct ExpressionEvaluator {
             if let viewName = identifierName(from: callee) {
                 let evaluatedParameters = try arguments.map { argument in
                     let value = try evaluate(expression: argument.value) ?? .void
-                    return RuntimeView.Parameter(label: argument.label, value: value)
+                    return RuntimeParameter(label: argument.label, value: value)
                 }
 
                 if module.builder(named: viewName) != nil || module.viewDefinition(named: viewName) != nil {
@@ -52,7 +52,10 @@ struct ExpressionEvaluator {
                   case .function(let compiled) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
-            let resolvedArguments = try arguments.map { try evaluate(expression: $0.value) ?? .void }
+            let resolvedArguments = try arguments.map { argument in
+                let value = try evaluate(expression: argument.value) ?? .void
+                return RuntimeParameter(label: argument.label, value: value)
+            }
             return try compiled.invoke(arguments: resolvedArguments, scope: scope)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)

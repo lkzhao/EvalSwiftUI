@@ -12,7 +12,7 @@ public final class RuntimeModule {
         compileBindings()
     }
 
-    public func call(function name: String, arguments: [RuntimeValue] = []) throws -> RuntimeValue {
+    public func call(function name: String, arguments: [RuntimeParameter] = []) throws -> RuntimeValue {
         guard let value = globals.get(name),
               case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
@@ -43,7 +43,7 @@ public final class RuntimeModule {
         viewBuilders[builder.typeName] = builder
     }
 
-    public func makeSwiftUIView(typeName: String, parameters: [RuntimeView.Parameter], scope: RuntimeScope) throws -> AnyView {
+    public func makeSwiftUIView(typeName: String, parameters: [RuntimeParameter], scope: RuntimeScope) throws -> AnyView {
         if let builder = builder(named: typeName) {
             return try builder.makeSwiftUIView(parameters: parameters, module: self, scope: scope)
         }

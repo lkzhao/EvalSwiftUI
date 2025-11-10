@@ -1,18 +1,8 @@
- public struct RuntimeView: CustomStringConvertible {
-     public struct Parameter {
-        public let label: String?
-        public let value: RuntimeValue
-
-        public init(label: String?, value: RuntimeValue) {
-            self.label = label
-            self.value = value
-        }
-    }
-
+public struct RuntimeView: CustomStringConvertible {
     public let typeName: String
-    public let parameters: [Parameter]
+    public let parameters: [RuntimeParameter]
 
-    public init(typeName: String, parameters: [Parameter]) {
+    public init(typeName: String, parameters: [RuntimeParameter]) {
         self.typeName = typeName
         self.parameters = parameters
     }

@@ -10,7 +10,7 @@ public final class CompiledViewDefinition {
         self.module = module
     }
 
-    public func instantiate(scope: RuntimeScope, parameters: [RuntimeView.Parameter] = []) throws -> RuntimeValue {
+    public func instantiate(scope: RuntimeScope, parameters: [RuntimeParameter] = []) throws -> RuntimeValue {
         let localScope = RuntimeScope(parent: scope)
         try initializeBindings(in: localScope)
         let interpreter = StatementInterpreter(module: module, scope: localScope)

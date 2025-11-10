@@ -10,11 +10,11 @@ public final class CompiledFunction {
         self.module = module
     }
 
-    func invoke(arguments: [RuntimeValue], scope: RuntimeScope) throws -> RuntimeValue {
+    func invoke(arguments: [RuntimeParameter], scope: RuntimeScope) throws -> RuntimeValue {
         let localScope = RuntimeScope(parent: scope)
 
         for (index, parameter) in ir.parameters.enumerated() {
-            let argument = index < arguments.count ? arguments[index] : RuntimeValue.void
+            let argument = index < arguments.count ? arguments[index].value : RuntimeValue.void
             localScope.set(parameter.name, value: argument)
         }
 
