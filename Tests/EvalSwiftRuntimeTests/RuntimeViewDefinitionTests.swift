@@ -195,6 +195,68 @@ struct RuntimeViewDefinitionTests {
         #expect(view.parameters.first?.value.asString == "Initializer")
     }
 
+    @Test func scopeAssignments() throws {
+        let source = """
+        struct ShadowedInitView: View {
+            var title: String
+
+            init() {
+                var title = "Local"
+                title = "Next"
+                self.title = title
+                title = "Final"
+            }
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "ShadowedInitView", from: module)
+        let rendered = try compiled.instantiate(scope: module.globalScope)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Next")
+    }
+
+    @Test func selfMemberReadsStoredProperty() throws {
+        let source = """
+        struct SelfReadView: View {
+            var title: String
+
+            init(title: String) {
+                self.title = title
+                var title = "Local"
+                let current = self.title
+                self.title = "Changed"
+                self.title = current
+            }
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "SelfReadView", from: module)
+        let parameters = [RuntimeParameter(label: "title", value: .string("Value"))]
+        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Value")
+    }
+
     @Test func synthesizedInitializerProvidesDefaultValues() throws {
         let source = """
         struct SynthesizedInitView: View {

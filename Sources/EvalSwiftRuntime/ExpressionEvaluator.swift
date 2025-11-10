@@ -33,6 +33,12 @@ struct ExpressionEvaluator {
             let compiled = CompiledFunction(ir: functionIR, module: module)
             return .function(compiled)
         case .member(let base, let name):
+            if case .identifier("self") = base {
+                if let value = scope.get(name, preference: .preferAncestor) {
+                    return value
+                }
+                throw RuntimeError.unknownIdentifier(name)
+            }
             let baseValue = try evaluate(expression: base)
             let description = "\(baseValue?.description ?? "nil")\(String.runtimeMemberSeparator)\(name)"
             return .string(description)

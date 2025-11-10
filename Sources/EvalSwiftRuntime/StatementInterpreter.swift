@@ -16,7 +16,7 @@ final class StatementInterpreter {
             switch statement {
             case .binding(let binding):
                 let value = try module.evaluate(expression: binding.initializer, scope: scope)
-                scope.set(binding.name, value: value ?? .void)
+                scope.define(binding.name, value: value ?? .void)
             case .expression(let expression):
                 lastExpressionValue = try module.evaluate(expression: expression, scope: scope)
                 if let value = lastExpressionValue {
@@ -42,7 +42,7 @@ final class StatementInterpreter {
             scope.set(name, value: value)
         case .member(let base, let name):
             if case .identifier("self") = base {
-                scope.set(name, value: value)
+                scope.set(name, value: value, preference: .preferAncestor)
             } else {
                 throw RuntimeError.unsupportedAssignment("Assignments only support self member targets")
             }

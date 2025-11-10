@@ -43,15 +43,15 @@ struct ArgumentParser {
 
         for parameter in parameters {
             if let provided = consumeValue(for: parameter) {
-                scope.set(parameter.name, value: provided)
+                scope.define(parameter.name, value: provided)
                 continue
             }
 
             if let defaultExpr = parameter.defaultValue {
                 let value = try module.evaluate(expression: defaultExpr, scope: scope) ?? .void
-                scope.set(parameter.name, value: value)
+                scope.define(parameter.name, value: value)
             } else {
-                scope.set(parameter.name, value: .void)
+                scope.define(parameter.name, value: .void)
             }
         }
     }
