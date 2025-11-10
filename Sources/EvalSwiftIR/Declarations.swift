@@ -5,7 +5,6 @@ public struct ModuleIR {
 }
 
 public struct ViewDefinitionIR {
-    public let name: String
     public let bindings: [BindingIR]
     public let bodyStatements: [StatementIR]
 }
@@ -17,7 +16,6 @@ public struct BindingIR {
 }
 
 public struct FunctionIR {
-    public let name: String
     public let parameters: [FunctionParameterIR]
     public let returnType: String?
     public let body: [StatementIR]

@@ -1,9 +1,11 @@
 import Foundation
+import SwiftUI
 import EvalSwiftIR
 
 public final class RuntimeModule {
     private let ir: ModuleIR
     private let globals = RuntimeScope()
+    private var viewBuilders: [String: any RuntimeViewBuilder] = [:]
 
     public init(ir: ModuleIR) {
         self.ir = ir
@@ -26,6 +28,32 @@ public final class RuntimeModule {
         globals
     }
 
+    func viewDefinition(named name: String) -> CompiledViewDefinition? {
+        if let value = globals.get(name), case .viewDefinition(let definition) = value {
+            return definition
+        }
+        return nil
+    }
+
+    func builder(named name: String) -> (any RuntimeViewBuilder)? {
+        viewBuilders[name]
+    }
+
+    public func registerViewBuilder(_ builder: any RuntimeViewBuilder) {
+        viewBuilders[builder.typeName] = builder
+    }
+
+    public func makeSwiftUIView(typeName: String, parameters: [RuntimeView.Parameter], scope: RuntimeScope) throws -> AnyView {
+        if let builder = builder(named: typeName) {
+            return try builder.makeSwiftUIView(parameters: parameters, module: self, scope: scope)
+        }
+        if let definition = viewDefinition(named: typeName) {
+            let value = try definition.instantiate(scope: scope, parameters: parameters)
+            return try realize(runtimeValue: value, scope: scope)
+        }
+        throw RuntimeError.unknownView(typeName)
+    }
+
     // MARK: - Compilation
 
     private func compileBindings() {
@@ -40,4 +68,47 @@ public final class RuntimeModule {
     func evaluate(expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
         try ExpressionEvaluator(module: self, scope: scope).evaluate(expression: expression)
     }
+
+    public func runtimeViews(from function: CompiledFunction, scope: RuntimeScope) throws -> [RuntimeView] {
+        let closureScope = RuntimeScope(parent: scope)
+        let evaluator = ExpressionEvaluator(module: self, scope: closureScope)
+        var collected: [RuntimeView] = []
+
+        func handleValue(_ value: RuntimeValue?) {
+            guard let value else { return }
+            if case .view(let view) = value {
+                collected.append(view)
+            }
+        }
+
+        for statement in function.ir.body {
+            switch statement {
+            case .binding(let binding):
+                let value = try evaluator.evaluate(expression: binding.initializer) ?? .void
+                closureScope.set(binding.name, value: value)
+            case .expression(let expression):
+                handleValue(try evaluator.evaluate(expression: expression))
+            case .return(let returnStmt):
+                handleValue(try evaluator.evaluate(expression: returnStmt.value))
+                return collected
+            case .unhandled(let raw):
+                throw RuntimeError.unsupportedExpression(raw)
+            }
+        }
+
+        return collected
+    }
+
+    public func realize(runtimeValue value: RuntimeValue, scope: RuntimeScope) throws -> AnyView {
+        switch value {
+        case .view(let runtimeView):
+            return try makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, scope: scope)
+        case .viewDefinition(let definition):
+            let produced = try definition.instantiate(scope: scope)
+            return try realize(runtimeValue: produced, scope: scope)
+        default:
+            throw RuntimeError.invalidViewResult("Expected view, got \(value)")
+        }
+    }
+
 }

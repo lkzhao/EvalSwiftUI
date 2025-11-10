@@ -13,21 +13,21 @@ public struct SwiftIRParser {
             let node = item.item
 
             if let structDecl = node.as(StructDeclSyntax.self),
-               let view = makeViewDefinition(from: structDecl) {
-                bindings.append(BindingIR(name: view.name, typeAnnotation: nil, initializer: .view(view)))
+               let entry = makeViewDefinition(from: structDecl) {
+                bindings.append(BindingIR(name: entry.name, typeAnnotation: nil, initializer: .view(entry.definition)))
                 continue
             }
 
             if let classDecl = node.as(ClassDeclSyntax.self),
-               let view = makeViewDefinition(from: classDecl) {
-                bindings.append(BindingIR(name: view.name, typeAnnotation: nil, initializer: .view(view)))
+               let entry = makeViewDefinition(from: classDecl) {
+                bindings.append(BindingIR(name: entry.name, typeAnnotation: nil, initializer: .view(entry.definition)))
                 continue
             }
 
             if let functionDecl = node.as(FunctionDeclSyntax.self) {
                 let functionIR = makeFunctionIR(from: functionDecl)
                 let binding = BindingIR(
-                    name: functionIR.name,
+                    name: functionDecl.name.text,
                     typeAnnotation: nil,
                     initializer: .function(functionIR)
                 )
@@ -52,7 +52,7 @@ public struct SwiftIRParser {
         )
     }
 
-    private func makeViewDefinition(from node: SyntaxProtocol) -> ViewDefinitionIR? {
+    private func makeViewDefinition(from node: SyntaxProtocol) -> (name: String, definition: ViewDefinitionIR)? {
         guard conformsToView(node) else { return nil }
 
         let name: String
@@ -87,11 +87,11 @@ public struct SwiftIRParser {
             }
         }
 
-        return ViewDefinitionIR(
-            name: name,
+        let definition = ViewDefinitionIR(
             bindings: bindings,
             bodyStatements: bodyStatements
         )
+        return (name: name, definition: definition)
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
@@ -99,7 +99,6 @@ public struct SwiftIRParser {
         let returnType = node.signature.returnClause?.type.trimmedDescription
         let bodyStatements = node.body.map(makeStatements) ?? []
         return FunctionIR(
-            name: node.name.text,
             parameters: params,
             returnType: returnType,
             body: bodyStatements
@@ -127,7 +126,7 @@ public struct SwiftIRParser {
     private func makeFunctionBinding(from node: FunctionDeclSyntax) -> BindingIR {
         let functionIR = makeFunctionIR(from: node)
         return BindingIR(
-            name: functionIR.name,
+            name: node.name.text,
             typeAnnotation: nil,
             initializer: .function(functionIR)
         )
@@ -205,13 +204,28 @@ public struct SwiftIRParser {
         }
 
         if let call = expr.as(FunctionCallExprSyntax.self) {
-            let arguments = call.arguments.map {
+            var arguments = call.arguments.map {
                 FunctionCallArgumentIR(label: $0.label?.text, value: makeExpr($0.expression))
             }
+
+            if let trailingClosure = call.trailingClosure {
+                let functionIR = makeClosureFunction(trailingClosure)
+                arguments.append(FunctionCallArgumentIR(label: nil, value: .function(functionIR)))
+            }
+
             return .call(callee: makeExpr(call.calledExpression), arguments: arguments)
         }
 
+        if let closure = expr.as(ClosureExprSyntax.self) {
+            return .function(makeClosureFunction(closure))
+        }
+
         return .unknown(expr.trimmedDescription)
+    }
+
+    private func makeClosureFunction(_ closure: ClosureExprSyntax) -> FunctionIR {
+        let statements = makeStatements(from: closure.statements)
+        return FunctionIR(parameters: [], returnType: nil, body: statements)
     }
 
     private func conformsToView(_ node: SyntaxProtocol) -> Bool {

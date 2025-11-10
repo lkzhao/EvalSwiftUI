@@ -37,6 +37,17 @@ struct ExpressionEvaluator {
             let description = "\(baseValue?.description ?? "nil")\(String.runtimeMemberSeparator)\(name)"
             return .string(description)
         case .call(let callee, let arguments):
+            if let viewName = identifierName(from: callee) {
+                let evaluatedParameters = try arguments.map { argument in
+                    let value = try evaluate(expression: argument.value) ?? .void
+                    return RuntimeView.Parameter(label: argument.label, value: value)
+                }
+
+                if module.builder(named: viewName) != nil || module.viewDefinition(named: viewName) != nil {
+                    return .view(RuntimeView(typeName: viewName, parameters: evaluatedParameters))
+                }
+            }
+
             guard let calleeValue = try evaluate(expression: callee),
                   case .function(let compiled) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
@@ -46,5 +57,10 @@ struct ExpressionEvaluator {
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
+    }
+
+    private func identifierName(from expr: ExprIR) -> String? {
+        if case .identifier(let name) = expr { return name }
+        return nil
     }
 }
