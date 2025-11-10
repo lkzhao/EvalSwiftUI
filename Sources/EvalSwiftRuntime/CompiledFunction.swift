@@ -13,11 +13,7 @@ public final class CompiledFunction {
     func invoke(arguments: [RuntimeParameter], scope: RuntimeScope) throws -> RuntimeValue {
         let localScope = RuntimeScope(parent: scope)
         let parser = ArgumentParser(parameters: ir.parameters)
-        let resolvedValues = parser.resolveValues(from: arguments)
-
-        for (parameter, value) in zip(ir.parameters, resolvedValues) {
-            localScope.set(parameter.name, value: value)
-        }
+        try parser.bind(arguments: arguments, into: localScope, module: module)
 
         let interpreter = StatementInterpreter(module: module, scope: localScope)
         return try interpreter.execute(statements: ir.body)

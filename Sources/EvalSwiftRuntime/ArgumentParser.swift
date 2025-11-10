@@ -7,7 +7,7 @@ struct ArgumentParser {
         self.parameters = parameters
     }
 
-    func resolveValues(from arguments: [RuntimeParameter]) -> [RuntimeValue] {
+    func bind(arguments: [RuntimeParameter], into scope: RuntimeScope, module: RuntimeModule) throws {
         var labeledArguments: [String: RuntimeValue] = [:]
         var positionalArguments: [RuntimeValue] = []
 
@@ -21,7 +21,7 @@ struct ArgumentParser {
 
         var positionalIndex = 0
 
-        func nextValue(for parameter: FunctionParameterIR) -> RuntimeValue {
+        func consumeValue(for parameter: FunctionParameterIR) -> RuntimeValue? {
             let candidateLabels = [parameter.label, parameter.name]
                 .compactMap { $0 }
                 .filter { !$0.isEmpty }
@@ -38,9 +38,21 @@ struct ArgumentParser {
                 return value
             }
 
-            return .void
+            return nil
         }
 
-        return parameters.map { nextValue(for: $0) }
+        for parameter in parameters {
+            if let provided = consumeValue(for: parameter) {
+                scope.set(parameter.name, value: provided)
+                continue
+            }
+
+            if let defaultExpr = parameter.defaultValue {
+                let value = try module.evaluate(expression: defaultExpr, scope: scope) ?? .void
+                scope.set(parameter.name, value: value)
+            } else {
+                scope.set(parameter.name, value: .void)
+            }
+        }
     }
 }

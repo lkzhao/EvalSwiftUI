@@ -24,6 +24,13 @@ public struct FunctionIR {
 public struct FunctionParameterIR {
     public let label: String?
     public let name: String
+    public let defaultValue: ExprIR?
+
+    public init(label: String?, name: String, defaultValue: ExprIR?) {
+        self.label = label
+        self.name = name
+        self.defaultValue = defaultValue
+    }
 }
 
 public indirect enum ExprIR {

@@ -119,6 +119,54 @@ struct RuntimeViewDefinitionTests {
         #expect(view.typeName == "VStack")
     }
 
+    @Test func parametersPopulateStoredBindingsWithoutDefaults() throws {
+        let source = """
+        struct RequiredArgumentView: View {
+            var title: String
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "RequiredArgumentView", from: module)
+        let parameters = [RuntimeParameter(label: "title", value: .string("Runtime"))]
+        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Runtime")
+    }
+
+    @Test func parametersOverrideDefaultBindingValues() throws {
+        let source = """
+        struct OverrideView: View {
+            var title: String = "Default"
+
+            var body: some View {
+                Text(title)
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "OverrideView", from: module)
+        let parameters = [RuntimeParameter(label: "title", value: .string("Injected"))]
+        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+
+        guard case .view(let view) = rendered else {
+            throw TestFailure.expected("Expected runtime view result, got \(rendered)")
+        }
+
+        #expect(view.parameters.first?.value.asString == "Injected")
+    }
+
     @MainActor
     @Test func makeSwiftUIViewRendersText() throws {
         let source = """
