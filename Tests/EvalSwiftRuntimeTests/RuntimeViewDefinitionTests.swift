@@ -48,28 +48,6 @@ struct RuntimeViewDefinitionTests {
         #expect(message == "Implicit")
     }
 
-    @Test func bindsParametersWhenInstantiating() throws {
-        let source = """
-        struct ParamView: View {
-            var title: String
-
-            var body: some View {
-                title
-            }
-        }
-        """
-
-        let module = makeModule(source: source)
-        let compiled = try compiledView(named: "ParamView", from: module)
-        let rendered = try compiled.instantiate(arguments: [.string("Hello")], scope: module.globalScope)
-
-        guard case .string(let message) = rendered else {
-            throw TestFailure.expected("Expected string result, got \(rendered)")
-        }
-
-        #expect(message == "Hello")
-    }
-
     // MARK: - Helpers
 
     private func makeModule(source: String) -> RuntimeModule {

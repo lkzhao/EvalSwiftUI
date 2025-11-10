@@ -15,7 +15,7 @@ public final class CompiledFunction {
 
         for (index, parameter) in ir.parameters.enumerated() {
             let argument = index < arguments.count ? arguments[index] : RuntimeValue.void
-            localScope.set(parameter.internalName, value: argument)
+            localScope.set(parameter.name, value: argument)
         }
 
         let interpreter = StatementInterpreter(module: module, scope: localScope)

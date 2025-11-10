@@ -6,16 +6,8 @@ public struct ModuleIR {
 
 public struct ViewDefinitionIR {
     public let name: String
-    public let parameters: [FunctionParameterIR]
-    public let properties: [PropertyIR]
-    public let methods: [FunctionIR]
+    public let bindings: [BindingIR]
     public let bodyStatements: [StatementIR]
-}
-
-public struct PropertyIR {
-    public let name: String
-    public let typeAnnotation: String?
-    public let initializer: ExprIR?
 }
 
 public struct BindingIR {
@@ -32,7 +24,5 @@ public struct FunctionIR {
 }
 
 public struct FunctionParameterIR {
-    public let externalName: String?
-    public let internalName: String
-    public let typeAnnotation: String?
+    public let name: String
 }

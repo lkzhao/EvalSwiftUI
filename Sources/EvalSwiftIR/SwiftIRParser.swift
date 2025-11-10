@@ -69,8 +69,7 @@ public struct SwiftIRParser {
             return nil
         }
 
-        var properties: [PropertyIR] = []
-        var methods: [FunctionIR] = []
+        var bindings: [BindingIR] = []
         var bodyStatements: [StatementIR] = []
 
         for member in members {
@@ -79,29 +78,18 @@ public struct SwiftIRParser {
                     bodyStatements = body
                     continue
                 }
-                properties.append(contentsOf: makeProperties(from: variable))
+                bindings.append(contentsOf: makeBindingList(from: variable))
                 continue
             }
 
             if let functionDecl = member.decl.as(FunctionDeclSyntax.self) {
-                methods.append(makeFunctionIR(from: functionDecl))
+                bindings.append(makeFunctionBinding(from: functionDecl))
             }
-        }
-
-        let parameters = properties.compactMap { property -> FunctionParameterIR? in
-            guard property.initializer == nil else { return nil }
-            return FunctionParameterIR(
-                externalName: property.name,
-                internalName: property.name,
-                typeAnnotation: property.typeAnnotation
-            )
         }
 
         return ViewDefinitionIR(
             name: name,
-            parameters: parameters,
-            properties: properties,
-            methods: methods,
+            bindings: bindings,
             bodyStatements: bodyStatements
         )
     }
@@ -120,18 +108,7 @@ public struct SwiftIRParser {
 
     private func makeParameter(_ parameter: FunctionParameterSyntax) -> FunctionParameterIR {
         let firstName = parameter.firstName.text
-        let externalName = firstName == "_" ? nil : firstName
-        return FunctionParameterIR(
-            externalName: externalName,
-            internalName: parameter.secondName?.text ?? firstName,
-            typeAnnotation: parameter.type.trimmedDescription
-        )
-    }
-
-    private func makeProperties(from node: VariableDeclSyntax) -> [PropertyIR] {
-        makeBindingList(from: node).map { binding in
-            PropertyIR(name: binding.name, typeAnnotation: binding.typeAnnotation, initializer: binding.initializer)
-        }
+        return FunctionParameterIR(name: parameter.secondName?.text ?? firstName)
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
@@ -145,6 +122,15 @@ public struct SwiftIRParser {
                 initializer: initializerExpr
             )
         }
+    }
+
+    private func makeFunctionBinding(from node: FunctionDeclSyntax) -> BindingIR {
+        let functionIR = makeFunctionIR(from: node)
+        return BindingIR(
+            name: functionIR.name,
+            typeAnnotation: nil,
+            initializer: .function(functionIR)
+        )
     }
 
     private func makeStatements(from block: CodeBlockSyntax) -> [StatementIR] {
