@@ -88,9 +88,18 @@ public struct SwiftIRParser {
             }
         }
 
+        let parameters = properties.compactMap { property -> FunctionParameterIR? in
+            guard property.initializer == nil else { return nil }
+            return FunctionParameterIR(
+                externalName: property.name,
+                internalName: property.name,
+                typeAnnotation: property.typeAnnotation
+            )
+        }
+
         return ViewDefinitionIR(
             name: name,
-            parameters: [],
+            parameters: parameters,
             properties: properties,
             methods: methods,
             bodyStatements: bodyStatements

@@ -5,6 +5,5 @@ import SwiftSyntaxMacros
 struct MacrosPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         SnapshotExpectationMacro.self,
-        PublicMemberwiseInitMacro.self
     ]
 }

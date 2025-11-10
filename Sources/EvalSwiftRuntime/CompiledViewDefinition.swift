@@ -28,7 +28,8 @@ public final class CompiledViewDefinition {
 
     private func initializeProperties(in localScope: RuntimeScope) throws {
         for property in ir.properties {
-            let value = try module.evaluate(expression: property.initializer, scope: localScope) ?? .void
+            guard let initializer = property.initializer else { continue }
+            let value = try module.evaluate(expression: initializer, scope: localScope) ?? .void
             localScope.set(property.name, value: value)
         }
     }

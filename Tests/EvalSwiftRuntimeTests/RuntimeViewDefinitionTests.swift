@@ -4,25 +4,18 @@ import EvalSwiftIR
 
 struct RuntimeViewDefinitionTests {
     @Test func instantiatesViewBodyReturnsPropertyValue() throws {
-        let property = PropertyIR(name: "title", typeAnnotation: nil, initializer: .literal("\"Hello\""))
-        let view = ViewDefinitionIR(
-            name: "SampleView",
-            parameters: [],
-            properties: [property],
-            methods: [],
-            bodyStatements: [
-                .return(ReturnIR(value: .identifier("title")))
-            ]
-        )
-        let binding = BindingIR(name: "SampleView", typeAnnotation: nil, initializer: .view(view))
-        let moduleIR = ModuleIR(bindings: [binding], statements: [])
-        let module = RuntimeModule(ir: moduleIR)
+        let source = """
+        struct SampleView: View {
+            var title: String = "Hello"
 
-        guard let value = module.value(for: "SampleView"),
-              case .viewDefinition(let compiled) = value else {
-            throw TestFailure.expected("Expected compiled view binding")
+            var body: some View {
+                title
+            }
         }
+        """
 
+        let module = makeModule(source: source)
+        let compiled = try compiledView(named: "SampleView", from: module)
         let rendered = try compiled.instantiate(scope: module.globalScope)
 
         guard case .string(let message) = rendered else {
@@ -33,26 +26,19 @@ struct RuntimeViewDefinitionTests {
     }
 
     @Test func implicitReturnUsesLastExpression() throws {
-        let property = PropertyIR(name: "title", typeAnnotation: nil, initializer: .literal("\"Implicit\""))
-        let view = ViewDefinitionIR(
-            name: "ImplicitView",
-            parameters: [],
-            properties: [property],
-            methods: [],
-            bodyStatements: [
-                .expression(.literal("\"Ignored\"")),
-                .expression(.identifier("title"))
-            ]
-        )
-        let binding = BindingIR(name: "ImplicitView", typeAnnotation: nil, initializer: .view(view))
-        let moduleIR = ModuleIR(bindings: [binding], statements: [])
-        let module = RuntimeModule(ir: moduleIR)
+        let source = """
+        struct ImplicitView: View {
+            var title: String = "Implicit"
 
-        guard let value = module.value(for: "ImplicitView"),
-              case .viewDefinition(let compiled) = value else {
-            throw TestFailure.expected("Expected compiled view binding")
+            var body: some View {
+                "Ignored"
+                title
+            }
         }
+        """
 
+        let module = makeModule(source: source)
+        let compiled = try compiledView(named: "ImplicitView", from: module)
         let rendered = try compiled.instantiate(scope: module.globalScope)
 
         guard case .string(let message) = rendered else {
@@ -63,25 +49,18 @@ struct RuntimeViewDefinitionTests {
     }
 
     @Test func bindsParametersWhenInstantiating() throws {
-        let parameter = FunctionParameterIR(externalName: "title", internalName: "title", typeAnnotation: "String")
-        let view = ViewDefinitionIR(
-            name: "ParamView",
-            parameters: [parameter],
-            properties: [],
-            methods: [],
-            bodyStatements: [
-                .return(ReturnIR(value: .identifier("title")))
-            ]
-        )
-        let binding = BindingIR(name: "ParamView", typeAnnotation: nil, initializer: .view(view))
-        let moduleIR = ModuleIR(bindings: [binding], statements: [])
-        let module = RuntimeModule(ir: moduleIR)
+        let source = """
+        struct ParamView: View {
+            var title: String
 
-        guard let value = module.value(for: "ParamView"),
-              case .viewDefinition(let compiled) = value else {
-            throw TestFailure.expected("Expected compiled view binding")
+            var body: some View {
+                title
+            }
         }
+        """
 
+        let module = makeModule(source: source)
+        let compiled = try compiledView(named: "ParamView", from: module)
         let rendered = try compiled.instantiate(arguments: [.string("Hello")], scope: module.globalScope)
 
         guard case .string(let message) = rendered else {
@@ -89,5 +68,21 @@ struct RuntimeViewDefinitionTests {
         }
 
         #expect(message == "Hello")
+    }
+
+    // MARK: - Helpers
+
+    private func makeModule(source: String) -> RuntimeModule {
+        let parser = SwiftIRParser()
+        let ir = parser.parseModule(source: source)
+        return RuntimeModule(ir: ir)
+    }
+
+    private func compiledView(named name: String, from module: RuntimeModule) throws -> CompiledViewDefinition {
+        guard let value = module.value(for: name),
+              case .viewDefinition(let compiled) = value else {
+            throw TestFailure.expected("Expected compiled view binding for \(name)")
+        }
+        return compiled
     }
 }
