@@ -3,7 +3,7 @@ import EvalSwiftIR
 
 public final class RuntimeModule {
     private let ir: ModuleIR
-    let globals = RuntimeScope()
+    private let globals = RuntimeScope()
 
     public init(ir: ModuleIR) {
         self.ir = ir
@@ -15,7 +15,15 @@ public final class RuntimeModule {
               case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
         }
-        return try function.invoke(arguments: arguments)
+        return try function.invoke(arguments: arguments, scope: globals)
+    }
+
+    public func value(for name: String) -> RuntimeValue? {
+        globals.get(name)
+    }
+
+    public var globalScope: RuntimeScope {
+        globals
     }
 
     // MARK: - Compilation
@@ -30,6 +38,6 @@ public final class RuntimeModule {
     // MARK: - Evaluation Helpers
 
     func evaluate(expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
-        try RuntimeEvaluator(module: self, scope: scope).evaluate(expression: expression)
+        try ExpressionEvaluator(module: self, scope: scope).evaluate(expression: expression)
     }
 }

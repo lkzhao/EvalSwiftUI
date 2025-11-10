@@ -10,15 +10,15 @@ public final class CompiledFunction {
         self.module = module
     }
 
-    func invoke(arguments: [RuntimeValue], scope: RuntimeScope? = nil) throws -> RuntimeValue {
-        let frame = RuntimeScope(parent: scope ?? module.globals)
+    func invoke(arguments: [RuntimeValue], scope: RuntimeScope) throws -> RuntimeValue {
+        let localScope = RuntimeScope(parent: scope)
 
         for (index, parameter) in ir.parameters.enumerated() {
             let argument = index < arguments.count ? arguments[index] : RuntimeValue.void
-            frame.set(parameter.internalName, value: argument)
+            localScope.set(parameter.internalName, value: argument)
         }
 
-        let interpreter = StatementInterpreter(module: module, scope: frame)
+        let interpreter = StatementInterpreter(module: module, scope: localScope)
         return try interpreter.execute(statements: ir.body)
     }
 }

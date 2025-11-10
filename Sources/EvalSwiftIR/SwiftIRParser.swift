@@ -90,6 +90,7 @@ public struct SwiftIRParser {
 
         return ViewDefinitionIR(
             name: name,
+            parameters: [],
             properties: properties,
             methods: methods,
             bodyStatements: bodyStatements

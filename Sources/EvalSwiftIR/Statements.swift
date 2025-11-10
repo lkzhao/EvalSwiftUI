@@ -7,4 +7,8 @@ public enum StatementIR {
 
 public struct ReturnIR {
     public let value: ExprIR?
+
+    public init(value: ExprIR?) {
+        self.value = value
+    }
 }

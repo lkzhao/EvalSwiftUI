@@ -69,5 +69,12 @@ let package = Package(
                 "EvalSwiftUIMacros"
             ]
         ),
+        .testTarget(
+            name: "EvalSwiftRuntimeTests",
+            dependencies: [
+                "EvalSwiftRuntime",
+                "EvalSwiftIR"
+            ]
+        ),
     ]
 )

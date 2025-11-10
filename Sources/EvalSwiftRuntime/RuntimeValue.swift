@@ -5,7 +5,7 @@ public enum RuntimeValue {
     case number(Double)
     case string(String)
     case bool(Bool)
-    case viewDefinition(ViewDefinitionIR)
+    case viewDefinition(CompiledViewDefinition)
     case array([RuntimeValue])
     case function(CompiledFunction)
     case void
@@ -21,7 +21,7 @@ extension RuntimeValue: CustomStringConvertible {
         case .bool(let bool):
             return String(bool)
         case .viewDefinition(let definition):
-            return "<ViewDefinition: \(definition.name)>"
+            return "<ViewDefinition: \(definition.ir.name)>"
         case .array(let values):
             return values.map { "\($0)" }.joined(separator: ",")
         case .function(let function):

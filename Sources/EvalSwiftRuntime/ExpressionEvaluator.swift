@@ -1,7 +1,7 @@
 import Foundation
 import EvalSwiftIR
 
-struct RuntimeEvaluator {
+struct ExpressionEvaluator {
     let module: RuntimeModule
     let scope: RuntimeScope
 
@@ -27,7 +27,8 @@ struct RuntimeEvaluator {
             }
             return .string(raw.trimmingCharacters(in: CharacterSet(charactersIn: "\"")))
         case .view(let definition):
-            return .viewDefinition(definition)
+            let compiled = CompiledViewDefinition(ir: definition, module: module)
+            return .viewDefinition(compiled)
         case .function(let functionIR):
             let compiled = CompiledFunction(ir: functionIR, module: module)
             return .function(compiled)

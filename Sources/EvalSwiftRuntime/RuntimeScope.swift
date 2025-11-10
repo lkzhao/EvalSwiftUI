@@ -1,18 +1,18 @@
 import Foundation
 
-final class RuntimeScope {
+public final class RuntimeScope {
     private var storage: [String: RuntimeValue] = [:]
     private let parent: RuntimeScope?
 
-    init(parent: RuntimeScope? = nil) {
+    public init(parent: RuntimeScope? = nil) {
         self.parent = parent
     }
 
-    func set(_ name: String, value: RuntimeValue) {
+    public func set(_ name: String, value: RuntimeValue) {
         storage[name] = value
     }
 
-    func get(_ name: String) -> RuntimeValue? {
+    public func get(_ name: String) -> RuntimeValue? {
         if let value = storage[name] {
             return value
         }
