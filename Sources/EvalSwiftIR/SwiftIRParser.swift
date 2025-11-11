@@ -38,6 +38,11 @@ public struct SwiftIRParser {
                 statements.append(.expression(makeExpr(expressionStmt.expression)))
                 continue
             }
+
+            if let expression = node.as(ExprSyntax.self) {
+                statements.append(.expression(makeExpr(expression)))
+                continue
+            }
         }
 
         return ModuleIR(

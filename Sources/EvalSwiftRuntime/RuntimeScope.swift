@@ -3,11 +3,14 @@ import Foundation
 public final class RuntimeScope: CustomStringConvertible {
     private var storage: [String: RuntimeValue] = [:]
     private let parent: RuntimeScope?
+    var mutationHandler: MutationHandler?
 
     public enum ScopePreference {
         case localFirst
         case preferAncestor
     }
+
+    public typealias MutationHandler = (_ name: String, _ value: RuntimeValue) -> Void
 
     public func define(_ name: String, value: RuntimeValue) {
         storage[name] = value
@@ -30,6 +33,7 @@ public final class RuntimeScope: CustomStringConvertible {
         }
 
         targetScope.storage[name] = value
+        targetScope.mutationHandler?(name, value)
     }
 
     public func get(_ name: String, preference: ScopePreference = .localFirst) -> RuntimeValue? {

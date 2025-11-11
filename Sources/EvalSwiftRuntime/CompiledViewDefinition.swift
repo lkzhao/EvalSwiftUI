@@ -10,19 +10,26 @@ public final class CompiledViewDefinition {
         self.module = module
     }
 
-    public func instantiate(scope: RuntimeScope, parameters: [RuntimeParameter] = []) throws -> RuntimeValue {
-        let localScope = RuntimeScope(parent: scope)
+    func makeInstanceScope(
+        parentScope: RuntimeScope,
+        parameters: [RuntimeParameter]
+    ) throws -> RuntimeScope {
+        let localScope = RuntimeScope(parent: parentScope)
         try initializeInstanceBindings(in: localScope)
         try runInitializer(in: localScope, arguments: parameters)
-        guard let bodyValue = localScope.get("body"), case .function(let bodyFunction) =  bodyValue else {
-            throw RuntimeError.unsupportedExpression("View definitions must provide a body binding")
+        return localScope
+    }
+
+    func renderBody(in scope: RuntimeScope) throws -> RuntimeValue {
+        guard let bodyValue = scope.get("body"), case .function(let bodyFunction) = bodyValue else {
+            throw RuntimeError.unsupportedExpression("View definitions must provide a body")
         }
-        return try bodyFunction.invoke(arguments: [], scope: localScope)
+        return try bodyFunction.invoke(arguments: [], scope: scope)
     }
 
     private func runInitializer(in scope: RuntimeScope, arguments: [RuntimeParameter]) throws {
         guard case .function(let initializer) = scope.get("init") else {
-            throw RuntimeError.noInitializer
+            throw RuntimeError.unsupportedExpression("View definitions must provide an init")
         }
         _ = try initializer.invoke(arguments: arguments, scope: scope)
     }

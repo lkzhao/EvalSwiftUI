@@ -5,6 +5,7 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
 
     public init() {}
 
+    @MainActor
     public func makeSwiftUIView(
         parameters: [RuntimeParameter],
         module: RuntimeModule,

@@ -13,6 +13,7 @@ public struct TextRuntimeViewBuilder: RuntimeViewBuilder {
     public init() {
     }
 
+    @MainActor
     public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
         guard let first = parameters.first, let string = first.value.asString else {
             throw RuntimeError.invalidViewArgument("Text expects a string parameter")

@@ -13,6 +13,7 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
     public init() {
     }
 
+    @MainActor
     public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
         var spacing: CGFloat?
         var childViews: [AnyView] = []

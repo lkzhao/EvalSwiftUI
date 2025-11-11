@@ -18,7 +18,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "SampleView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let runtimeView) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -42,7 +42,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "ImplicitView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let runtimeView) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -63,7 +63,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "TextView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -87,7 +87,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "StackView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -110,7 +110,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "StackSpacingView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -134,7 +134,7 @@ struct RuntimeViewDefinitionTests {
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "RequiredArgumentView", from: module)
         let parameters = [RuntimeParameter(label: "title", value: .string("Runtime"))]
-        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+        let rendered = try instantiateView(compiled, module: module, parameters: parameters)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -158,7 +158,7 @@ struct RuntimeViewDefinitionTests {
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "OverrideView", from: module)
         let parameters = [RuntimeParameter(label: "title", value: .string("Injected"))]
-        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+        let rendered = try instantiateView(compiled, module: module, parameters: parameters)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -186,7 +186,7 @@ struct RuntimeViewDefinitionTests {
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "ExplicitInitView", from: module)
         let parameters = [RuntimeParameter(label: "title", value: .string("Initializer"))]
-        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+        let rendered = try instantiateView(compiled, module: module, parameters: parameters)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -216,7 +216,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "ShadowedInitView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -248,7 +248,7 @@ struct RuntimeViewDefinitionTests {
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "SelfReadView", from: module)
         let parameters = [RuntimeParameter(label: "title", value: .string("Value"))]
-        let rendered = try compiled.instantiate(scope: module.globalScope, parameters: parameters)
+        let rendered = try instantiateView(compiled, module: module, parameters: parameters)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -271,7 +271,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "SynthesizedInitView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -293,7 +293,7 @@ struct RuntimeViewDefinitionTests {
         let module = makeModule(source: source)
         registerDefaultBuilders(on: module)
         let compiled = try compiledView(named: "TextView", from: module)
-        let rendered = try compiled.instantiate(scope: module.globalScope)
+        let rendered = try instantiateView(compiled, module: module)
 
         guard case .view(let runtimeView) = rendered else {
             throw TestFailure.expected("Expected runtime view")
@@ -303,6 +303,43 @@ struct RuntimeViewDefinitionTests {
         let renderer = ImageRenderer(content: realized)
         renderer.scale = 1
         #expect(renderer.cgImage != nil)
+    }
+
+    @MainActor
+    @Test func stateMutationTriggersViewRerender() throws {
+        let source = """
+        struct CounterView: View {
+            var count: Int = 0
+
+            var body: some View {
+                Text("Count: \\(count)")
+            }
+        }
+        """
+
+        let module = makeModule(source: source)
+        registerDefaultBuilders(on: module)
+        let compiled = try compiledView(named: "CounterView", from: module)
+        let renderer = try RuntimeViewRenderer(
+            definition: compiled,
+            module: module,
+            parentScope: module.globalScope,
+            parameters: []
+        )
+
+        guard case .view(let initialView) = renderer.runtimeValue else {
+            throw TestFailure.expected("Expected runtime view for CounterView")
+        }
+
+        #expect(initialView.parameters.first?.value.asString == "Count: 0.0")
+
+        renderer.scope.set("count", value: .number(5))
+
+        guard case .view(let updatedView) = renderer.runtimeValue else {
+            throw TestFailure.expected("Expected updated runtime view for CounterView")
+        }
+
+        #expect(updatedView.parameters.first?.value.asString == "Count: 5.0")
     }
 
     // MARK: - Helpers
@@ -324,5 +361,14 @@ struct RuntimeViewDefinitionTests {
     private func registerDefaultBuilders(on module: RuntimeModule) {
         module.registerViewBuilder(TextRuntimeViewBuilder())
         module.registerViewBuilder(VStackRuntimeViewBuilder())
+    }
+
+    private func instantiateView(
+        _ compiled: CompiledViewDefinition,
+        module: RuntimeModule,
+        parameters: [RuntimeParameter] = []
+    ) throws -> RuntimeValue {
+        let scope = try compiled.makeInstanceScope(parentScope: module.globalScope, parameters: parameters)
+        return try compiled.renderBody(in: scope)
     }
 }
