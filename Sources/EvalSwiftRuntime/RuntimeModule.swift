@@ -7,6 +7,10 @@ public final class RuntimeModule {
     private let globals = RuntimeScope()
     private var viewBuilders: [String: any RuntimeViewBuilder] = [:]
 
+    public convenience init(source: String) {
+        self.init(ir: SwiftIRParser().parseModule(source: source))
+    }
+
     public init(ir: ModuleIR) {
         self.ir = ir
         registerViewBuilder(TextRuntimeViewBuilder())

@@ -60,15 +60,7 @@ let package = Package(
         .target(
             name: "EvalSwiftUI",
             dependencies: [
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-            ]
-        ),
-        .testTarget(
-            name: "EvalSwiftUITests",
-            dependencies: [
-                "EvalSwiftUI",
-                "Macros"
+                "EvalSwiftRuntime"
             ]
         ),
         .testTarget(
