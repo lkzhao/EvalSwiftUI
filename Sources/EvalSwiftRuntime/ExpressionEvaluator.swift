@@ -11,8 +11,11 @@ struct ExpressionEvaluator {
             }
             throw RuntimeError.unknownIdentifier(name)
         case .literal(let raw):
+            if let integer = Int(raw) {
+                return .int(integer)
+            }
             if let number = Double(raw) {
-                return .number(number)
+                return .double(number)
             }
             if raw == "true" { return .bool(true) }
             if raw == "false" { return .bool(false) }

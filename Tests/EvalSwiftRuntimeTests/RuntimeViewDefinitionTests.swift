@@ -314,11 +314,11 @@ struct RuntimeViewDefinitionTests {
             scope: module.globalScope,
         )
 
-        try assertViewMatch(renderer.renderedView, Text("Count: 0.0"))
+        try assertViewMatch(renderer.renderedView, Text("Count: 0"))
 
-        renderer.instance.set("count", value: .number(5))
+        renderer.instance.set("count", value: .int(5))
 
-        try assertViewMatch(renderer.renderedView, Text("Count: 5.0"))
+        try assertViewMatch(renderer.renderedView, Text("Count: 5"))
     }
 
     // MARK: - Helpers

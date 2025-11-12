@@ -2,7 +2,8 @@ import Foundation
 import EvalSwiftIR
 
 public enum RuntimeValue {
-    case number(Double)
+    case int(Int)
+    case double(Double)
     case string(String)
     case bool(Bool)
     case viewDefinition(CompiledViewDefinition)
@@ -15,7 +16,9 @@ public enum RuntimeValue {
 extension RuntimeValue: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .number(let number):
+        case .int(let value):
+            return String(value)
+        case .double(let number):
             return String(number)
         case .string(let string):
             return string
@@ -40,7 +43,9 @@ extension RuntimeValue {
         switch self {
         case .string(let string):
             return string
-        case .number(let number):
+        case .int(let value):
+            return String(value)
+        case .double(let number):
             return String(number)
         case .bool(let bool):
             return String(bool)
@@ -51,7 +56,9 @@ extension RuntimeValue {
 
     var asDouble: Double? {
         switch self {
-        case .number(let number):
+        case .int(let value):
+            return Double(value)
+        case .double(let number):
             return number
         case .string(let string):
             return Double(string)
