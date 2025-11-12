@@ -51,6 +51,10 @@ public enum UnaryOperatorIR: String {
     case minus = "-"
 }
 
+public enum KeyPathIR: Equatable {
+    case `self`
+}
+
 public indirect enum ExprIR {
     case identifier(String)
     case int(Int)
@@ -58,6 +62,7 @@ public indirect enum ExprIR {
     case bool(Bool)
     case string(String)
     case array([ExprIR])
+    case keyPath(KeyPathIR)
     case stringInterpolation([StringInterpolationSegmentIR])
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])

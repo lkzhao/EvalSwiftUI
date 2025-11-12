@@ -3,6 +3,7 @@ import EvalSwiftIR
 
 public typealias Function = FunctionIR
 public typealias ViewDefinition = ViewDefinitionIR
+public typealias RuntimeKeyPath = KeyPathIR
 
 extension ViewDefinition {
     func makeInstance(

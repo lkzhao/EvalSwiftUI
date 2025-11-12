@@ -147,5 +147,16 @@ struct ExpressionEvaluatorTests {
 
         #expect(exclusiveValues.count == 3)
         #expect(inclusiveValues.count == 3)
+        let exclusiveInts = exclusiveValues.compactMap { value -> Int? in
+            if case .int(let number) = value { return number }
+            return nil
+        }
+        let inclusiveInts = inclusiveValues.compactMap { value -> Int? in
+            if case .int(let number) = value { return number }
+            return nil
+        }
+
+        #expect(exclusiveInts == [0, 1, 2])
+        #expect(inclusiveInts == [1, 2, 3])
     }
 }

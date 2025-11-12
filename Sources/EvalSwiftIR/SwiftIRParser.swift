@@ -241,6 +241,10 @@ public struct SwiftIRParser {
             return .array(elements)
         }
 
+        if expr.trimmedDescription == "\\.self" {
+            return .keyPath(.self)
+        }
+
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),
            let op = unaryOperator(from: prefix) {
             return .unary(op: op, operand: makeExpr(prefix.expression))

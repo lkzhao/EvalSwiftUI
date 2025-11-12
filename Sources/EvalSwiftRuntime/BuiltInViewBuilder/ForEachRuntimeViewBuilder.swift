@@ -10,11 +10,31 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
         arguments: [RuntimeArgument],
         scope: RuntimeScope
     ) throws -> AnyView {
-        guard let dataValue = findDataArgument(in: arguments) else {
+        var dataValue: RuntimeValue?
+        var contentFunction: Function?
+        var idStrategy: IDStrategy = .index
+
+        for argument in arguments {
+            if argument.label == "id" {
+                idStrategy = try strategy(from: argument.value)
+                continue
+            }
+
+            if case .function(let function) = argument.value {
+                contentFunction = function
+                continue
+            }
+
+            if dataValue == nil && (argument.label == nil || argument.label == "data") {
+                dataValue = argument.value
+            }
+        }
+
+        guard let dataValue else {
             throw RuntimeError.invalidViewArgument("ForEach requires a data collection argument.")
         }
 
-        guard let contentFunction = findContentFunction(in: arguments) else {
+        guard let contentFunction else {
             throw RuntimeError.invalidViewArgument("ForEach requires a content closure.")
         }
 
@@ -30,34 +50,17 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
                 function: contentFunction,
                 scope: scope
             )
-            return RenderedElement(id: index, view: content)
+            let elementID = makeElementIdentifier(
+                element: element,
+                index: index,
+                strategy: idStrategy
+            )
+            return RenderedElement(id: elementID, view: content)
         }
 
         return AnyView(ForEach(renderedElements) { element in
             element.view
         })
-    }
-
-    private func findDataArgument(in arguments: [RuntimeArgument]) -> RuntimeValue? {
-        for argument in arguments {
-            if case .function = argument.value {
-                continue
-            }
-
-            if argument.label == nil || argument.label == "data" {
-                return argument.value
-            }
-        }
-        return nil
-    }
-
-    private func findContentFunction(in arguments: [RuntimeArgument]) -> Function? {
-        for argument in arguments.reversed() {
-            if case .function(let function) = argument.value {
-                return function
-            }
-        }
-        return nil
     }
 
     private func makeDataSequence(from value: RuntimeValue) throws -> [RuntimeValue] {
@@ -66,6 +69,15 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
             return values
         default:
             throw RuntimeError.invalidViewArgument("ForEach data must be a range or array expression.")
+        }
+    }
+
+    private func strategy(from value: RuntimeValue) throws -> IDStrategy {
+        switch value {
+        case .keyPath(let keyPath) where keyPath == .self:
+            return .element
+        default:
+            throw RuntimeError.invalidViewArgument("ForEach currently only supports id: \\.self")
         }
     }
 
@@ -116,9 +128,42 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
 
         return arguments
     }
+
+    private func makeElementIdentifier(
+        element: RuntimeValue,
+        index: Int,
+        strategy: IDStrategy
+    ) -> String {
+        switch strategy {
+        case .index:
+            return "index-\(index)"
+        case .element:
+            return "self-\(elementIdentifierComponent(from: element, fallback: index))"
+        }
+    }
+
+    private func elementIdentifierComponent(from value: RuntimeValue, fallback: Int) -> String {
+        switch value {
+        case .int(let number):
+            return String(number)
+        case .double(let number):
+            return String(number)
+        case .string(let string):
+            return string
+        case .bool(let bool):
+            return String(bool)
+        default:
+            return String(fallback)
+        }
+    }
 }
 
 private struct RenderedElement: Identifiable {
-    let id: Int
+    let id: String
     let view: AnyView
+}
+
+private enum IDStrategy {
+    case index
+    case element
 }

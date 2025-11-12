@@ -6,6 +6,7 @@ public enum RuntimeValue {
     case double(Double)
     case string(String)
     case bool(Bool)
+    case keyPath(RuntimeKeyPath)
     case viewDefinition(ViewDefinition)
     case viewBuilder(any RuntimeViewBuilder)
     case function(Function)
@@ -25,6 +26,8 @@ extension RuntimeValue: CustomStringConvertible {
             return string
         case .bool(let bool):
             return String(bool)
+        case .keyPath:
+            return "<KeyPath>"
         case .viewDefinition:
             return "<ViewDefinition>"
         case .viewBuilder(let builder):
@@ -92,6 +95,7 @@ extension RuntimeValue {
         case double = "Double"
         case string = "String"
         case bool = "Bool"
+        case keyPath = "KeyPath"
         case viewDefinition = "ViewDefinition"
         case viewBuilder = "ViewBuilder"
         case view = "RuntimeView"
@@ -110,6 +114,8 @@ extension RuntimeValue {
             return .string
         case .bool:
             return .bool
+        case .keyPath:
+            return .keyPath
         case .viewDefinition:
             return .viewDefinition
         case .viewBuilder:

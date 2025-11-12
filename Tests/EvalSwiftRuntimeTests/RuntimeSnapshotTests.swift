@@ -233,4 +233,28 @@ struct RuntimeSnapshotTests {
             }
         }
     }
+
+    @Test func rendersForEachWithExplicitID() throws {
+        let source = """
+        struct ExplicitIDList: View {
+            let items = ["Alpha", "Beta", "Gamma"]
+
+            var body: some View {
+                VStack {
+                    ForEach(items, id: \\.self) { item in
+                        Text(item)
+                    }
+                }
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source, viewName: "ExplicitIDList") {
+            VStack {
+                Text("Alpha")
+                Text("Beta")
+                Text("Gamma")
+            }
+        }
+    }
 }

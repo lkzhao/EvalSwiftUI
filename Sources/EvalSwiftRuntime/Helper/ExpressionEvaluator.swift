@@ -21,6 +21,8 @@ struct ExpressionEvaluator {
                 return value
             }
             return .array(values)
+        case .keyPath(let keyPath):
+            return .keyPath(keyPath)
         case .stringInterpolation(let segments):
             let resolved = try segments.map { segment -> String in
                 switch segment {
