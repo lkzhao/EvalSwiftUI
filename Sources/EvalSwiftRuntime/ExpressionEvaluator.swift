@@ -32,7 +32,7 @@ struct ExpressionEvaluator {
                     guard let value = try evaluate(expr, module: module, scope: scope) else {
                         return ""
                     }
-                    return stringValue(from: value)
+                    return value.asString ?? value.description
                 }
             }.joined()
             return .string(resolved)
@@ -53,7 +53,7 @@ struct ExpressionEvaluator {
             let description = "\(baseValue?.description ?? "nil").\(name)"
             return .string(description)
         case .call(let callee, let arguments):
-            if let viewName = identifierName(from: callee) {
+            if case .identifier(let viewName) = callee {
                 let evaluatedArguments = try arguments.map { argument in
                     let value = try evaluate(argument.value, module: module, scope: scope) ?? .void
                     return RuntimeArgument(label: argument.label, value: value)
@@ -76,17 +76,5 @@ struct ExpressionEvaluator {
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
-    }
-
-    private static func identifierName(from expr: ExprIR) -> String? {
-        if case .identifier(let name) = expr { return name }
-        return nil
-    }
-
-    private static func stringValue(from value: RuntimeValue) -> String {
-        if let string = value.asString {
-            return string
-        }
-        return value.description
     }
 }
