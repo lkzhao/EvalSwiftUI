@@ -21,7 +21,7 @@ struct CompiledFunctionTests {
         let value = try module.globalScope.callMethod("primary", arguments: arguments)
 
         guard case .string(let result) = value else {
-            throw TestFailure.expected("Expected string result, got \(value)")
+            throw TestFailure.expected("Expected string result, got \(String(describing: value))")
         }
 
         #expect(result == "Alpha")
@@ -44,7 +44,7 @@ struct CompiledFunctionTests {
         let value = try module.globalScope.callMethod("resolve", arguments: arguments)
 
         guard case .string(let result) = value else {
-            throw TestFailure.expected("Expected string, got \(value)")
+            throw TestFailure.expected("Expected string, got \(String(describing: value))")
         }
 
         #expect(result == "Positional")
