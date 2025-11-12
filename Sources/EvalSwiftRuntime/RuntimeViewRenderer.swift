@@ -9,23 +9,23 @@ final class RuntimeViewRenderer: ObservableObject {
 
     let module: RuntimeModule
     let definition: CompiledViewDefinition
-    let scope: RuntimeScope
+    let instance: RuntimeInstance
     var isRendering = false
 
     init(
         definition: CompiledViewDefinition,
         module: RuntimeModule,
-        parentScope: RuntimeScope,
+        parentInstance: RuntimeInstance,
         parameters: [RuntimeParameter]
     ) throws {
         self.definition = definition
         self.module = module
-        self.scope = try definition.makeInstanceScope(parentScope: parentScope, parameters: parameters)
+        self.instance = try definition.makeInstance(parentInstance: parentInstance, parameters: parameters)
         self.runtimeValue = .void
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
-        scope.mutationHandler = { [weak self] _, _ in
+        instance.mutationHandler = { [weak self] _, _ in
             guard let self else { return }
             if Thread.isMainThread {
                 try? self.rerender()
@@ -42,9 +42,9 @@ final class RuntimeViewRenderer: ObservableObject {
         isRendering = true
         defer { isRendering = false }
 
-        let nextValue = try definition.renderBody(in: scope)
+        let nextValue = try instance.callMethod("body")
         runtimeValue = nextValue
-        renderedView = try module.realize(runtimeValue: nextValue, scope: scope)
+        renderedView = try module.realize(runtimeValue: nextValue, instance: instance)
     }
 }
 

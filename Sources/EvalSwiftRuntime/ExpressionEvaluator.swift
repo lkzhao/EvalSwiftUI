@@ -3,13 +3,13 @@ import EvalSwiftIR
 
 struct ExpressionEvaluator {
     let module: RuntimeModule
-    let scope: RuntimeScope
+    let instance: RuntimeInstance
 
     func evaluate(expression: ExprIR?) throws -> RuntimeValue? {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
-            if let local = scope.get(name) {
+            if let local = instance.get(name) {
                 return local
             }
             throw RuntimeError.unknownIdentifier(name)
@@ -47,7 +47,7 @@ struct ExpressionEvaluator {
             return .function(compiled)
         case .member(let base, let name):
             if case .identifier("self") = base {
-                if let value = scope.get(name, preference: .preferAncestor) {
+                if let value = instance.get(name, preference: .preferAncestor) {
                     return value
                 }
                 throw RuntimeError.unknownIdentifier(name)
@@ -75,7 +75,7 @@ struct ExpressionEvaluator {
                 let value = try evaluate(expression: argument.value) ?? .void
                 return RuntimeParameter(label: argument.label, value: value)
             }
-            return try compiled.invoke(arguments: resolvedArguments, scope: scope)
+            return try compiled.invoke(arguments: resolvedArguments, instance: instance)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }

@@ -14,7 +14,7 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
     }
 
     @MainActor
-    public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
+    public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, instance: RuntimeInstance) throws -> AnyView {
         var spacing: CGFloat?
         var childViews: [AnyView] = []
 
@@ -27,14 +27,14 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
             switch parameter.value {
             case .array(let values):
                 for value in values {
-                    childViews.append(try module.realize(runtimeValue: value, scope: scope))
+                    childViews.append(try module.realize(runtimeValue: value, instance: instance))
                 }
             case .view(let runtimeView):
-                childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, scope: scope))
+                childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: instance))
             case .function(let function):
-                let views = try module.runtimeViews(from: function, scope: scope)
+                let views = try module.runtimeViews(from: function, instance: instance)
                 for runtimeView in views {
-                    childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, scope: scope))
+                    childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: instance))
                 }
             default:
                 continue

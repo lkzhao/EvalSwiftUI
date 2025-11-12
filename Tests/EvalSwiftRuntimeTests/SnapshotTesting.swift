@@ -87,7 +87,7 @@ func assertSnapshotsMatch<V: View>(
     let evaluatedView = try module.makeSwiftUIView(
         typeName: viewName,
         parameters: [],
-        scope: module.globalScope
+        instance: module.globalInstance
     )
 
     let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)

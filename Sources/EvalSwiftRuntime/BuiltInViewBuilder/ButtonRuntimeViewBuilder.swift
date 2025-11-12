@@ -9,7 +9,7 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
     public func makeSwiftUIView(
         parameters: [RuntimeParameter],
         module: RuntimeModule,
-        scope: RuntimeScope
+        instance: RuntimeInstance
     ) throws -> AnyView {
         var actionFunction: CompiledFunction?
         var labelFunction: CompiledFunction?
@@ -44,17 +44,17 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
             throw RuntimeError.invalidViewArgument("Button requires an action closure.")
         }
 
-        let action = RuntimeButtonAction(function: actionFunction, scope: scope)
+        let action = RuntimeButtonAction(function: actionFunction, instance: instance)
 
         if let labelFunction = labelFunction {
-            let labelViews = try module.runtimeViews(from: labelFunction, scope: scope)
+            let labelViews = try module.runtimeViews(from: labelFunction, instance: instance)
             guard labelViews.count == 1, let runtimeView = labelViews.first else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
             let label = try module.makeSwiftUIView(
                 typeName: runtimeView.typeName,
                 parameters: runtimeView.parameters,
-                scope: scope
+                instance: instance
             )
             return AnyView(Button(action: action.perform) {
                 label
@@ -73,14 +73,14 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
 
 private final class RuntimeButtonAction {
     private let function: CompiledFunction
-    private let scope: RuntimeScope
+    private let instance: RuntimeInstance
 
-    init(function: CompiledFunction, scope: RuntimeScope) {
+    init(function: CompiledFunction, instance: RuntimeInstance) {
         self.function = function
-        self.scope = scope
+        self.instance = instance
     }
 
     func perform() {
-        _ = try? function.invoke(arguments: [], scope: scope)
+        _ = try? function.invoke(arguments: [], instance: instance)
     }
 }
