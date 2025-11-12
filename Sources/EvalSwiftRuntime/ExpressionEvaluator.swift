@@ -50,7 +50,7 @@ struct ExpressionEvaluator {
                 throw RuntimeError.unknownIdentifier(name)
             }
             let baseValue = try evaluate(base, module: module, scope: scope)
-            let description = "\(baseValue?.description ?? "nil")\(String.runtimeMemberSeparator)\(name)"
+            let description = "\(baseValue?.description ?? "nil").\(name)"
             return .string(description)
         case .call(let callee, let arguments):
             if let viewName = identifierName(from: callee) {
