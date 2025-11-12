@@ -40,6 +40,17 @@ struct ExpressionEvaluator {
             return .viewDefinition(definition)
         case .function(let function):
             return .function(function)
+        case .unary(let op, let operandExpr):
+            guard let operand = try evaluate(operandExpr, scope: scope) else {
+                throw RuntimeError.unsupportedExpression("Unary operator \(op.rawValue) requires a value")
+            }
+            return try evaluateUnary(op: op, operand: operand)
+        case .binary(let op, let lhsExpr, let rhsExpr):
+            guard let lhs = try evaluate(lhsExpr, scope: scope),
+                  let rhs = try evaluate(rhsExpr, scope: scope) else {
+                throw RuntimeError.unsupportedExpression("Binary operator \(op.rawValue) requires valid operands")
+            }
+            return try evaluateBinary(op: op, lhs: lhs, rhs: rhs)
         case .member(let base, let name):
             if case .identifier("self") = base {
                 if let instance = scope.instance {
@@ -74,5 +85,106 @@ struct ExpressionEvaluator {
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
+    }
+
+    private static func evaluateUnary(
+        op: UnaryOperatorIR,
+        operand: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch op {
+        case .plus:
+            switch operand {
+            case .int, .double:
+                return operand
+            default:
+                guard let numeric = operand.asDouble else {
+                    throw RuntimeError.unsupportedExpression("Unary + is not supported for \(operand.runtimeTypeDescription)")
+                }
+                return .double(numeric)
+            }
+        case .minus:
+            switch operand {
+            case .int(let value):
+                return .int(-value)
+            case .double(let number):
+                return .double(-number)
+            default:
+                guard let numeric = operand.asDouble else {
+                    throw RuntimeError.unsupportedExpression("Unary - is not supported for \(operand.runtimeTypeDescription)")
+                }
+                return .double(-numeric)
+            }
+        }
+    }
+
+    private static func evaluateBinary(
+        op: BinaryOperatorIR,
+        lhs: RuntimeValue,
+        rhs: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch (lhs, rhs) {
+        case (.int(let left), .int(let right)):
+            return try evaluateIntegerBinary(op: op, lhs: left, rhs: right)
+        default:
+            guard let left = lhs.asDouble,
+                  let right = rhs.asDouble else {
+                throw RuntimeError.unsupportedExpression(
+                    "Binary operator \(op.rawValue) is not supported between \(lhs.runtimeTypeDescription) and \(rhs.runtimeTypeDescription)"
+                )
+            }
+            return try evaluateFloatingBinary(op: op, lhs: left, rhs: right)
+        }
+    }
+
+    private static func evaluateIntegerBinary(
+        op: BinaryOperatorIR,
+        lhs: Int,
+        rhs: Int
+    ) throws -> RuntimeValue {
+        switch op {
+        case .addition:
+            return .int(lhs + rhs)
+        case .subtraction:
+            return .int(lhs - rhs)
+        case .multiplication:
+            return .int(lhs * rhs)
+        case .division:
+            guard rhs != 0 else {
+                throw RuntimeError.unsupportedExpression("Division by zero")
+            }
+            return .int(lhs / rhs)
+        case .remainder:
+            guard rhs != 0 else {
+                throw RuntimeError.unsupportedExpression("Modulo by zero")
+            }
+            return .int(lhs % rhs)
+        }
+    }
+
+    private static func evaluateFloatingBinary(
+        op: BinaryOperatorIR,
+        lhs: Double,
+        rhs: Double
+    ) throws -> RuntimeValue {
+        let result: Double
+        switch op {
+        case .addition:
+            result = lhs + rhs
+        case .subtraction:
+            result = lhs - rhs
+        case .multiplication:
+            result = lhs * rhs
+        case .division:
+            guard rhs != 0 else {
+                throw RuntimeError.unsupportedExpression("Division by zero")
+            }
+            result = lhs / rhs
+        case .remainder:
+            guard rhs != 0 else {
+                throw RuntimeError.unsupportedExpression("Modulo by zero")
+            }
+            result = lhs.truncatingRemainder(dividingBy: rhs)
+        }
+        return .double(result)
     }
 }

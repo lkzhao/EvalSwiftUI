@@ -25,6 +25,28 @@ public struct FunctionParameterIR {
     public let defaultValue: ExprIR?
 }
 
+public enum BinaryOperatorIR: String {
+    case addition = "+"
+    case subtraction = "-"
+    case multiplication = "*"
+    case division = "/"
+    case remainder = "%"
+
+    var precedence: Int {
+        switch self {
+        case .multiplication, .division, .remainder:
+            return 2
+        case .addition, .subtraction:
+            return 1
+        }
+    }
+}
+
+public enum UnaryOperatorIR: String {
+    case plus = "+"
+    case minus = "-"
+}
+
 public indirect enum ExprIR {
     case identifier(String)
     case literal(String)
@@ -33,6 +55,8 @@ public indirect enum ExprIR {
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
     case function(FunctionIR)
     case view(ViewDefinitionIR)
+    case binary(op: BinaryOperatorIR, lhs: ExprIR, rhs: ExprIR)
+    case unary(op: UnaryOperatorIR, operand: ExprIR)
     case unknown(String)
 }
 

@@ -234,6 +234,16 @@ public struct SwiftIRParser {
             return .literal(literal.literal.text)
         }
 
+        if let prefix = expr.as(PrefixOperatorExprSyntax.self),
+           let op = unaryOperator(from: prefix) {
+            return .unary(op: op, operand: makeExpr(prefix.expression))
+        }
+
+        if let sequence = expr.as(SequenceExprSyntax.self),
+           let binaryExpr = makeBinaryExpr(from: Array(sequence.elements)) {
+            return binaryExpr
+        }
+
         if let reference = expr.as(DeclReferenceExprSyntax.self) {
             return .identifier(reference.baseName.text)
         }
@@ -347,11 +357,102 @@ public struct SwiftIRParser {
     private func makeAssignment(from item: CodeBlockItemSyntax) -> AssignmentIR? {
         guard let sequence = item.item.as(SequenceExprSyntax.self) else { return nil }
         let elements = Array(sequence.elements)
-        guard elements.count == 3,
-              elements[1].as(AssignmentExprSyntax.self) != nil else {
-            return nil
+        if let assignmentIndex = elements.firstIndex(where: { $0.as(AssignmentExprSyntax.self) != nil }),
+           assignmentIndex > 0,
+           assignmentIndex < elements.count - 1 {
+            let target = makeExpr(elements[assignmentIndex - 1])
+            let valueElements = elements[(assignmentIndex + 1)...]
+            let value = makeExpr(fromSequenceElements: valueElements)
+            return AssignmentIR(target: target, value: value)
         }
-        return AssignmentIR(target: makeExpr(elements[0]), value: makeExpr(elements[2]))
+
+        if elements.count >= 3,
+           let op = compoundAssignmentOperator(from: elements[1]) {
+            let rhsElements = elements[2...]
+            guard !rhsElements.isEmpty else { return nil }
+            let target = makeExpr(elements[0])
+            let rhs = makeExpr(fromSequenceElements: rhsElements)
+            let value = ExprIR.binary(op: op, lhs: target, rhs: rhs)
+            return AssignmentIR(target: target, value: value)
+        }
+
+        return nil
     }
 
+    private func makeExpr(fromSequenceElements elements: ArraySlice<ExprSyntax>) -> ExprIR {
+        let list = Array(elements)
+        if list.isEmpty {
+            return .unknown("")
+        }
+        if list.count == 1, let first = list.first {
+            return makeExpr(first)
+        }
+        return makeBinaryExpr(from: list) ?? .unknown(list.map { $0.trimmedDescription }.joined(separator: " "))
+    }
+
+    private func makeBinaryExpr(from elements: [ExprSyntax]) -> ExprIR? {
+        guard elements.count >= 3,
+              elements.count % 2 == 1,
+              !elements.contains(where: { $0.as(AssignmentExprSyntax.self) != nil }) else {
+            return nil
+        }
+
+        var values: [ExprIR] = []
+        var operators: [BinaryOperatorIR] = []
+
+        for (index, element) in elements.enumerated() {
+            if index % 2 == 0 {
+                values.append(makeExpr(element))
+            } else {
+                guard let op = binaryOperator(from: element) else {
+                    return nil
+                }
+
+                while let last = operators.last,
+                      last.precedence >= op.precedence,
+                      values.count >= 2 {
+                    let rhs = values.removeLast()
+                    let lhs = values.removeLast()
+                    let popped = operators.removeLast()
+                    values.append(.binary(op: popped, lhs: lhs, rhs: rhs))
+                }
+
+                operators.append(op)
+            }
+        }
+
+        while let op = operators.popLast(),
+              values.count >= 2 {
+            let rhs = values.removeLast()
+            let lhs = values.removeLast()
+            values.append(.binary(op: op, lhs: lhs, rhs: rhs))
+        }
+
+        return values.first
+    }
+
+    private func binaryOperator(from expr: ExprSyntax) -> BinaryOperatorIR? {
+        if let reference = expr.as(DeclReferenceExprSyntax.self) {
+            return BinaryOperatorIR(rawValue: reference.baseName.text)
+        }
+        if let binary = expr.as(BinaryOperatorExprSyntax.self) {
+            return BinaryOperatorIR(rawValue: binary.operator.text)
+        }
+        let token = expr.trimmedDescription
+        return BinaryOperatorIR(rawValue: token)
+    }
+
+    private func compoundAssignmentOperator(from expr: ExprSyntax) -> BinaryOperatorIR? {
+        let token = expr.trimmedDescription
+        guard token.hasSuffix("="),
+              token.count > 1 else {
+            return nil
+        }
+        let opSymbol = String(token.dropLast())
+        return BinaryOperatorIR(rawValue: opSymbol)
+    }
+
+    private func unaryOperator(from expr: PrefixOperatorExprSyntax) -> UnaryOperatorIR? {
+        UnaryOperatorIR(rawValue: expr.operator.text)
+    }
 }
