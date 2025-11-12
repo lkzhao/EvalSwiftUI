@@ -23,7 +23,7 @@ final class RuntimeViewRenderer: ObservableObject {
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
-        instance.mutationHandler = { [weak self] _, _ in
+        instance.mutationHandler = { [weak self] in
             guard let self else { return }
             if Thread.isMainThread {
                 try? self.rerender()

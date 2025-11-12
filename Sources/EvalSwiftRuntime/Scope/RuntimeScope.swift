@@ -6,9 +6,8 @@
 //
 
 public protocol RuntimeScope: AnyObject, CustomStringConvertible {
-    var storage: [String: RuntimeValue] { get }
+    var storage: [String: RuntimeValue] { get set }
     var parent: RuntimeScope? { get }
-    // TODO: define/set/get should receive a type to distinguish between same variable names with different types
     func define(_ name: String, value: RuntimeValue)
     func set(_ name: String, value: RuntimeValue)
     func get(_ name: String) -> RuntimeValue?
@@ -34,5 +33,26 @@ extension RuntimeScope {
             throw RuntimeError.unknownFunction(name)
         }
         return try function.invoke(arguments: arguments, scope: self)
+    }
+
+    public func define(_ name: String, value: RuntimeValue) {
+        storage[name] = value
+    }
+
+    public func set(_ name: String, value: RuntimeValue) {
+        if storage[name] != nil {
+            storage[name] = value
+        } else if let parent, parent.get(name) != nil {
+            parent.set(name, value: value)
+        } else {
+            fatalError("Undefined variable '\(name)'")
+        }
+    }
+
+    public func get(_ name: String) -> RuntimeValue? {
+        if let value = storage[name] {
+            return value
+        }
+        return parent?.get(name)
     }
 }
