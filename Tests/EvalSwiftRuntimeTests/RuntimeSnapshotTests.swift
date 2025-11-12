@@ -11,7 +11,7 @@ struct RuntimeSnapshotTests {
         }
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             VStack {
                 Text("Hello world!")
             }
@@ -31,7 +31,7 @@ struct RuntimeSnapshotTests {
         GreetingView()
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             Text("Hello, World!")
         }
     }
@@ -54,7 +54,7 @@ struct RuntimeSnapshotTests {
         CountView()
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             VStack(spacing: 4) {
                 Text("Count: 0")
                 Button("Increase") {}
@@ -68,7 +68,7 @@ struct RuntimeSnapshotTests {
         Text("Second")
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             VStack {
                 Text("First")
                 Text("Second")
@@ -91,7 +91,7 @@ struct RuntimeSnapshotTests {
         CountView()
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             VStack(spacing: 4) {
                 Text("Count: 0")
             }
@@ -205,7 +205,7 @@ struct RuntimeSnapshotTests {
         globalFunctionProducingView(value: globalFunction(value: 5))
         """
 
-        try assertTopLevelSnapshotsMatch(source: source) {
+        try assertSnapshotsMatch(source: source) {
             VStack {
                 Text("value is 5")
             }
