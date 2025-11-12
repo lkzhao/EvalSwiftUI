@@ -80,15 +80,8 @@ func assertSnapshotsMatch<V: View>(
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: moduleSource)
     let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
-    let evaluatedView = try module.makeSwiftUIView(
-        typeName: viewName,
-        arguments: [],
-        scope: module.globalScope
-    )
-
-    let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
-    let expectedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: expectedView())
-    #expect(evaluatedSnapshot == expectedSnapshot)
+    let evaluatedView = try RuntimeView(typeName: viewName, arguments: []).makeSwiftUIView(module: module)
+    try assertViewMatch(evaluatedView, expectedView())
 }
 
 @MainActor
@@ -101,9 +94,14 @@ func assertTopLevelSnapshotsMatch<V: View>(
     let moduleIR = parser.parseModule(source: source)
     let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
     let evaluatedView = try module.makeTopLevelSwiftUIViews()
-    let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
-    let expectedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: expectedView())
-    #expect(evaluatedSnapshot == expectedSnapshot)
+    try assertViewMatch(evaluatedView, expectedView())
+}
+
+@MainActor
+func assertViewMatch(_ view1: some View, _ view2: some View) throws {
+    let snapshot1 = try RuntimeViewSnapshotRenderer.snapshot(from: view1)
+    let snapshot2 = try RuntimeViewSnapshotRenderer.snapshot(from: view2)
+    #expect(snapshot1 == snapshot2)
 }
 
 private func runtimeModuleSource(for source: String, viewName: String) -> String {

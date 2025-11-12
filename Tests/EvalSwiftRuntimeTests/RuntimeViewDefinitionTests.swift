@@ -287,7 +287,7 @@ struct RuntimeViewDefinitionTests {
             throw TestFailure.expected("Expected runtime view")
         }
 
-        let realized = try module.makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: module.globalScope)
+        let realized = try runtimeView.makeSwiftUIView(module: module)
         let renderer = ImageRenderer(content: realized)
         renderer.scale = 1
         #expect(renderer.cgImage != nil)
@@ -314,19 +314,11 @@ struct RuntimeViewDefinitionTests {
             scope: module.globalScope,
         )
 
-        guard case .view(let initialView) = renderer.runtimeValue else {
-            throw TestFailure.expected("Expected runtime view for CounterView")
-        }
-
-        #expect(initialView.arguments.first?.value.asString == "Count: 0.0")
+        try assertViewMatch(renderer.renderedView, Text("Count: 0.0"))
 
         renderer.instance.set("count", value: .number(5))
 
-        guard case .view(let updatedView) = renderer.runtimeValue else {
-            throw TestFailure.expected("Expected updated runtime view for CounterView")
-        }
-
-        #expect(updatedView.arguments.first?.value.asString == "Count: 5.0")
+        try assertViewMatch(renderer.renderedView, Text("Count: 5.0"))
     }
 
     // MARK: - Helpers

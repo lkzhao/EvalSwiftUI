@@ -35,30 +35,13 @@ public final class RuntimeModule {
     }
 
     @MainActor
-    public func makeSwiftUIView(typeName: String, arguments: [RuntimeArgument], scope: RuntimeScope) throws -> AnyView {
-        if let builder = builder(named: typeName) {
-            return try builder.makeSwiftUIView(arguments: arguments, module: self, scope: scope)
-        }
-        if let definition = viewDefinition(named: typeName) {
-            let renderer = try RuntimeViewRenderer(
-                definition: definition,
-                module: self,
-                arguments: arguments,
-                scope: scope,
-            )
-            return AnyView(RuntimeViewHost(renderer: renderer))
-        }
-        throw RuntimeError.unknownView(typeName)
-    }
-
-    @MainActor
     public func makeTopLevelSwiftUIViews() throws -> AnyView {
         guard !runtimeViews.isEmpty else {
             throw RuntimeError.invalidViewResult("Top-level statements did not produce any SwiftUI views")
         }
 
         let swiftUIViews = try runtimeViews.map { runtimeView in
-            try makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: globalScope)
+            try runtimeView.makeSwiftUIView(module: self, scope: globalScope)
         }
 
         return AnyView(VStack {
@@ -66,23 +49,5 @@ public final class RuntimeModule {
                 view
             }
         })
-    }
-
-    @MainActor
-    public func realize(runtimeValue value: RuntimeValue, scope: RuntimeScope) throws -> AnyView {
-        switch value {
-        case .view(let runtimeView):
-            return try makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope)
-        case .viewDefinition(let definition):
-            let renderer = try RuntimeViewRenderer(
-                definition: definition,
-                module: self,
-                arguments: [],
-                scope: scope,
-            )
-            return AnyView(RuntimeViewHost(renderer: renderer))
-        default:
-            throw RuntimeError.invalidViewResult("Expected view, got \(value)")
-        }
     }
 }

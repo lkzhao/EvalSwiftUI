@@ -56,7 +56,7 @@ struct RuntimeSnapshotTests {
 
         try assertTopLevelSnapshotsMatch(source: source) {
             VStack(spacing: 4) {
-                Text("Count: 0")
+                Text("Count: 0.0")
                 Button("Increase") {}
             }
         }
@@ -93,7 +93,7 @@ struct RuntimeSnapshotTests {
 
         try assertTopLevelSnapshotsMatch(source: source) {
             VStack(spacing: 4) {
-                Text("Count: 0")
+                Text("Count: 0.0")
             }
         }
     }

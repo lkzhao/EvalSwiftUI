@@ -44,9 +44,7 @@ public struct SwiftIRParser {
             }
         }
 
-        return ModuleIR(
-            statements: statements
-        )
+        return ModuleIR(statements: statements)
     }
 
     private func makeViewDefinition(from node: StructDeclSyntax) -> ViewDefinitionIR? {

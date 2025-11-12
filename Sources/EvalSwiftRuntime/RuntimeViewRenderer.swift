@@ -5,7 +5,6 @@ import SwiftUI
 @MainActor
 final class RuntimeViewRenderer: ObservableObject {
     @Published private(set) var renderedView: AnyView
-    private(set) var runtimeValue: RuntimeValue
 
     let module: RuntimeModule
     let definition: CompiledViewDefinition
@@ -21,7 +20,6 @@ final class RuntimeViewRenderer: ObservableObject {
         self.definition = definition
         self.module = module
         self.instance = try definition.makeInstance(arguments: arguments, scope: scope)
-        self.runtimeValue = .void
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
@@ -45,8 +43,10 @@ final class RuntimeViewRenderer: ObservableObject {
         guard let nextValue = try instance.callMethod("body") else {
             throw RuntimeError.invalidViewResult("View body did not return a value")
         }
-        runtimeValue = nextValue
-        renderedView = try module.realize(runtimeValue: nextValue, scope: instance)
+        guard case .view(let viewValue) = nextValue else {
+            throw RuntimeError.invalidViewResult("View body did not return a view, got \(nextValue)")
+        }
+        renderedView = try viewValue.makeSwiftUIView(module: module, scope: instance)
     }
 }
 
