@@ -26,7 +26,7 @@ public final class RuntimeModule {
     }
 
     func viewDefinition(named name: String) -> CompiledViewDefinition? {
-        guard let value = globalScope.get(name), case .viewDefinition(let definition) = value else { return nil }
+        guard let value = try? globalScope.get(name), case .viewDefinition(let definition) = value else { return nil }
         return definition
     }
 

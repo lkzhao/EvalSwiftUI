@@ -316,7 +316,7 @@ struct RuntimeViewDefinitionTests {
 
         try assertViewMatch(renderer.renderedView, Text("Count: 0"))
 
-        renderer.instance.set("count", value: .int(5))
+        try renderer.instance.set("count", value: .int(5))
 
         try assertViewMatch(renderer.renderedView, Text("Count: 5"))
     }

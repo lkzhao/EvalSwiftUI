@@ -56,10 +56,10 @@ final class StatementInterpreter {
     private func assign(value: RuntimeValue, to target: ExprIR) throws {
         switch target {
         case .identifier(let name):
-            scope.set(name, value: value)
+            try scope.set(name, value: value)
         case .member(let base, let name):
             if case .identifier("self") = base, let instance = scope.instance {
-                instance.set(name, value: value)
+                try instance.set(name, value: value)
             } else {
                 throw RuntimeError.unsupportedAssignment("Assignments only support self member targets")
             }

@@ -9,8 +9,8 @@ public protocol RuntimeScope: AnyObject, CustomStringConvertible {
     var storage: [String: RuntimeValue] { get set }
     var parent: RuntimeScope? { get }
     func define(_ name: String, value: RuntimeValue)
-    func set(_ name: String, value: RuntimeValue)
-    func get(_ name: String) -> RuntimeValue?
+    func set(_ name: String, value: RuntimeValue) throws
+    func get(_ name: String) throws -> RuntimeValue
 }
 
 extension RuntimeScope {
@@ -29,7 +29,8 @@ extension RuntimeScope {
         return instance
     }
     public func callMethod(_ name: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
-        guard let value = get(name), case .function(let function) = value else {
+        let value = try get(name)
+        guard case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
         }
         return try function.invoke(arguments: arguments, scope: self)
@@ -39,20 +40,32 @@ extension RuntimeScope {
         storage[name] = value
     }
 
-    public func set(_ name: String, value: RuntimeValue) {
-        if storage[name] != nil {
-            storage[name] = value
-        } else if let parent, parent.get(name) != nil {
-            parent.set(name, value: value)
+    public func set(_ name: String, value: RuntimeValue) throws {
+        if let existing = storage[name] {
+            if existing.runtimeType == .void {
+                storage[name] = value
+            } else {
+                guard existing.runtimeType == value.runtimeType else {
+                    throw RuntimeError.unsupportedAssignment(
+                        "Type mismatch for '\(name)': expected \(existing.runtimeTypeDescription), got \(value.runtimeTypeDescription)"
+                    )
+                }
+                storage[name] = value
+            }
+        } else if let parent {
+            try parent.set(name, value: value)
         } else {
-            fatalError("Undefined variable '\(name)'")
+            throw RuntimeError.unknownIdentifier(name)
         }
     }
 
-    public func get(_ name: String) -> RuntimeValue? {
+    public func get(_ name: String) throws -> RuntimeValue {
         if let value = storage[name] {
             return value
         }
-        return parent?.get(name)
+        if let parent {
+            return try parent.get(name)
+        }
+        throw RuntimeError.unknownIdentifier(name)
     }
 }

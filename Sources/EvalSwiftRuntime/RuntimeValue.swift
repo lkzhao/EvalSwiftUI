@@ -67,3 +67,44 @@ extension RuntimeValue {
         }
     }
 }
+
+extension RuntimeValue {
+    enum RuntimeType: String {
+        case int = "Int"
+        case double = "Double"
+        case string = "String"
+        case bool = "Bool"
+        case viewDefinition = "ViewDefinition"
+        case view = "RuntimeView"
+        case array = "Array"
+        case function = "Function"
+        case void = "Void"
+    }
+
+    var runtimeType: RuntimeType {
+        switch self {
+        case .int:
+            return .int
+        case .double:
+            return .double
+        case .string:
+            return .string
+        case .bool:
+            return .bool
+        case .viewDefinition:
+            return .viewDefinition
+        case .view:
+            return .view
+        case .array:
+            return .array
+        case .function:
+            return .function
+        case .void:
+            return .void
+        }
+    }
+
+    var runtimeTypeDescription: String {
+        runtimeType.rawValue
+    }
+}

@@ -6,10 +6,7 @@ struct ExpressionEvaluator {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
-            if let local = scope.get(name) {
-                return local
-            }
-            throw RuntimeError.unknownIdentifier(name)
+            return try scope.get(name)
         case .literal(let raw):
             if let integer = Int(raw) {
                 return .int(integer)
@@ -47,8 +44,8 @@ struct ExpressionEvaluator {
             return .function(compiled)
         case .member(let base, let name):
             if case .identifier("self") = base {
-                if let value = scope.instance?.get(name) {
-                    return value
+                if let instance = scope.instance {
+                    return try instance.get(name)
                 }
                 throw RuntimeError.unknownIdentifier(name)
             }
