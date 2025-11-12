@@ -103,10 +103,8 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
         }
 
         let swiftUIViews = try runtimeViews.map { try $0.makeSwiftUIView(scope: scope) }
-        return AnyView(VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
-                view
-            }
+        return AnyView(ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
+            view
         })
     }
 

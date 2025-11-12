@@ -20,7 +20,7 @@ extension ViewDefinition {
                 instance.define(binding.name, value: .void)
             }
         }
-        _ = try instance.callMethod("init", arguments: arguments)
+        _ = try instance.getFunction("init").invoke(arguments: arguments, scope: instance)
         return instance
     }
 }

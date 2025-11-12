@@ -38,13 +38,13 @@ final class RuntimeViewRenderer: ObservableObject {
         isRendering = true
         defer { isRendering = false }
 
-        guard let nextValue = try instance.callMethod("body") else {
-            throw RuntimeError.invalidViewResult("View body did not return a value")
+        let bodyFunction = try instance.getFunction("body")
+        let views = try bodyFunction.renderRuntimeViews(scope: instance).map {
+            try $0.makeSwiftUIView(scope: instance)
         }
-        guard case .view(let viewValue) = nextValue else {
-            throw RuntimeError.invalidViewResult("View body did not return a view, got \(nextValue)")
-        }
-        renderedView = try viewValue.makeSwiftUIView(scope: instance)
+        renderedView = AnyView(ForEach(Array(views.enumerated()), id: \.0) { _, view in
+            view
+        })
     }
 }
 
