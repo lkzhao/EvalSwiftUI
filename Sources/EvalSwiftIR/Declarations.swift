@@ -49,7 +49,10 @@ public enum UnaryOperatorIR: String {
 
 public indirect enum ExprIR {
     case identifier(String)
-    case literal(String)
+    case int(Int)
+    case double(Double)
+    case bool(Bool)
+    case string(String)
     case stringInterpolation([StringInterpolationSegmentIR])
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])

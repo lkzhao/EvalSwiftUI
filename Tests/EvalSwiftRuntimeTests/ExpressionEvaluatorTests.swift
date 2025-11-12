@@ -70,4 +70,65 @@ struct ExpressionEvaluatorTests {
         #expect(negated == -5)
         #expect(positive == -5)
     }
+
+    @Test func supportsNumericTypeInitializers() throws {
+        let source = """
+        var intValue: Int = Int(3.7)
+        var doubleValue: Double = Double(1)
+        var floatValue: Float = Float(2.5)
+        var cgValue: CGFloat = CGFloat(4.25)
+        """
+
+        let module = RuntimeModule(source: source)
+
+        guard case .int(let intValue) = try module.get("intValue"),
+              case .double(let doubleValue) = try module.get("doubleValue"),
+              case .double(let floatValue) = try module.get("floatValue"),
+              case .double(let cgValue) = try module.get("cgValue") else {
+            throw TestFailure.expected("Expected numeric values to be stored")
+        }
+
+        #expect(intValue == 3)
+        #expect(doubleValue == 1)
+        #expect(floatValue == 2.5)
+        #expect(cgValue == 4.25)
+    }
+
+    @Test func coercesFloatBindingsToDoubleStorage() throws {
+        let source = """
+        var spacing: CGFloat = 0
+
+        func adjust() {
+            spacing = spacing + 0.5
+            spacing = spacing + 1
+        }
+
+        adjust()
+        """
+
+        let module = RuntimeModule(source: source)
+        guard case .double(let spacing) = try module.get("spacing") else {
+            throw TestFailure.expected("Expected spacing to be stored as Double")
+        }
+
+        #expect(spacing == 1.5)
+    }
+
+    @Test func supportsMixingIntsAndDoubleConversions() throws {
+        let source = """
+        var value = 3
+        var newValue = Double(value)
+        var finalValue = value + Double(value) / 2
+        """
+
+        let module = RuntimeModule(source: source)
+
+        guard case .double(let newValue) = try module.get("newValue"),
+              case .double(let finalValue) = try module.get("finalValue") else {
+            throw TestFailure.expected("Expected Double storage for converted values")
+        }
+
+        #expect(newValue == 3)
+        #expect(finalValue == 4.5)
+    }
 }

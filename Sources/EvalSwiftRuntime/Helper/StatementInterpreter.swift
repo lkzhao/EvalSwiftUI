@@ -14,7 +14,8 @@ final class StatementInterpreter {
             switch statement {
             case .binding(let binding):
                 let value = try ExpressionEvaluator.evaluate(binding.initializer, scope: scope)
-                scope.define(binding.name, value: value ?? .void)
+                let storedValue = binding.coercedValue(from: value ?? .void)
+                scope.define(binding.name, value: storedValue)
             case .expression(let expression):
                 let value = try ExpressionEvaluator.evaluate(expression, scope: scope)
                 if let value {

@@ -7,22 +7,14 @@ struct ExpressionEvaluator {
         switch expression {
         case .identifier(let name):
             return try scope.get(name)
-        case .literal(let raw):
-            if let integer = Int(raw) {
-                return .int(integer)
-            }
-            if let number = Double(raw) {
-                return .double(number)
-            }
-            if raw == "true" { return .bool(true) }
-            if raw == "false" { return .bool(false) }
-            if raw.hasPrefix("[") && raw.hasSuffix("]") {
-                let trimmed = raw.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-                let elements = trimmed.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
-                let values = elements.map { RuntimeValue.string($0.trimmingCharacters(in: CharacterSet(charactersIn: "\""))) }
-                return .array(values)
-            }
-            return .string(raw.trimmingCharacters(in: CharacterSet(charactersIn: "\"")))
+        case .int(let value):
+            return .int(value)
+        case .double(let value):
+            return .double(value)
+        case .bool(let value):
+            return .bool(value)
+        case .string(let string):
+            return .string(string)
         case .stringInterpolation(let segments):
             let resolved = try segments.map { segment -> String in
                 switch segment {
@@ -62,14 +54,18 @@ struct ExpressionEvaluator {
             let description = "\(baseValue?.description ?? "nil").\(name)"
             return .string(description)
         case .call(let callee, let arguments):
-            if case .identifier(let viewName) = callee {
-                let evaluatedArguments = try arguments.map { argument in
-                    let value = try evaluate(argument.value, scope: scope) ?? .void
-                    return RuntimeArgument(label: argument.label, value: value)
+            let evaluatedArguments = try arguments.map { argument in
+                let value = try evaluate(argument.value, scope: scope) ?? .void
+                return RuntimeArgument(label: argument.label, value: value)
+            }
+
+            if case .identifier(let identifier) = callee {
+                if let conversion = try evaluateTypeInitializer(name: identifier, arguments: evaluatedArguments) {
+                    return conversion
                 }
 
-                if scope.builder(named: viewName) != nil || scope.viewDefinition(named: viewName) != nil {
-                    return .view(RuntimeView(typeName: viewName, arguments: evaluatedArguments))
+                if scope.builder(named: identifier) != nil || scope.viewDefinition(named: identifier) != nil {
+                    return .view(RuntimeView(typeName: identifier, arguments: evaluatedArguments))
                 }
             }
 
@@ -77,11 +73,7 @@ struct ExpressionEvaluator {
                   case .function(let function) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
-            let resolvedArguments = try arguments.map { argument in
-                let value = try evaluate(argument.value, scope: scope) ?? .void
-                return RuntimeArgument(label: argument.label, value: value)
-            }
-            return try function.invoke(arguments: resolvedArguments, scope: scope)
+            return try function.invoke(arguments: evaluatedArguments, scope: scope)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
@@ -186,5 +178,39 @@ struct ExpressionEvaluator {
             result = lhs.truncatingRemainder(dividingBy: rhs)
         }
         return .double(result)
+    }
+
+    private static func evaluateTypeInitializer(
+        name: String,
+        arguments: [RuntimeArgument]
+    ) throws -> RuntimeValue? {
+        guard let numericType = NumericTypeInitializer(rawValue: name) else {
+            return nil
+        }
+
+        guard arguments.count == 1,
+              let value = arguments.first?.value else {
+            throw RuntimeError.unsupportedExpression("\(name) initializer expects exactly one argument")
+        }
+
+        switch numericType {
+        case .int:
+            guard let intValue = value.asInt ?? value.asDouble.map(Int.init) else {
+                throw RuntimeError.unsupportedExpression("Cannot convert \(value.runtimeTypeDescription) to Int")
+            }
+            return .int(intValue)
+        case .double, .float, .cgfloat:
+            guard let doubleValue = value.asDouble else {
+                throw RuntimeError.unsupportedExpression("Cannot convert \(value.runtimeTypeDescription) to \(name)")
+            }
+            return .double(doubleValue)
+        }
+    }
+
+    private enum NumericTypeInitializer: String {
+        case int = "Int"
+        case double = "Double"
+        case float = "Float"
+        case cgfloat = "CGFloat"
     }
 }

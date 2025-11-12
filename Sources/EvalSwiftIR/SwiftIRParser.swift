@@ -192,12 +192,14 @@ public struct SwiftIRParser {
     }
 
     private func makeExpr(_ expr: ExprSyntax) -> ExprIR {
-        if let literal = expr.as(IntegerLiteralExprSyntax.self) {
-            return .literal(literal.literal.text)
+        if let literal = expr.as(IntegerLiteralExprSyntax.self),
+           let value = Int(literal.literal.text) {
+            return .int(value)
         }
 
-        if let literal = expr.as(FloatLiteralExprSyntax.self) {
-            return .literal(literal.literal.text)
+        if let literal = expr.as(FloatLiteralExprSyntax.self),
+           let value = Double(literal.literal.text) {
+            return .double(value)
         }
 
         if let literal = expr.as(StringLiteralExprSyntax.self) {
@@ -207,7 +209,7 @@ public struct SwiftIRParser {
                 let text = literal.segments.compactMap { segment -> String? in
                     segment.as(StringSegmentSyntax.self)?.content.text
                 }.joined()
-                return .literal(text)
+                return .string(text)
             }
 
             var segments: [StringInterpolationSegmentIR] = []
@@ -231,7 +233,7 @@ public struct SwiftIRParser {
         }
 
         if let literal = expr.as(BooleanLiteralExprSyntax.self) {
-            return .literal(literal.literal.text)
+            return .bool(literal.literal.text == "true")
         }
 
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),

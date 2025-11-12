@@ -12,8 +12,9 @@ extension ViewDefinition {
         let instance = RuntimeInstance(parent: scope)
         for binding in bindings {
             if let initializer = binding.initializer {
-                let value = try ExpressionEvaluator.evaluate(initializer, scope: instance) ?? .void
-                instance.define(binding.name, value: value)
+                let rawValue = try ExpressionEvaluator.evaluate(initializer, scope: instance) ?? .void
+                let coercedValue = binding.coercedValue(from: rawValue)
+                instance.define(binding.name, value: coercedValue)
             } else {
                 instance.define(binding.name, value: .void)
             }
@@ -31,5 +32,48 @@ extension Function {
         try parser.bind(arguments: arguments, into: functionScope)
         let interpreter = StatementInterpreter(scope: functionScope)
         return try interpreter.execute(statements: body)
+    }
+}
+
+private enum PreferredNumericType {
+    case int
+    case double
+}
+
+extension BindingIR {
+    func coercedValue(from value: RuntimeValue) -> RuntimeValue {
+        guard let preferred = preferredNumericType else {
+            return value
+        }
+
+        switch preferred {
+        case .double:
+            if let double = value.asDouble {
+                return .double(double)
+            }
+            return value
+        case .int:
+            if let int = value.asInt {
+                return .int(int)
+            }
+            return value
+        }
+    }
+
+    private var preferredNumericType: PreferredNumericType? {
+        guard let annotation = typeAnnotation?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+            return nil
+        }
+
+        switch annotation {
+        case "double":
+            return .double
+        case "float", "cgfloat":
+            return .double
+        case "int":
+            return .int
+        default:
+            return nil
+        }
     }
 }

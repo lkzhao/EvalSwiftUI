@@ -69,6 +69,21 @@ extension RuntimeValue {
             return nil
         }
     }
+
+    var asInt: Int? {
+        switch self {
+        case .int(let value):
+            return value
+        case .double(let number):
+            return Int(number)
+        case .string(let string):
+            return Int(string)
+        case .bool(let bool):
+            return bool ? 1 : 0
+        default:
+            return nil
+        }
+    }
 }
 
 extension RuntimeValue {
