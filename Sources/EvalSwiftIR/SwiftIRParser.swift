@@ -57,6 +57,18 @@ public struct SwiftIRParser {
         var hasExplicitInitializer = false
 
         for member in members {
+            if let structDecl = member.decl.as(StructDeclSyntax.self),
+               let definition = makeViewDefinition(from: structDecl) {
+                instanceBindings.append(
+                    BindingIR(
+                        name: structDecl.name.text,
+                        typeAnnotation: nil,
+                        initializer: .view(definition)
+                    )
+                )
+                continue
+            }
+
             if let variable = member.decl.as(VariableDeclSyntax.self) {
                 if let computedBinding = makeComputedBinding(from: variable) {
                     instanceBindings.append(computedBinding)
@@ -80,6 +92,8 @@ public struct SwiftIRParser {
                 hasExplicitInitializer = true
                 continue
             }
+
+            print("Unhandled member in View definition: \(member.decl.trimmedDescription)")
         }
 
         if !hasExplicitInitializer {

@@ -7,20 +7,17 @@ import EvalSwiftIR
 final class RuntimeViewRenderer: ObservableObject {
     @Published private(set) var renderedView: AnyView
 
-    let module: RuntimeModule
     let definition: ViewDefinition
     let instance: RuntimeInstance
     var isRendering = false
 
     init(
         definition: ViewDefinition,
-        module: RuntimeModule,
         arguments: [RuntimeArgument],
         scope: RuntimeScope,
     ) throws {
         self.definition = definition
-        self.module = module
-        self.instance = try definition.makeInstance(arguments: arguments, module: module, scope: scope)
+        self.instance = try definition.makeInstance(arguments: arguments, scope: scope)
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
@@ -41,13 +38,13 @@ final class RuntimeViewRenderer: ObservableObject {
         isRendering = true
         defer { isRendering = false }
 
-        guard let nextValue = try instance.callMethod("body", module: module) else {
+        guard let nextValue = try instance.callMethod("body") else {
             throw RuntimeError.invalidViewResult("View body did not return a value")
         }
         guard case .view(let viewValue) = nextValue else {
             throw RuntimeError.invalidViewResult("View body did not return a view, got \(nextValue)")
         }
-        renderedView = try viewValue.makeSwiftUIView(module: module, scope: instance)
+        renderedView = try viewValue.makeSwiftUIView(scope: instance)
     }
 }
 

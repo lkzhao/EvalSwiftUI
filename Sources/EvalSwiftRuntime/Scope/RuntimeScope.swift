@@ -22,18 +22,27 @@ extension RuntimeScope {
         desc += ")"
         return desc
     }
+
     public var instance: RuntimeInstance? {
         guard let instance = self as? RuntimeInstance else {
             return parent?.instance
         }
         return instance
     }
-    public func callMethod(_ name: String, arguments: [RuntimeArgument] = [], module: RuntimeModule) throws -> RuntimeValue? {
+
+    public var module: RuntimeModule? {
+        guard let module = self as? RuntimeModule else {
+            return parent?.module
+        }
+        return module
+    }
+
+    public func callMethod(_ name: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
         let value = try get(name)
         guard case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
         }
-        return try function.invoke(arguments: arguments, module: module, scope: self)
+        return try function.invoke(arguments: arguments, scope: self)
     }
 
     public func define(_ name: String, value: RuntimeValue) {
@@ -67,5 +76,15 @@ extension RuntimeScope {
             return try parent.get(name)
         }
         throw RuntimeError.unknownIdentifier(name)
+    }
+
+    func viewDefinition(named name: String) -> ViewDefinition? {
+        guard let value = try? get(name), case .viewDefinition(let definition) = value else { return nil }
+        return definition
+    }
+
+    func builder(named name: String) -> (any RuntimeViewBuilder)? {
+        guard let value = try? get(name), case .viewBuilder(let builder) = value else { return nil }
+        return builder
     }
 }

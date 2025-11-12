@@ -20,15 +20,13 @@ public struct RuntimeView: CustomStringConvertible {
 
 extension RuntimeView {
     @MainActor
-    func makeSwiftUIView(module: RuntimeModule, scope: RuntimeScope? = nil) throws -> AnyView {
-        let scope = scope ?? module.globalScope
-        if let builder = module.builder(named: typeName) {
-            return try builder.makeSwiftUIView(arguments: arguments, module: module, scope: scope)
+    func makeSwiftUIView(scope: RuntimeScope) throws -> AnyView {
+        if let builder = scope.builder(named: typeName) {
+            return try builder.makeSwiftUIView(arguments: arguments, scope: scope)
         }
-        if let definition = module.viewDefinition(named: typeName) {
+        if let definition = scope.viewDefinition(named: typeName) {
             let renderer = try RuntimeViewRenderer(
                 definition: definition,
-                module: module,
                 arguments: arguments,
                 scope: scope,
             )

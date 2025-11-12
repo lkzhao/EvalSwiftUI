@@ -7,7 +7,7 @@ struct ArgumentParser {
         self.parameters = parameters
     }
 
-    func bind(arguments: [RuntimeArgument], into scope: RuntimeScope, module: RuntimeModule) throws {
+    func bind(arguments: [RuntimeArgument], into scope: RuntimeScope) throws {
         var labeledArguments: [String: RuntimeValue] = [:]
         var positionalArguments: [RuntimeValue] = []
 
@@ -48,7 +48,7 @@ struct ArgumentParser {
             }
 
             if let defaultExpr = parameter.defaultValue {
-                let value = try ExpressionEvaluator.evaluate(defaultExpr, module: module, scope: scope) ?? .void
+                let value = try ExpressionEvaluator.evaluate(defaultExpr, scope: scope) ?? .void
                 scope.define(parameter.name, value: value)
             } else {
                 scope.define(parameter.name, value: .void)

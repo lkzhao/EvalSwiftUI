@@ -18,7 +18,7 @@ struct FunctionTests {
             RuntimeArgument(label: "alias", value: .string("Beta")),
             RuntimeArgument(label: "person", value: .string("Alpha"))
         ]
-        let value = try module.globalScope.callMethod("primary", arguments: arguments, module: module)
+        let value = try module.callMethod("primary", arguments: arguments)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string result, got \(String(describing: value))")
@@ -41,7 +41,7 @@ struct FunctionTests {
             RuntimeArgument(label: nil, value: .string("Positional")),
             RuntimeArgument(label: "alias", value: .string("Labeled"))
         ]
-        let value = try module.globalScope.callMethod("resolve", arguments: arguments, module: module)
+        let value = try module.callMethod("resolve", arguments: arguments)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string, got \(String(describing: value))")

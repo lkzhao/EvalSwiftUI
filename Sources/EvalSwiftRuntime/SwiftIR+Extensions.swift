@@ -7,31 +7,29 @@ public typealias ViewDefinition = ViewDefinitionIR
 extension ViewDefinition {
     func makeInstance(
         arguments: [RuntimeArgument],
-        module: RuntimeModule,
-        scope: RuntimeScope? = nil,
+        scope: RuntimeScope,
     ) throws -> RuntimeInstance {
-        let instance = RuntimeInstance(parent: scope ?? module.globalScope)
+        let instance = RuntimeInstance(parent: scope)
         for binding in bindings {
             if let initializer = binding.initializer {
-                let value = try ExpressionEvaluator.evaluate(initializer, module: module, scope: instance) ?? .void
+                let value = try ExpressionEvaluator.evaluate(initializer, scope: instance) ?? .void
                 instance.define(binding.name, value: value)
             } else {
                 instance.define(binding.name, value: .void)
             }
         }
-        _ = try instance.callMethod("init", arguments: arguments, module: module)
+        _ = try instance.callMethod("init", arguments: arguments)
         return instance
     }
 }
 
 extension Function {
     func invoke(arguments: [RuntimeArgument],
-                module: RuntimeModule,
-                scope: RuntimeScope? = nil) throws -> RuntimeValue? {
-        let functionScope = RuntimeFunctionScope(parent: scope ?? module.globalScope)
+                scope: RuntimeScope) throws -> RuntimeValue? {
+        let functionScope = RuntimeFunctionScope(parent: scope)
         let parser = ArgumentParser(parameters: parameters)
-        try parser.bind(arguments: arguments, into: functionScope, module: module)
-        let interpreter = StatementInterpreter(module: module, scope: functionScope)
+        try parser.bind(arguments: arguments, into: functionScope)
+        let interpreter = StatementInterpreter(scope: functionScope)
         return try interpreter.execute(statements: body)
     }
 }

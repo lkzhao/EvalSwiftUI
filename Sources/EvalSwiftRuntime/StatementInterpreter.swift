@@ -2,12 +2,10 @@ import Foundation
 import EvalSwiftIR
 
 final class StatementInterpreter {
-    private unowned let module: RuntimeModule
     private let scope: RuntimeScope
     private var collectedValues: [RuntimeValue] = []
 
-    init(module: RuntimeModule, scope: RuntimeScope) {
-        self.module = module
+    init(scope: RuntimeScope) {
         self.scope = scope
     }
 
@@ -15,21 +13,21 @@ final class StatementInterpreter {
         for statement in statements {
             switch statement {
             case .binding(let binding):
-                let value = try ExpressionEvaluator.evaluate(binding.initializer, module: module, scope: scope)
+                let value = try ExpressionEvaluator.evaluate(binding.initializer, scope: scope)
                 scope.define(binding.name, value: value ?? .void)
             case .expression(let expression):
-                let value = try ExpressionEvaluator.evaluate(expression, module: module, scope: scope)
+                let value = try ExpressionEvaluator.evaluate(expression, scope: scope)
                 if let value {
                     collectedValues.append(value)
                 }
             case .return(let returnStmt):
-                let value = try ExpressionEvaluator.evaluate(returnStmt.value, module: module, scope: scope)
+                let value = try ExpressionEvaluator.evaluate(returnStmt.value, scope: scope)
                 if let value {
                     collectedValues.append(value)
                 }
                 return value
             case .assignment(let assignment):
-                let value = try ExpressionEvaluator.evaluate(assignment.value, module: module, scope: scope) ?? .void
+                let value = try ExpressionEvaluator.evaluate(assignment.value, scope: scope) ?? .void
                 try assign(value: value, to: assignment.target)
             case .unhandled(let raw):
                 throw RuntimeError.unsupportedExpression(raw)

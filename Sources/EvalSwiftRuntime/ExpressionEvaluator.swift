@@ -2,7 +2,7 @@ import Foundation
 import EvalSwiftIR
 
 struct ExpressionEvaluator {
-    static func evaluate(_ expression: ExprIR?, module: RuntimeModule, scope: RuntimeScope) throws -> RuntimeValue? {
+    static func evaluate(_ expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
@@ -29,7 +29,7 @@ struct ExpressionEvaluator {
                 case .literal(let literal):
                     return literal
                 case .expression(let expr):
-                    guard let value = try evaluate(expr, module: module, scope: scope) else {
+                    guard let value = try evaluate(expr, scope: scope) else {
                         return ""
                     }
                     return value.asString ?? value.description
@@ -47,30 +47,30 @@ struct ExpressionEvaluator {
                 }
                 throw RuntimeError.unknownIdentifier(name)
             }
-            let baseValue = try evaluate(base, module: module, scope: scope)
+            let baseValue = try evaluate(base, scope: scope)
             let description = "\(baseValue?.description ?? "nil").\(name)"
             return .string(description)
         case .call(let callee, let arguments):
             if case .identifier(let viewName) = callee {
                 let evaluatedArguments = try arguments.map { argument in
-                    let value = try evaluate(argument.value, module: module, scope: scope) ?? .void
+                    let value = try evaluate(argument.value, scope: scope) ?? .void
                     return RuntimeArgument(label: argument.label, value: value)
                 }
 
-                if module.builder(named: viewName) != nil || module.viewDefinition(named: viewName) != nil {
+                if scope.builder(named: viewName) != nil || scope.viewDefinition(named: viewName) != nil {
                     return .view(RuntimeView(typeName: viewName, arguments: evaluatedArguments))
                 }
             }
 
-            guard let calleeValue = try evaluate(callee, module: module, scope: scope),
+            guard let calleeValue = try evaluate(callee, scope: scope),
                   case .function(let function) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
             let resolvedArguments = try arguments.map { argument in
-                let value = try evaluate(argument.value, module: module, scope: scope) ?? .void
+                let value = try evaluate(argument.value, scope: scope) ?? .void
                 return RuntimeArgument(label: argument.label, value: value)
             }
-            return try function.invoke(arguments: resolvedArguments, module: module, scope: scope)
+            return try function.invoke(arguments: resolvedArguments, scope: scope)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }

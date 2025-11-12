@@ -2,10 +2,10 @@ import Foundation
 import SwiftUI
 import EvalSwiftIR
 
-public final class RuntimeModule {
+public final class RuntimeModule: RuntimeScope {
     public let ir: ModuleIR
-    public let globalScope = RuntimeGlobalScope()
-    public let viewBuilders: [String: any RuntimeViewBuilder]
+    public let parent: RuntimeScope? = nil
+    public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeView] = []
 
     public convenience init(source: String, viewBuilders: [any RuntimeViewBuilder] = []) {
@@ -19,19 +19,12 @@ public final class RuntimeModule {
             VStackRuntimeViewBuilder(),
             ButtonRuntimeViewBuilder(),
         ] + viewBuilders
-        self.viewBuilders = Dictionary(uniqueKeysWithValues: builders.map({ ($0.typeName, $0) }))
-        let statementInterpreter = StatementInterpreter(module: self, scope: globalScope)
+        for builder in builders {
+            define(builder.typeName, value: .viewBuilder(builder))
+        }
+        let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
         self.runtimeViews = values ??  []
-    }
-
-    func viewDefinition(named name: String) -> ViewDefinition? {
-        guard let value = try? globalScope.get(name), case .viewDefinition(let definition) = value else { return nil }
-        return definition
-    }
-
-    func builder(named name: String) -> (any RuntimeViewBuilder)? {
-        viewBuilders[name]
     }
 
     @MainActor
@@ -41,7 +34,7 @@ public final class RuntimeModule {
         }
 
         let swiftUIViews = try runtimeViews.map { runtimeView in
-            try runtimeView.makeSwiftUIView(module: self, scope: globalScope)
+            try runtimeView.makeSwiftUIView(scope: self)
         }
 
         return AnyView(VStack {

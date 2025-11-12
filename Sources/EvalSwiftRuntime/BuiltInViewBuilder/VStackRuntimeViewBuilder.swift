@@ -14,7 +14,7 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
     }
 
     @MainActor
-    public func makeSwiftUIView(arguments: [RuntimeArgument], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
+    public func makeSwiftUIView(arguments: [RuntimeArgument], scope: RuntimeScope) throws -> AnyView {
         var spacing: CGFloat?
         var childViews: [AnyView] = []
 
@@ -30,15 +30,15 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
                     guard case .view(let runtimeView) = value else {
                         throw RuntimeError.invalidViewArgument("VStack only accepts views as children.")
                     }
-                    childViews.append(try runtimeView.makeSwiftUIView(module: module, scope: scope))
+                    childViews.append(try runtimeView.makeSwiftUIView(scope: scope))
                 }
             case .view(let runtimeView):
-                childViews.append(try runtimeView.makeSwiftUIView(module: module, scope: scope))
+                childViews.append(try runtimeView.makeSwiftUIView(scope: scope))
             case .function(let function):
-                let views = try StatementInterpreter(module: module, scope: scope)
+                let views = try StatementInterpreter(scope: scope)
                     .executeAndCollectRuntimeViews(statements: function.body)
                 for runtimeView in views {
-                    childViews.append(try runtimeView.makeSwiftUIView(module: module, scope: scope))
+                    childViews.append(try runtimeView.makeSwiftUIView(scope: scope))
                 }
             default:
                 continue
