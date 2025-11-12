@@ -49,6 +49,10 @@ extension RuntimeScope {
         return function
     }
 
+    public func callFunction(_ name: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
+        return try getFunction(name).invoke(arguments: arguments, scope: self)
+    }
+
     public func define(_ name: String, value: RuntimeValue) {
         storage[name] = value
     }
