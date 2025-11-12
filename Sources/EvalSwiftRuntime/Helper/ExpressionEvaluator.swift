@@ -15,6 +15,12 @@ struct ExpressionEvaluator {
             return .bool(value)
         case .string(let string):
             return .string(string)
+        case .array(let expressions):
+            let values = try expressions.map { expr -> RuntimeValue in
+                guard let value = try evaluate(expr, scope: scope) else { return .void }
+                return value
+            }
+            return .array(values)
         case .stringInterpolation(let segments):
             let resolved = try segments.map { segment -> String in
                 switch segment {
@@ -114,6 +120,13 @@ struct ExpressionEvaluator {
         lhs: RuntimeValue,
         rhs: RuntimeValue
     ) throws -> RuntimeValue {
+        if op == .rangeExclusive || op == .rangeInclusive {
+            guard let left = lhs.asInt, let right = rhs.asInt else {
+                throw RuntimeError.unsupportedExpression("Range operators require Int operands")
+            }
+            return try evaluateIntegerBinary(op: op, lhs: left, rhs: right)
+        }
+
         switch (lhs, rhs) {
         case (.int(let left), .int(let right)):
             return try evaluateIntegerBinary(op: op, lhs: left, rhs: right)
@@ -150,6 +163,14 @@ struct ExpressionEvaluator {
                 throw RuntimeError.unsupportedExpression("Modulo by zero")
             }
             return .int(lhs % rhs)
+        case .rangeExclusive:
+            if rhs <= lhs { return .array([]) }
+            let values = Array(lhs..<rhs).map { RuntimeValue.int($0) }
+            return .array(values)
+        case .rangeInclusive:
+            if rhs < lhs { return .array([]) }
+            let values = Array(lhs...rhs).map { RuntimeValue.int($0) }
+            return .array(values)
         }
     }
 
@@ -176,6 +197,8 @@ struct ExpressionEvaluator {
                 throw RuntimeError.unsupportedExpression("Modulo by zero")
             }
             result = lhs.truncatingRemainder(dividingBy: rhs)
+        case .rangeExclusive, .rangeInclusive:
+            throw RuntimeError.unsupportedExpression("Range operators require integer operands")
         }
         return .double(result)
     }

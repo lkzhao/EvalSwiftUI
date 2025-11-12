@@ -288,7 +288,7 @@ struct RuntimeViewDefinitionTests {
 
         let module = RuntimeModule(source: source)
         let outerDefinition = try viewDefinition(named: "OuterView", from: module)
-        let outerInstance = try outerDefinition.makeInstance(arguments: [], scope: module)
+        let outerInstance = try outerDefinition.makeInstance(scope: module)
         let outerRendererd = try outerInstance.callMethod("body")!
 
         guard case .view(let outerViewContent) = outerRendererd else {
@@ -297,7 +297,7 @@ struct RuntimeViewDefinitionTests {
 
         #expect(outerViewContent.typeName == "InnerView")
         let innerDefinition = try viewDefinition(named: "InnerView", from: outerInstance)
-        let innerInstance = try innerDefinition.makeInstance(arguments: [], scope: outerInstance)
+        let innerInstance = try innerDefinition.makeInstance(scope: outerInstance)
         let innerRendererd = try innerInstance.callMethod("body")!
 
         guard case .view(let innerViewContent) = innerRendererd else {
@@ -323,7 +323,6 @@ struct RuntimeViewDefinitionTests {
         let definition = try viewDefinition(named: "CounterView", from: module)
         let renderer = try RuntimeViewRenderer(
             definition: definition,
-            arguments: [],
             scope: module,
         )
 

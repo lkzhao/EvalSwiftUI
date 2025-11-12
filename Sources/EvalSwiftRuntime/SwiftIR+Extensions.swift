@@ -6,7 +6,7 @@ public typealias ViewDefinition = ViewDefinitionIR
 
 extension ViewDefinition {
     func makeInstance(
-        arguments: [RuntimeArgument],
+        arguments: [RuntimeArgument] = [],
         scope: RuntimeScope,
     ) throws -> RuntimeInstance {
         let instance = RuntimeInstance(parent: scope)
@@ -25,13 +25,24 @@ extension ViewDefinition {
 }
 
 extension Function {
-    func invoke(arguments: [RuntimeArgument],
+    func invoke(arguments: [RuntimeArgument] = [],
                 scope: RuntimeScope) throws -> RuntimeValue? {
         let functionScope = RuntimeFunctionScope(parent: scope)
         let parser = ArgumentParser(parameters: parameters)
         try parser.bind(arguments: arguments, into: functionScope)
         let interpreter = StatementInterpreter(scope: functionScope)
         return try interpreter.execute(statements: body)
+    }
+
+    func renderRuntimeViews(
+        arguments: [RuntimeArgument] = [],
+        scope: RuntimeScope
+    ) throws -> [RuntimeView] {
+        let functionScope = RuntimeFunctionScope(parent: scope)
+        let parser = ArgumentParser(parameters: parameters)
+        try parser.bind(arguments: arguments, into: functionScope)
+        let interpreter = StatementInterpreter(scope: functionScope)
+        return try interpreter.executeAndCollectRuntimeViews(statements: body)
     }
 }
 

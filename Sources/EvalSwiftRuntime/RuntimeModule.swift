@@ -14,6 +14,7 @@ public final class RuntimeModule: RuntimeScope {
         let builders: [any RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
             VStackRuntimeViewBuilder(),
+            ForEachRuntimeViewBuilder(),
             ButtonRuntimeViewBuilder(),
         ] + viewBuilders
         for builder in builders {

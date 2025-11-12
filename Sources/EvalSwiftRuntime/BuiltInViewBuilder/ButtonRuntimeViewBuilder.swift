@@ -46,8 +46,7 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
         let action = RuntimeButtonAction(function: actionFunction, scope: scope)
 
         if let labelFunction = labelFunction {
-            let labelViews = try StatementInterpreter(scope: scope)
-                .executeAndCollectRuntimeViews(statements: labelFunction.body)
+            let labelViews = try labelFunction.renderRuntimeViews(scope: scope)
             guard labelViews.count == 1, let runtimeView = labelViews.first else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
@@ -77,6 +76,6 @@ private final class RuntimeButtonAction {
     }
 
     func perform() {
-        _ = try? function.invoke(arguments: [], scope: scope)
+        _ = try? function.invoke(scope: scope)
     }
 }

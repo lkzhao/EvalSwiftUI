@@ -131,4 +131,21 @@ struct ExpressionEvaluatorTests {
         #expect(newValue == 3)
         #expect(finalValue == 4.5)
     }
+
+    @Test func rangeOperatorsProduceArrays() throws {
+        let source = """
+        var exclusive = 0..<3
+        var inclusive = 1...3
+        """
+
+        let module = RuntimeModule(source: source)
+
+        guard case .array(let exclusiveValues) = try module.get("exclusive"),
+              case .array(let inclusiveValues) = try module.get("inclusive") else {
+            throw TestFailure.expected("Expected ranges to evaluate to arrays")
+        }
+
+        #expect(exclusiveValues.count == 3)
+        #expect(inclusiveValues.count == 3)
+    }
 }

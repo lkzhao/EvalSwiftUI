@@ -211,4 +211,26 @@ struct RuntimeSnapshotTests {
             }
         }
     }
+
+    @Test func rendersForEachOverRange() throws {
+        let source = """
+        struct RangeList: View {
+            var body: some View {
+                VStack {
+                    ForEach(0..<3) { index in
+                        Text("Row \\(index)")
+                    }
+                }
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source, viewName: "RangeList") {
+            VStack {
+                Text("Row 0")
+                Text("Row 1")
+                Text("Row 2")
+            }
+        }
+    }
 }

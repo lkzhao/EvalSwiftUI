@@ -31,9 +31,13 @@ public enum BinaryOperatorIR: String {
     case multiplication = "*"
     case division = "/"
     case remainder = "%"
+    case rangeExclusive = "..<"
+    case rangeInclusive = "..."
 
     var precedence: Int {
         switch self {
+        case .rangeExclusive, .rangeInclusive:
+            return 3
         case .multiplication, .division, .remainder:
             return 2
         case .addition, .subtraction:
@@ -53,6 +57,7 @@ public indirect enum ExprIR {
     case double(Double)
     case bool(Bool)
     case string(String)
+    case array([ExprIR])
     case stringInterpolation([StringInterpolationSegmentIR])
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])

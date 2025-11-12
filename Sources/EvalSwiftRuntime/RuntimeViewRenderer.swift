@@ -13,7 +13,7 @@ final class RuntimeViewRenderer: ObservableObject {
 
     init(
         definition: ViewDefinition,
-        arguments: [RuntimeArgument],
+        arguments: [RuntimeArgument] = [],
         scope: RuntimeScope,
     ) throws {
         self.definition = definition

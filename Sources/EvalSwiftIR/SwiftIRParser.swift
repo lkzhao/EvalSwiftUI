@@ -236,6 +236,11 @@ public struct SwiftIRParser {
             return .bool(literal.literal.text == "true")
         }
 
+        if let array = expr.as(ArrayExprSyntax.self) {
+            let elements = array.elements.map { makeExpr($0.expression) }
+            return .array(elements)
+        }
+
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),
            let op = unaryOperator(from: prefix) {
             return .unary(op: op, operand: makeExpr(prefix.expression))
@@ -279,7 +284,8 @@ public struct SwiftIRParser {
 
     private func makeClosureFunction(_ closure: ClosureExprSyntax) -> FunctionIR {
         let statements = makeStatements(from: closure.statements)
-        return FunctionIR(parameters: [], returnType: nil, body: statements)
+        let parameters = makeClosureParameters(from: closure.signature)
+        return FunctionIR(parameters: parameters, returnType: nil, body: statements)
     }
 
     private func conformsToView(_ node: SyntaxProtocol) -> Bool {
@@ -456,5 +462,29 @@ public struct SwiftIRParser {
 
     private func unaryOperator(from expr: PrefixOperatorExprSyntax) -> UnaryOperatorIR? {
         UnaryOperatorIR(rawValue: expr.operator.text)
+    }
+
+    private func makeClosureParameters(from signature: ClosureSignatureSyntax?) -> [FunctionParameterIR] {
+        guard let signature, let clause = signature.parameterClause else {
+            return []
+        }
+
+        switch clause {
+        case .parameterClause(let parameterClause):
+            return parameterClause.parameters.map(makeClosureParameter)
+        case .simpleInput(let shorthandList):
+            return shorthandList.map { shorthand in
+                let name = shorthand.name.text
+                let label = name == "_" ? nil : name
+                return FunctionParameterIR(label: label, name: name, defaultValue: nil)
+            }
+        }
+    }
+
+    private func makeClosureParameter(_ parameter: ClosureParameterSyntax) -> FunctionParameterIR {
+        let firstName = parameter.firstName.text
+        let label = firstName == "_" ? nil : firstName
+        let name = parameter.secondName?.text ?? firstName
+        return FunctionParameterIR(label: label, name: name, defaultValue: nil)
     }
 }
