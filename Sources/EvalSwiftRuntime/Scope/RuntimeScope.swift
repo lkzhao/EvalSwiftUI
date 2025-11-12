@@ -14,6 +14,10 @@ public protocol RuntimeScope: AnyObject, CustomStringConvertible {
 }
 
 extension RuntimeScope {
+    public var parent: RuntimeScope? {
+        return nil
+    }
+
     public var description: String {
         var desc = "\(type(of: self))(storage: \(storage)"
         if let parent = parent {

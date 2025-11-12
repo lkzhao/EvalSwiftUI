@@ -355,9 +355,3 @@ public struct SwiftIRParser {
     }
 
 }
-
-private struct StoredProperty {
-    let name: String
-    let typeAnnotation: String?
-    let initializer: ExprIR?
-}

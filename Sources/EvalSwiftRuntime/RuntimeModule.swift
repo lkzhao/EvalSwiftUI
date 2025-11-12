@@ -3,8 +3,6 @@ import SwiftUI
 import EvalSwiftIR
 
 public final class RuntimeModule: RuntimeScope {
-    public let ir: ModuleIR
-    public let parent: RuntimeScope? = nil
     public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeView] = []
 
@@ -13,7 +11,6 @@ public final class RuntimeModule: RuntimeScope {
     }
 
     public init(ir: ModuleIR, viewBuilders: [any RuntimeViewBuilder] = []) {
-        self.ir = ir
         let builders: [any RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
             VStackRuntimeViewBuilder(),
