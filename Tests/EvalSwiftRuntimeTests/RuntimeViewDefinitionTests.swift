@@ -344,6 +344,6 @@ struct RuntimeViewDefinitionTests {
         arguments: [RuntimeArgument] = []
     ) throws -> RuntimeValue {
         let instance = try compiled.makeInstance(arguments: arguments, scope: module.globalScope)
-        return try instance.callMethod("body")
+        return try instance.callMethod("body")!
     }
 }

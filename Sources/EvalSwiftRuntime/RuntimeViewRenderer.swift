@@ -42,7 +42,9 @@ final class RuntimeViewRenderer: ObservableObject {
         isRendering = true
         defer { isRendering = false }
 
-        let nextValue = try instance.callMethod("body")
+        guard let nextValue = try instance.callMethod("body") else {
+            throw RuntimeError.invalidViewResult("View body did not return a value")
+        }
         runtimeValue = nextValue
         renderedView = try module.realize(runtimeValue: nextValue, scope: instance)
     }

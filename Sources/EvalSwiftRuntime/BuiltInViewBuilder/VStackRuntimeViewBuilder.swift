@@ -32,7 +32,8 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
             case .view(let runtimeView):
                 childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope))
             case .function(let function):
-                let views = try module.runtimeViews(from: function, scope: scope)
+                let views = try StatementInterpreter(module: module, scope: scope)
+                    .executeAndCollectRuntimeViews(statements: function.ir.body)
                 for runtimeView in views {
                     childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope))
                 }

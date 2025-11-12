@@ -48,7 +48,7 @@ struct ArgumentParser {
             }
 
             if let defaultExpr = parameter.defaultValue {
-                let value = try module.evaluate(expression: defaultExpr, scope: scope) ?? .void
+                let value = try ExpressionEvaluator.evaluate(defaultExpr, module: module, scope: scope) ?? .void
                 scope.define(parameter.name, value: value)
             } else {
                 scope.define(parameter.name, value: .void)

@@ -20,14 +20,9 @@ public final class RuntimeModule {
             ButtonRuntimeViewBuilder(),
         ] + viewBuilders
         self.viewBuilders = Dictionary(uniqueKeysWithValues: builders.map({ ($0.typeName, $0) }))
-        var runtimeViews: [RuntimeView] = []
-        let interpreter = StatementInterpreter(module: self, scope: globalScope)
-        _ = try? interpreter.execute(statements: ir.statements) { value in
-            if case .view(let runtimeView) = value {
-                runtimeViews.append(runtimeView)
-            }
-        }
-        self.runtimeViews = runtimeViews
+        let statementInterpreter = StatementInterpreter(module: self, scope: globalScope)
+        let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
+        self.runtimeViews = values ??  []
     }
 
     func viewDefinition(named name: String) -> CompiledViewDefinition? {
@@ -66,34 +61,11 @@ public final class RuntimeModule {
             try makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: globalScope)
         }
 
-        if swiftUIViews.count == 1, let first = swiftUIViews.first {
-            return first
-        }
-
         return AnyView(VStack {
             ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
                 view
             }
         })
-    }
-
-    // MARK: - Evaluation Helpers
-
-    func evaluate(expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
-        try ExpressionEvaluator(module: self, scope: scope).evaluate(expression: expression)
-    }
-
-    public func runtimeViews(from function: CompiledFunction, scope: RuntimeScope) throws -> [RuntimeView] {
-        let scope = RuntimeFunctionScope(parent: scope)
-        var collected: [RuntimeView] = []
-
-        let interpreter = StatementInterpreter(module: self, scope: scope)
-        _ = try interpreter.execute(statements: function.ir.body) { value in
-            if case .view(let view) = value {
-                collected.append(view)
-            }
-        }
-        return collected
     }
 
     @MainActor
@@ -113,5 +85,4 @@ public final class RuntimeModule {
             throw RuntimeError.invalidViewResult("Expected view, got \(value)")
         }
     }
-
 }

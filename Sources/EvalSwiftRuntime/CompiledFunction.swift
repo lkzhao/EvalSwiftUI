@@ -10,7 +10,7 @@ public final class CompiledFunction {
         self.module = module
     }
 
-    func invoke(arguments: [RuntimeArgument], scope: RuntimeScope) throws -> RuntimeValue {
+    func invoke(arguments: [RuntimeArgument], scope: RuntimeScope) throws -> RuntimeValue? {
         let functionScope = RuntimeFunctionScope(parent: scope)
         let parser = ArgumentParser(parameters: ir.parameters)
         try parser.bind(arguments: arguments, into: functionScope, module: module)

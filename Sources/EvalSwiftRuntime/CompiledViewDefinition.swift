@@ -17,7 +17,7 @@ public final class CompiledViewDefinition {
         let instance = RuntimeInstance(parent: scope)
         for binding in ir.bindings {
             if let initializer = binding.initializer {
-                let value = try module.evaluate(expression: initializer, scope: instance) ?? .void
+                let value = try ExpressionEvaluator.evaluate(initializer, module: module, scope: instance) ?? .void
                 instance.define(binding.name, value: value)
             } else {
                 instance.define(binding.name, value: .void)
