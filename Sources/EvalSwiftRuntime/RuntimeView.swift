@@ -1,14 +1,14 @@
 public struct RuntimeView: CustomStringConvertible {
     public let typeName: String
-    public let parameters: [RuntimeParameter]
+    public let arguments: [RuntimeArgument]
 
-    public init(typeName: String, parameters: [RuntimeParameter]) {
+    public init(typeName: String, arguments: [RuntimeArgument]) {
         self.typeName = typeName
-        self.parameters = parameters
+        self.arguments = arguments
     }
 
     public var description: String {
-        let params = parameters.map { param in
+        let params = arguments.map { param in
             let label = param.label.map { "\($0):" } ?? ""
             return "\(label)\(param.value)"
         }.joined(separator: ", ")

@@ -14,8 +14,8 @@ public struct TextRuntimeViewBuilder: RuntimeViewBuilder {
     }
 
     @MainActor
-    public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, instance: RuntimeInstance) throws -> AnyView {
-        guard let first = parameters.first, let string = first.value.asString else {
+    public func makeSwiftUIView(arguments: [RuntimeArgument], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
+        guard let first = arguments.first, let string = first.value.asString else {
             throw RuntimeError.invalidViewArgument("Text expects a string parameter")
         }
         return AnyView(Text(string))

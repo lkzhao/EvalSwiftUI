@@ -15,10 +15,10 @@ struct CompiledFunctionTests {
         let module = RuntimeModule(ir: moduleIR)
 
         let arguments = [
-            RuntimeParameter(label: "alias", value: .string("Beta")),
-            RuntimeParameter(label: "person", value: .string("Alpha"))
+            RuntimeArgument(label: "alias", value: .string("Beta")),
+            RuntimeArgument(label: "person", value: .string("Alpha"))
         ]
-        let value = try module.call(function: "primary", arguments: arguments)
+        let value = try module.globalScope.callMethod("primary", arguments: arguments)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string result, got \(value)")
@@ -38,10 +38,10 @@ struct CompiledFunctionTests {
         let module = RuntimeModule(ir: parser.parseModule(source: source))
 
         let arguments = [
-            RuntimeParameter(label: nil, value: .string("Positional")),
-            RuntimeParameter(label: "alias", value: .string("Labeled"))
+            RuntimeArgument(label: nil, value: .string("Positional")),
+            RuntimeArgument(label: "alias", value: .string("Labeled"))
         ]
-        let value = try module.call(function: "resolve", arguments: arguments)
+        let value = try module.globalScope.callMethod("resolve", arguments: arguments)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string, got \(value)")

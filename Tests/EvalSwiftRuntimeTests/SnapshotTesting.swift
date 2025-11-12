@@ -79,15 +79,11 @@ func assertSnapshotsMatch<V: View>(
     let moduleSource = runtimeModuleSource(for: source, viewName: viewName)
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: moduleSource)
-    let module = RuntimeModule(ir: moduleIR)
-    for builder in viewBuilders {
-        module.registerViewBuilder(builder)
-    }
-
+    let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
     let evaluatedView = try module.makeSwiftUIView(
         typeName: viewName,
-        parameters: [],
-        instance: module.globalInstance
+        arguments: [],
+        scope: module.globalScope
     )
 
     let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
@@ -103,11 +99,7 @@ func assertTopLevelSnapshotsMatch<V: View>(
 ) throws {
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: source)
-    let module = RuntimeModule(ir: moduleIR)
-    for builder in viewBuilders {
-        module.registerViewBuilder(builder)
-    }
-
+    let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
     let evaluatedView = try module.makeTopLevelSwiftUIViews()
     let evaluatedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: evaluatedView)
     let expectedSnapshot = try RuntimeViewSnapshotRenderer.snapshot(from: expectedView())

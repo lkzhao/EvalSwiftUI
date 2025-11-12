@@ -14,11 +14,11 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
     }
 
     @MainActor
-    public func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, instance: RuntimeInstance) throws -> AnyView {
+    public func makeSwiftUIView(arguments: [RuntimeArgument], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView {
         var spacing: CGFloat?
         var childViews: [AnyView] = []
 
-        for parameter in parameters {
+        for parameter in arguments {
             if parameter.label == "spacing" {
                 spacing = parameter.value.asDouble.map { CGFloat($0) }
                 continue
@@ -27,14 +27,14 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
             switch parameter.value {
             case .array(let values):
                 for value in values {
-                    childViews.append(try module.realize(runtimeValue: value, instance: instance))
+                    childViews.append(try module.realize(runtimeValue: value, scope: scope))
                 }
             case .view(let runtimeView):
-                childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: instance))
+                childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope))
             case .function(let function):
-                let views = try module.runtimeViews(from: function, instance: instance)
+                let views = try module.runtimeViews(from: function, scope: scope)
                 for runtimeView in views {
-                    childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: instance))
+                    childViews.append(try module.makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope))
                 }
             default:
                 continue

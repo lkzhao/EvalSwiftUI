@@ -3,5 +3,5 @@ import SwiftUI
 public protocol RuntimeViewBuilder {
     var typeName: String { get }
     @MainActor
-    func makeSwiftUIView(parameters: [RuntimeParameter], module: RuntimeModule, instance: RuntimeInstance) throws -> AnyView
+    func makeSwiftUIView(arguments: [RuntimeArgument], module: RuntimeModule, scope: RuntimeScope) throws -> AnyView
 }

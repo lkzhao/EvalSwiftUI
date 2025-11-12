@@ -3,13 +3,13 @@ import EvalSwiftIR
 
 struct ExpressionEvaluator {
     let module: RuntimeModule
-    let instance: RuntimeInstance
+    let scope: RuntimeScope
 
     func evaluate(expression: ExprIR?) throws -> RuntimeValue? {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
-            if let local = instance.get(name) {
+            if let local = scope.get(name) {
                 return local
             }
             throw RuntimeError.unknownIdentifier(name)
@@ -47,7 +47,7 @@ struct ExpressionEvaluator {
             return .function(compiled)
         case .member(let base, let name):
             if case .identifier("self") = base {
-                if let value = instance.get(name, preference: .preferAncestor) {
+                if let value = scope.instance?.get(name) {
                     return value
                 }
                 throw RuntimeError.unknownIdentifier(name)
@@ -57,13 +57,13 @@ struct ExpressionEvaluator {
             return .string(description)
         case .call(let callee, let arguments):
             if let viewName = identifierName(from: callee) {
-                let evaluatedParameters = try arguments.map { argument in
+                let evaluatedArguments = try arguments.map { argument in
                     let value = try evaluate(expression: argument.value) ?? .void
-                    return RuntimeParameter(label: argument.label, value: value)
+                    return RuntimeArgument(label: argument.label, value: value)
                 }
 
                 if module.builder(named: viewName) != nil || module.viewDefinition(named: viewName) != nil {
-                    return .view(RuntimeView(typeName: viewName, parameters: evaluatedParameters))
+                    return .view(RuntimeView(typeName: viewName, arguments: evaluatedArguments))
                 }
             }
 
@@ -73,9 +73,9 @@ struct ExpressionEvaluator {
             }
             let resolvedArguments = try arguments.map { argument in
                 let value = try evaluate(expression: argument.value) ?? .void
-                return RuntimeParameter(label: argument.label, value: value)
+                return RuntimeArgument(label: argument.label, value: value)
             }
-            return try compiled.invoke(arguments: resolvedArguments, instance: instance)
+            return try compiled.invoke(arguments: resolvedArguments, scope: scope)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }

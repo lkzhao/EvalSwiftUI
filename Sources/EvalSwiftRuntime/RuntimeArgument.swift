@@ -1,4 +1,4 @@
-public struct RuntimeParameter {
+public struct RuntimeArgument {
     public let label: String?
     public let value: RuntimeValue
 

@@ -6,7 +6,6 @@ public struct SwiftIRParser {
 
     public func parseModule(source: String) -> ModuleIR {
         let syntax = Parser.parse(source: source)
-        var bindings: [BindingIR] = []
         var statements: [StatementIR] = []
 
         for item in syntax.statements {
@@ -14,7 +13,7 @@ public struct SwiftIRParser {
 
             if let structDecl = node.as(StructDeclSyntax.self),
                let definition = makeViewDefinition(from: structDecl) {
-                bindings.append(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .view(definition)))
+                statements.append(.binding(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .view(definition))))
                 continue
             }
 
@@ -25,12 +24,12 @@ public struct SwiftIRParser {
                     typeAnnotation: nil,
                     initializer: .function(functionIR)
                 )
-                bindings.append(binding)
+                statements.append(.binding(binding))
                 continue
             }
 
             if let variableDecl = node.as(VariableDeclSyntax.self) {
-                bindings.append(contentsOf: makeBindingList(from: variableDecl))
+                statements.append(contentsOf: makeBindingList(from: variableDecl).map({ .binding($0) }))
                 continue
             }
 
@@ -46,7 +45,6 @@ public struct SwiftIRParser {
         }
 
         return ModuleIR(
-            bindings: bindings,
             statements: statements
         )
     }

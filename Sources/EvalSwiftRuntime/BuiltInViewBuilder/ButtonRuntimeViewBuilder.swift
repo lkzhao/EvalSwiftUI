@@ -7,15 +7,15 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
 
     @MainActor
     public func makeSwiftUIView(
-        parameters: [RuntimeParameter],
+        arguments: [RuntimeArgument],
         module: RuntimeModule,
-        instance: RuntimeInstance
+        scope: RuntimeScope
     ) throws -> AnyView {
         var actionFunction: CompiledFunction?
         var labelFunction: CompiledFunction?
         var title: String?
 
-        for parameter in parameters {
+        for parameter in arguments {
             if parameter.label == "action", case .function(let function) = parameter.value {
                 actionFunction = function
                 continue
@@ -44,17 +44,17 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
             throw RuntimeError.invalidViewArgument("Button requires an action closure.")
         }
 
-        let action = RuntimeButtonAction(function: actionFunction, instance: instance)
+        let action = RuntimeButtonAction(function: actionFunction, scope: scope)
 
         if let labelFunction = labelFunction {
-            let labelViews = try module.runtimeViews(from: labelFunction, instance: instance)
+            let labelViews = try module.runtimeViews(from: labelFunction, scope: scope)
             guard labelViews.count == 1, let runtimeView = labelViews.first else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
             let label = try module.makeSwiftUIView(
                 typeName: runtimeView.typeName,
-                parameters: runtimeView.parameters,
-                instance: instance
+                arguments: runtimeView.arguments,
+                scope: scope
             )
             return AnyView(Button(action: action.perform) {
                 label
@@ -73,14 +73,14 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
 
 private final class RuntimeButtonAction {
     private let function: CompiledFunction
-    private let instance: RuntimeInstance
+    private let scope: RuntimeScope
 
-    init(function: CompiledFunction, instance: RuntimeInstance) {
+    init(function: CompiledFunction, scope: RuntimeScope) {
         self.function = function
-        self.instance = instance
+        self.scope = scope
     }
 
     func perform() {
-        _ = try? function.invoke(arguments: [], instance: instance)
+        _ = try? function.invoke(arguments: [], scope: scope)
     }
 }

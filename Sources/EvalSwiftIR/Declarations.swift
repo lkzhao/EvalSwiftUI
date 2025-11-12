@@ -1,6 +1,5 @@
 
 public struct ModuleIR {
-    public let bindings: [BindingIR]
     public let statements: [StatementIR]
 }
 

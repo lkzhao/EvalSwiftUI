@@ -10,12 +10,12 @@ public final class CompiledFunction {
         self.module = module
     }
 
-    func invoke(arguments: [RuntimeParameter], instance: RuntimeInstance) throws -> RuntimeValue {
-        let localInstance = RuntimeInstance(parent: instance)
+    func invoke(arguments: [RuntimeArgument], scope: RuntimeScope) throws -> RuntimeValue {
+        let functionScope = RuntimeFunctionScope(parent: scope)
         let parser = ArgumentParser(parameters: ir.parameters)
-        try parser.bind(arguments: arguments, into: localInstance, module: module)
+        try parser.bind(arguments: arguments, into: functionScope, module: module)
 
-        let interpreter = StatementInterpreter(module: module, instance: localInstance)
+        let interpreter = StatementInterpreter(module: module, scope: functionScope)
         return try interpreter.execute(statements: ir.body)
     }
 }

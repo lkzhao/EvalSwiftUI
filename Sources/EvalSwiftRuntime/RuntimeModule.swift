@@ -3,64 +3,53 @@ import SwiftUI
 import EvalSwiftIR
 
 public final class RuntimeModule {
-    private let ir: ModuleIR
-    private let rootInstance = RuntimeInstance()
-    private var viewBuilders: [String: any RuntimeViewBuilder] = [:]
+    public let ir: ModuleIR
+    public let globalScope = RuntimeGlobalScope()
+    public let viewBuilders: [String: any RuntimeViewBuilder]
+    public var runtimeViews: [RuntimeView] = []
 
-    public convenience init(source: String) {
-        self.init(ir: SwiftIRParser().parseModule(source: source))
+    public convenience init(source: String, viewBuilders: [any RuntimeViewBuilder] = []) {
+        self.init(ir: SwiftIRParser().parseModule(source: source), viewBuilders: viewBuilders)
     }
 
-    public init(ir: ModuleIR) {
+    public init(ir: ModuleIR, viewBuilders: [any RuntimeViewBuilder] = []) {
         self.ir = ir
-        registerViewBuilder(TextRuntimeViewBuilder())
-        registerViewBuilder(VStackRuntimeViewBuilder())
-        registerViewBuilder(ButtonRuntimeViewBuilder())
-        compileBindings()
-    }
-
-    public func call(function name: String, arguments: [RuntimeParameter] = []) throws -> RuntimeValue {
-        guard let value = rootInstance.get(name),
-              case .function(let function) = value else {
-            throw RuntimeError.unknownFunction(name)
+        let builders: [any RuntimeViewBuilder] = [
+            TextRuntimeViewBuilder(),
+            VStackRuntimeViewBuilder(),
+            ButtonRuntimeViewBuilder(),
+        ] + viewBuilders
+        self.viewBuilders = Dictionary(uniqueKeysWithValues: builders.map({ ($0.typeName, $0) }))
+        var runtimeViews: [RuntimeView] = []
+        let interpreter = StatementInterpreter(module: self, scope: globalScope)
+        _ = try? interpreter.execute(statements: ir.statements) { value in
+            if case .view(let runtimeView) = value {
+                runtimeViews.append(runtimeView)
+            }
         }
-        return try function.invoke(arguments: arguments, instance: rootInstance)
-    }
-
-    public func value(for name: String) -> RuntimeValue? {
-        rootInstance.get(name)
-    }
-
-    public var globalInstance: RuntimeInstance {
-        rootInstance
+        self.runtimeViews = runtimeViews
     }
 
     func viewDefinition(named name: String) -> CompiledViewDefinition? {
-        if let value = rootInstance.get(name), case .viewDefinition(let definition) = value {
-            return definition
-        }
-        return nil
+        guard let value = globalScope.get(name), case .viewDefinition(let definition) = value else { return nil }
+        return definition
     }
 
     func builder(named name: String) -> (any RuntimeViewBuilder)? {
         viewBuilders[name]
     }
 
-    public func registerViewBuilder(_ builder: any RuntimeViewBuilder) {
-        viewBuilders[builder.typeName] = builder
-    }
-
     @MainActor
-    public func makeSwiftUIView(typeName: String, parameters: [RuntimeParameter], instance: RuntimeInstance) throws -> AnyView {
+    public func makeSwiftUIView(typeName: String, arguments: [RuntimeArgument], scope: RuntimeScope) throws -> AnyView {
         if let builder = builder(named: typeName) {
-            return try builder.makeSwiftUIView(parameters: parameters, module: self, instance: instance)
+            return try builder.makeSwiftUIView(arguments: arguments, module: self, scope: scope)
         }
         if let definition = viewDefinition(named: typeName) {
             let renderer = try RuntimeViewRenderer(
                 definition: definition,
                 module: self,
-                parentInstance: instance,
-                parameters: parameters
+                arguments: arguments,
+                scope: scope,
             )
             return AnyView(RuntimeViewHost(renderer: renderer))
         }
@@ -69,22 +58,12 @@ public final class RuntimeModule {
 
     @MainActor
     public func makeTopLevelSwiftUIViews() throws -> AnyView {
-        let statementInstance = RuntimeInstance(parent: rootInstance)
-        var runtimeViews: [RuntimeView] = []
-
-        let interpreter = StatementInterpreter(module: self, instance: statementInstance)
-        _ = try interpreter.execute(statements: ir.statements) { value in
-            if case .view(let runtimeView) = value {
-                runtimeViews.append(runtimeView)
-            }
-        }
-
         guard !runtimeViews.isEmpty else {
             throw RuntimeError.invalidViewResult("Top-level statements did not produce any SwiftUI views")
         }
 
         let swiftUIViews = try runtimeViews.map { runtimeView in
-            try makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: statementInstance)
+            try makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: globalScope)
         }
 
         if swiftUIViews.count == 1, let first = swiftUIViews.first {
@@ -98,26 +77,17 @@ public final class RuntimeModule {
         })
     }
 
-    // MARK: - Compilation
-
-    private func compileBindings() {
-        for binding in ir.bindings {
-            let value = try? evaluate(expression: binding.initializer, instance: rootInstance) ?? .void
-            rootInstance.set(binding.name, value: value ?? .void)
-        }
-    }
-
     // MARK: - Evaluation Helpers
 
-    func evaluate(expression: ExprIR?, instance: RuntimeInstance) throws -> RuntimeValue? {
-        try ExpressionEvaluator(module: self, instance: instance).evaluate(expression: expression)
+    func evaluate(expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
+        try ExpressionEvaluator(module: self, scope: scope).evaluate(expression: expression)
     }
 
-    public func runtimeViews(from function: CompiledFunction, instance: RuntimeInstance) throws -> [RuntimeView] {
-        let closureInstance = RuntimeInstance(parent: instance)
+    public func runtimeViews(from function: CompiledFunction, scope: RuntimeScope) throws -> [RuntimeView] {
+        let scope = RuntimeFunctionScope(parent: scope)
         var collected: [RuntimeView] = []
 
-        let interpreter = StatementInterpreter(module: self, instance: closureInstance)
+        let interpreter = StatementInterpreter(module: self, scope: scope)
         _ = try interpreter.execute(statements: function.ir.body) { value in
             if case .view(let view) = value {
                 collected.append(view)
@@ -127,16 +97,16 @@ public final class RuntimeModule {
     }
 
     @MainActor
-    public func realize(runtimeValue value: RuntimeValue, instance: RuntimeInstance) throws -> AnyView {
+    public func realize(runtimeValue value: RuntimeValue, scope: RuntimeScope) throws -> AnyView {
         switch value {
         case .view(let runtimeView):
-            return try makeSwiftUIView(typeName: runtimeView.typeName, parameters: runtimeView.parameters, instance: instance)
+            return try makeSwiftUIView(typeName: runtimeView.typeName, arguments: runtimeView.arguments, scope: scope)
         case .viewDefinition(let definition):
             let renderer = try RuntimeViewRenderer(
                 definition: definition,
                 module: self,
-                parentInstance: instance,
-                parameters: []
+                arguments: [],
+                scope: scope,
             )
             return AnyView(RuntimeViewHost(renderer: renderer))
         default:

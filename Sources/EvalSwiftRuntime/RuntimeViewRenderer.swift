@@ -15,12 +15,12 @@ final class RuntimeViewRenderer: ObservableObject {
     init(
         definition: CompiledViewDefinition,
         module: RuntimeModule,
-        parentInstance: RuntimeInstance,
-        parameters: [RuntimeParameter]
+        arguments: [RuntimeArgument],
+        scope: RuntimeScope,
     ) throws {
         self.definition = definition
         self.module = module
-        self.instance = try definition.makeInstance(parentInstance: parentInstance, parameters: parameters)
+        self.instance = try definition.makeInstance(arguments: arguments, scope: scope)
         self.runtimeValue = .void
         self.renderedView = AnyView(EmptyView())
 
@@ -44,7 +44,7 @@ final class RuntimeViewRenderer: ObservableObject {
 
         let nextValue = try instance.callMethod("body")
         runtimeValue = nextValue
-        renderedView = try module.realize(runtimeValue: nextValue, instance: instance)
+        renderedView = try module.realize(runtimeValue: nextValue, scope: instance)
     }
 }
 

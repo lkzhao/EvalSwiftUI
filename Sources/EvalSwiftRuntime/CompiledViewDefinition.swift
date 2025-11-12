@@ -11,19 +11,19 @@ public final class CompiledViewDefinition {
     }
 
     func makeInstance(
-        parentInstance: RuntimeInstance,
-        parameters: [RuntimeParameter]
+        arguments: [RuntimeArgument],
+        scope: RuntimeScope,
     ) throws -> RuntimeInstance {
-        let localInstance = RuntimeInstance(parent: parentInstance)
+        let instance = RuntimeInstance(parent: scope)
         for binding in ir.bindings {
             if let initializer = binding.initializer {
-                let value = try module.evaluate(expression: initializer, instance: localInstance) ?? .void
-                localInstance.set(binding.name, value: value)
+                let value = try module.evaluate(expression: initializer, scope: instance) ?? .void
+                instance.define(binding.name, value: value)
             } else {
-                localInstance.set(binding.name, value: .void)
+                instance.define(binding.name, value: .void)
             }
         }
-        _ = try localInstance.callMethod("init", arguments: parameters)
-        return localInstance
+        _ = try instance.callMethod("init", arguments: arguments)
+        return instance
     }
 }

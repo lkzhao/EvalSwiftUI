@@ -7,7 +7,7 @@ struct ArgumentParser {
         self.parameters = parameters
     }
 
-    func bind(arguments: [RuntimeParameter], into instance: RuntimeInstance, module: RuntimeModule) throws {
+    func bind(arguments: [RuntimeArgument], into scope: RuntimeScope, module: RuntimeModule) throws {
         var labeledArguments: [String: RuntimeValue] = [:]
         var positionalArguments: [RuntimeValue] = []
 
@@ -43,15 +43,15 @@ struct ArgumentParser {
 
         for parameter in parameters {
             if let provided = consumeValue(for: parameter) {
-                instance.define(parameter.name, value: provided)
+                scope.define(parameter.name, value: provided)
                 continue
             }
 
             if let defaultExpr = parameter.defaultValue {
-                let value = try module.evaluate(expression: defaultExpr, instance: instance) ?? .void
-                instance.define(parameter.name, value: value)
+                let value = try module.evaluate(expression: defaultExpr, scope: scope) ?? .void
+                scope.define(parameter.name, value: value)
             } else {
-                instance.define(parameter.name, value: .void)
+                scope.define(parameter.name, value: .void)
             }
         }
     }
