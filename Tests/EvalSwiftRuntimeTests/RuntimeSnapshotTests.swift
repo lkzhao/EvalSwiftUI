@@ -189,4 +189,26 @@ struct RuntimeSnapshotTests {
             }
         }
     }
+
+    @Test func rendersViewReturnedFromGlobalFunction() throws {
+        let source = """
+        var globalText: String = ""
+
+        func globalFunction(value: Int) -> Int {
+            return value
+        }
+
+        func globalFunctionProducingView(value: Int) -> some View {
+            Text("value is \\(value)")
+        }
+
+        globalFunctionProducingView(value: globalFunction(value: 5))
+        """
+
+        try assertTopLevelSnapshotsMatch(source: source) {
+            VStack {
+                Text("value is 5")
+            }
+        }
+    }
 }
