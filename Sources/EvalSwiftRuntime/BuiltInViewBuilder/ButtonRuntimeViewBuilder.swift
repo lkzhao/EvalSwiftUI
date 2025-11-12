@@ -11,8 +11,8 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
         module: RuntimeModule,
         scope: RuntimeScope
     ) throws -> AnyView {
-        var actionFunction: CompiledFunction?
-        var labelFunction: CompiledFunction?
+        var actionFunction: Function?
+        var labelFunction: Function?
         var title: String?
 
         for parameter in arguments {
@@ -44,11 +44,11 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
             throw RuntimeError.invalidViewArgument("Button requires an action closure.")
         }
 
-        let action = RuntimeButtonAction(function: actionFunction, scope: scope)
+        let action = RuntimeButtonAction(function: actionFunction, module: module, scope: scope)
 
         if let labelFunction = labelFunction {
             let labelViews = try StatementInterpreter(module: module, scope: scope)
-                .executeAndCollectRuntimeViews(statements: labelFunction.ir.body)
+                .executeAndCollectRuntimeViews(statements: labelFunction.body)
             guard labelViews.count == 1, let runtimeView = labelViews.first else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
@@ -69,15 +69,17 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
 }
 
 private final class RuntimeButtonAction {
-    private let function: CompiledFunction
+    private let function: Function
+    private let module: RuntimeModule
     private let scope: RuntimeScope
 
-    init(function: CompiledFunction, scope: RuntimeScope) {
+    init(function: Function, module: RuntimeModule, scope: RuntimeScope) {
         self.function = function
+        self.module = module
         self.scope = scope
     }
 
     func perform() {
-        _ = try? function.invoke(arguments: [], scope: scope)
+        _ = try? function.invoke(arguments: [], module: module, scope: scope)
     }
 }

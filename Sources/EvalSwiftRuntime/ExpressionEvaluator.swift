@@ -37,11 +37,9 @@ struct ExpressionEvaluator {
             }.joined()
             return .string(resolved)
         case .view(let definition):
-            let compiled = CompiledViewDefinition(ir: definition, module: module)
-            return .viewDefinition(compiled)
-        case .function(let functionIR):
-            let compiled = CompiledFunction(ir: functionIR, module: module)
-            return .function(compiled)
+            return .viewDefinition(definition)
+        case .function(let function):
+            return .function(function)
         case .member(let base, let name):
             if case .identifier("self") = base {
                 if let instance = scope.instance {
@@ -65,14 +63,14 @@ struct ExpressionEvaluator {
             }
 
             guard let calleeValue = try evaluate(callee, module: module, scope: scope),
-                  case .function(let compiled) = calleeValue else {
+                  case .function(let function) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
             let resolvedArguments = try arguments.map { argument in
                 let value = try evaluate(argument.value, module: module, scope: scope) ?? .void
                 return RuntimeArgument(label: argument.label, value: value)
             }
-            return try compiled.invoke(arguments: resolvedArguments, scope: scope)
+            return try function.invoke(arguments: resolvedArguments, module: module, scope: scope)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }

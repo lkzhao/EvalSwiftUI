@@ -2,7 +2,7 @@ import Testing
 @testable import EvalSwiftRuntime
 import EvalSwiftIR
 
-struct CompiledFunctionTests {
+struct FunctionTests {
     @Test func matchesArgumentsByLabelRegardlessOfOrder() throws {
         let source = """
         func primary(person name: String, alias: String) -> String {
@@ -18,7 +18,7 @@ struct CompiledFunctionTests {
             RuntimeArgument(label: "alias", value: .string("Beta")),
             RuntimeArgument(label: "person", value: .string("Alpha"))
         ]
-        let value = try module.globalScope.callMethod("primary", arguments: arguments)
+        let value = try module.globalScope.callMethod("primary", arguments: arguments, module: module)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string result, got \(String(describing: value))")
@@ -41,7 +41,7 @@ struct CompiledFunctionTests {
             RuntimeArgument(label: nil, value: .string("Positional")),
             RuntimeArgument(label: "alias", value: .string("Labeled"))
         ]
-        let value = try module.globalScope.callMethod("resolve", arguments: arguments)
+        let value = try module.globalScope.callMethod("resolve", arguments: arguments, module: module)
 
         guard case .string(let result) = value else {
             throw TestFailure.expected("Expected string, got \(String(describing: value))")

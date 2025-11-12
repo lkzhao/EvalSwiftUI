@@ -6,10 +6,10 @@ public enum RuntimeValue {
     case double(Double)
     case string(String)
     case bool(Bool)
-    case viewDefinition(CompiledViewDefinition)
+    case viewDefinition(ViewDefinition)
+    case function(Function)
     case view(RuntimeView)
     case array([RuntimeValue])
-    case function(CompiledFunction)
     case void
 }
 

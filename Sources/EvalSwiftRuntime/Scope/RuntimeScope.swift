@@ -28,12 +28,12 @@ extension RuntimeScope {
         }
         return instance
     }
-    public func callMethod(_ name: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
+    public func callMethod(_ name: String, arguments: [RuntimeArgument] = [], module: RuntimeModule) throws -> RuntimeValue? {
         let value = try get(name)
         guard case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
         }
-        return try function.invoke(arguments: arguments, scope: self)
+        return try function.invoke(arguments: arguments, module: module, scope: self)
     }
 
     public func define(_ name: String, value: RuntimeValue) {
