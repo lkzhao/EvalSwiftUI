@@ -11,7 +11,7 @@ public struct RoundedRectangleViewBuilder: RuntimeViewBuilder {
         scope: RuntimeScope
     ) throws -> AnyView {
         var cornerRadius: CGFloat?
-        var style: RoundedCornerStyle = .circular
+        var style: RoundedCornerStyle = .continuous
         var positionalIndex = 0
 
         for argument in arguments {

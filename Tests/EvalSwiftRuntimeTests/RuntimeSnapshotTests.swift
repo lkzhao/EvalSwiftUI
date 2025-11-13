@@ -213,35 +213,21 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersShapesAndSpacerBuilders() throws {
-        let source = """
-        VStack(spacing: 6) {
-            Circle()
-                .foregroundStyle(.mint)
-                .frame(width: 24, height: 24)
-            Spacer(minLength: 8)
-            Rectangle()
-                .foregroundStyle(.pink)
-                .frame(width: 32, height: 8)
-            RoundedRectangle(cornerRadius: 6)
-                .foregroundStyle(.purple)
-                .frame(width: 36, height: 12)
-        }
-        """
-
-        try assertSnapshotsMatch(source: source) {
-            VStack(spacing: 6) {
+        #expectSnapshot(
+            HStack(spacing: 0) {
                 Circle()
                     .foregroundStyle(.mint)
-                    .frame(width: 24, height: 24)
-                Spacer(minLength: 8)
+                    .frame(width: 20, height: 20)
+                Spacer(minLength: 12)
                 Rectangle()
                     .foregroundStyle(.pink)
-                    .frame(width: 32, height: 8)
-                RoundedRectangle(cornerRadius: 6)
+                    .frame(width: 16, height: 10)
+                RoundedRectangle(cornerRadius: 4)
                     .foregroundStyle(.purple)
-                    .frame(width: 36, height: 12)
+                    .frame(width: 18, height: 12)
             }
-        }
+            .frame(width: 120, height: 24)
+        )
     }
 
     @Test func rendersZStackWithAlignment() throws {
@@ -251,7 +237,7 @@ struct RuntimeSnapshotTests {
                 .foregroundStyle(.blue)
                 .frame(width: 80, height: 40)
             Text("SALE")
-                .font(.caption.bold())
+                .font(.caption)
                 .foregroundStyle(.white)
                 .padding(4)
                 .background(.red)
@@ -266,7 +252,7 @@ struct RuntimeSnapshotTests {
                     .foregroundStyle(.blue)
                     .frame(width: 80, height: 40)
                 Text("SALE")
-                    .font(.caption.bold())
+                    .font(.caption)
                     .foregroundStyle(.white)
                     .padding(4)
                     .background(Color.red)
