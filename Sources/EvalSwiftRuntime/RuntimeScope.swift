@@ -1,4 +1,5 @@
 import SwiftUI
+import EvalSwiftIR
 
 public protocol RuntimeScope: AnyObject, CustomStringConvertible {
     var storage: [String: RuntimeValue] { get set }
@@ -112,5 +113,24 @@ extension RuntimeScope {
             return try type.makeInstance()
         }
         throw RuntimeError.unknownView(typeName)
+    }
+
+    func define(binding: BindingIR) throws {
+        if let initializer = binding.initializer {
+            let rawValue = try ExpressionEvaluator.evaluate(initializer, scope: self) ?? .void
+            let coercedValue = binding.coercedValue(from: rawValue)
+            define(binding.name, value: coercedValue)
+        } else {
+            define(binding.name, value: .void)
+        }
+    }
+
+    func define(parameter: FunctionParameterIR) throws {
+        if let initializer = parameter.defaultValue {
+            let value = try ExpressionEvaluator.evaluate(initializer, scope: self) ?? .void
+            define(parameter.name, value: value)
+        } else {
+            define(parameter.name, value: .void)
+        }
     }
 }

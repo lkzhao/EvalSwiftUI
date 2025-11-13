@@ -37,7 +37,7 @@ struct ExpressionEvaluator {
             }.joined()
             return .string(resolved)
         case .definition(let definition):
-            return .type(RuntimeType(ir: definition, parent: scope))
+            return .type(try RuntimeType(ir: definition, parent: scope))
         case .function(let function):
             return .function(RuntimeFunction(ir: function, parent: scope))
         case .unary(let op, let operandExpr):

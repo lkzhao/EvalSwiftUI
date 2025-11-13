@@ -59,13 +59,14 @@ public struct SwiftIRParser {
         let members: MemberBlockItemListSyntax = node.memberBlock.members
 
         var instanceBindings: [BindingIR] = []
+        var staticBindings: [BindingIR] = []
         var storedProperties: [BindingIR] = []
         var hasExplicitInitializer = false
 
         for member in members {
             if let structDecl = member.decl.as(StructDeclSyntax.self),
                let definition = makeDefinition(from: structDecl) {
-                instanceBindings.append(
+                staticBindings.append(
                     BindingIR(
                         name: structDecl.name.text,
                         typeAnnotation: nil,
@@ -76,20 +77,33 @@ public struct SwiftIRParser {
             }
 
             if let variable = member.decl.as(VariableDeclSyntax.self) {
+                let isStatic = hasStaticModifier(variable.modifiers)
                 if let computedBinding = makeComputedBinding(from: variable) {
-                    instanceBindings.append(computedBinding)
+                    if isStatic {
+                        staticBindings.append(computedBinding)
+                    } else {
+                        instanceBindings.append(computedBinding)
+                    }
                     continue
                 }
 
                 let bindings = makeBindingList(from: variable)
-                storedProperties.append(contentsOf: bindings)
-                instanceBindings.append(contentsOf: bindings)
+                if isStatic {
+                    staticBindings.append(contentsOf: bindings)
+                } else {
+                    storedProperties.append(contentsOf: bindings)
+                    instanceBindings.append(contentsOf: bindings)
+                }
                 continue
             }
 
             if let functionDecl = member.decl.as(FunctionDeclSyntax.self) {
                 let binding = makeFunctionBinding(from: functionDecl)
-                instanceBindings.append(binding)
+                if hasStaticModifier(functionDecl.modifiers) {
+                    staticBindings.append(binding)
+                } else {
+                    instanceBindings.append(binding)
+                }
                 continue
             }
 
@@ -106,7 +120,12 @@ public struct SwiftIRParser {
             instanceBindings.insert(synthesizeInitializer(from: storedProperties), at: 0)
         }
 
-        return DefinitionIR(name: node.name.text, inheritedTypes: makeInheritedTypes(node), bindings: instanceBindings)
+        return DefinitionIR(
+            name: node.name.text,
+            inheritedTypes: makeInheritedTypes(node),
+            bindings: instanceBindings,
+            staticBindings: staticBindings
+        )
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
@@ -129,7 +148,7 @@ public struct SwiftIRParser {
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
-        node.bindings.compactMap { binding in
+        return node.bindings.compactMap { binding in
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else { return nil }
             let initializerExpr = binding.initializer.map { makeExpr($0.value) }
             let typeAnnotation = binding.typeAnnotation?.type.trimmedDescription
@@ -370,6 +389,19 @@ public struct SwiftIRParser {
             }
             return nil
         }
+    }
+
+    private func hasStaticModifier(_ modifiers: DeclModifierListSyntax?) -> Bool {
+        guard let modifiers else { return false }
+        for modifier in modifiers {
+            switch modifier.name.tokenKind {
+            case .keyword(.static), .keyword(.class):
+                return true
+            default:
+                continue
+            }
+        }
+        return false
     }
 
     private func makeAssignment(from item: CodeBlockItemSyntax) -> AssignmentIR? {

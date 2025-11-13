@@ -9,21 +9,18 @@ public final class RuntimeType: RuntimeScope {
         ir.name
     }
 
-    public init(ir: DefinitionIR, parent: RuntimeScope?) {
+    public init(ir: DefinitionIR, parent: RuntimeScope?) throws {
         self.ir = ir
         self.parent = parent
+        for binding in ir.staticBindings {
+            try define(binding: binding)
+        }
     }
 
     public func makeInstance(arguments: [RuntimeArgument] = []) throws -> RuntimeInstance {
         let instance = RuntimeInstance(parent: self)
         for binding in ir.bindings {
-            if let initializer = binding.initializer {
-                let rawValue = try ExpressionEvaluator.evaluate(initializer, scope: instance) ?? .void
-                let coercedValue = binding.coercedValue(from: rawValue)
-                instance.define(binding.name, value: coercedValue)
-            } else {
-                instance.define(binding.name, value: .void)
-            }
+            try instance.define(binding: binding)
         }
         _ = try instance.callFunction("init", arguments: arguments)
         return instance

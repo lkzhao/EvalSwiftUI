@@ -7,6 +7,7 @@ public struct DefinitionIR {
     public let name: String
     public let inheritedTypes: [String]
     public let bindings: [BindingIR]
+    public let staticBindings: [BindingIR]
 }
 
 public struct BindingIR {
