@@ -13,7 +13,9 @@ public final class RuntimeModule: RuntimeScope {
     public init(ir: ModuleIR, viewBuilders: [any RuntimeViewBuilder] = []) {
         let builders: [any RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
+            ImageRuntimeViewBuilder(),
             VStackRuntimeViewBuilder(),
+            HStackRuntimeViewBuilder(),
             ForEachRuntimeViewBuilder(),
             ButtonRuntimeViewBuilder(),
         ] + viewBuilders

@@ -164,6 +164,28 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersHStackSpacingArgument() throws {
+        let source = """
+        struct RowView: View {
+            var body: some View {
+                HStack(spacing: 12) {
+                    Text("Leading")
+                    Text("Trailing")
+                }
+            }
+        }
+
+        RowView()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            HStack(spacing: 12) {
+                Text("Leading")
+                Text("Trailing")
+            }
+        }
+    }
+
     @Test func rendersNestedVStacks() throws {
         let source = """
         struct NestedStackView: View {
@@ -209,6 +231,16 @@ struct RuntimeSnapshotTests {
             VStack {
                 Text("value is 5")
             }
+        }
+    }
+
+    @Test func rendersImageSystemSymbol() throws {
+        let source = """
+        Image(systemName: "globe")
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Image(systemName: "globe")
         }
     }
 
