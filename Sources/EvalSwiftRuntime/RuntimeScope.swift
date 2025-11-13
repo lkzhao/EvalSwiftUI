@@ -97,23 +97,8 @@ extension RuntimeScope {
         return definition
     }
 
-    public func builder(named name: String) throws -> any RuntimeViewBuilder {
-        let value = try get(name)
-        guard case .viewBuilder(let builder) = value else {
-            throw RuntimeError.unknownIdentifier(name)
-        }
-        return builder
-    }
-
-    public func modifier(named name: String) throws -> any RuntimeViewModifierBuilder {
-        guard let builder = module?.modifierBuilder(named: name) else {
-            throw RuntimeError.unknownModifier(name)
-        }
-        return builder
-    }
-
     func makeInstance(typeName: String, arguments: [RuntimeArgument] = []) throws -> RuntimeInstance {
-        if let builder = try? builder(named: typeName) {
+        if let builder = module?.viewBuilder(named: typeName) {
             return .init(builder: builder, arguments: arguments, parent: self)
         }
         if let type = try? type(named: typeName) {

@@ -8,7 +8,6 @@ public enum RuntimeValue {
     case bool(Bool)
     case keyPath(RuntimeKeyPath)
     case type(RuntimeType)
-    case viewBuilder(any RuntimeViewBuilder)
     case function(RuntimeFunction)
     case instance(RuntimeInstance)
     case array([RuntimeValue])
@@ -30,8 +29,6 @@ extension RuntimeValue: CustomStringConvertible {
             return "<KeyPath>"
         case .type(let type):
             return "<Type \(type.name)>"
-        case .viewBuilder(let builder):
-            return "<ViewBuilder \(builder.typeName)>"
         case .instance(let instance):
             return String(describing: instance)
         case .array(let values):
@@ -97,7 +94,6 @@ extension RuntimeValue {
         case bool = "Bool"
         case keyPath = "KeyPath"
         case type = "Type"
-        case viewBuilder = "ViewBuilder"
         case instance = "Instance"
         case array = "Array"
         case function = "Function"
@@ -118,8 +114,6 @@ extension RuntimeValue {
             return .keyPath
         case .type:
             return .type
-        case .viewBuilder:
-            return .viewBuilder
         case .instance:
             return .instance
         case .array:

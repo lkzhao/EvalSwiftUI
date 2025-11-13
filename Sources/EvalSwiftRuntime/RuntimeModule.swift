@@ -5,12 +5,13 @@ import EvalSwiftIR
 public final class RuntimeModule: RuntimeScope {
     public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeInstance] = []
-    private var registeredModifierBuilders: [String: any RuntimeViewModifierBuilder] = [:]
+    private var viewBuilders: [String: RuntimeViewBuilder] = [:]
+    private var modifierBuilders: [String: RuntimeViewModifierBuilder] = [:]
 
     public convenience init(
         source: String,
-        viewBuilders: [any RuntimeViewBuilder] = [],
-        modifierBuilders: [any RuntimeViewModifierBuilder] = []
+        viewBuilders: [RuntimeViewBuilder] = [],
+        modifierBuilders: [RuntimeViewModifierBuilder] = []
     ) {
         self.init(
             ir: SwiftIRParser().parseModule(source: source),
@@ -21,10 +22,10 @@ public final class RuntimeModule: RuntimeScope {
 
     public init(
         ir: ModuleIR,
-        viewBuilders: [any RuntimeViewBuilder] = [],
-        modifierBuilders: [any RuntimeViewModifierBuilder] = []
+        viewBuilders: [RuntimeViewBuilder] = [],
+        modifierBuilders: [RuntimeViewModifierBuilder] = []
     ) {
-        let builders: [any RuntimeViewBuilder] = [
+        let builders: [RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
             ImageRuntimeViewBuilder(),
             VStackRuntimeViewBuilder(),
@@ -33,14 +34,14 @@ public final class RuntimeModule: RuntimeScope {
             ButtonRuntimeViewBuilder(),
         ] + viewBuilders
         for builder in builders {
-            define(builder.typeName, value: .viewBuilder(builder))
+            self.viewBuilders[builder.typeName] = builder
         }
 
-        let modifiers: [any RuntimeViewModifierBuilder] = [
+        let modifiers: [RuntimeViewModifierBuilder] = [
             PaddingRuntimeViewModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifiers {
-            registeredModifierBuilders[modifier.modifierName] = modifier
+            self.modifierBuilders[modifier.modifierName] = modifier
         }
 
         let statementInterpreter = StatementInterpreter(scope: self)
@@ -48,8 +49,12 @@ public final class RuntimeModule: RuntimeScope {
         self.runtimeViews = values ?? []
     }
 
-    func modifierBuilder(named name: String) -> (any RuntimeViewModifierBuilder)? {
-        registeredModifierBuilders[name]
+    func viewBuilder(named name: String) -> RuntimeViewBuilder? {
+        viewBuilders[name]
+    }
+
+    func modifierBuilder(named name: String) -> RuntimeViewModifierBuilder? {
+        modifierBuilders[name]
     }
 
     @MainActor
