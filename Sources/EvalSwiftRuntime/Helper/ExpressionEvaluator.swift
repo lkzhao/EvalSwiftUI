@@ -84,6 +84,16 @@ struct ExpressionEvaluator {
                 return RuntimeArgument(label: argument.label, value: value)
             }
 
+            if case .member(let baseExpr, let name) = callee,
+               let modifierBuilder = scope.module?.modifierBuilder(named: name) {
+                guard let baseValue = try evaluate(baseExpr, scope: scope),
+                      case .instance(let instance) = baseValue else {
+                    throw RuntimeError.invalidViewArgument("\(name) modifier requires a SwiftUI view as the receiver.")
+                }
+                let modifiedInstance = RuntimeInstance(modifierBuilder: modifierBuilder, arguments: evaluatedArguments, parent: instance)
+                return .instance(modifiedInstance)
+            }
+
             if case .identifier(let identifier) = callee {
                 if let conversion = try evaluateTypeInitializer(name: identifier, arguments: evaluatedArguments) {
                     return conversion

@@ -212,6 +212,18 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersPaddingModifier() throws {
+        let source = """
+        Text("Padded")
+            .padding(12)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Padded")
+                .padding(12)
+        }
+    }
+
     @Test func rendersViewReturnedFromGlobalFunction() throws {
         let source = """
         var globalText: String = ""
@@ -241,6 +253,23 @@ struct RuntimeSnapshotTests {
 
         try assertSnapshotsMatch(source: source) {
             Image(systemName: "globe")
+        }
+    }
+
+    @Test func rendersCustomModifierBuilder() throws {
+        let source = """
+        Text("Badge")
+            .capsuleBackground()
+        """
+
+        try assertSnapshotsMatch(
+            source: source,
+            modifierBuilders: [CapsuleBackgroundModifierBuilder()]
+        ) {
+            Text("Badge")
+                .padding(8)
+                .background(Color.blue.opacity(0.2))
+                .clipShape(Capsule())
         }
     }
 
@@ -355,5 +384,23 @@ struct RuntimeSnapshotTests {
         try renderer.instance.set("count", value: .int(5))
 
         try assertViewMatch(renderer.renderedView, Text("Count: 5"))
+    }
+}
+
+private struct CapsuleBackgroundModifierBuilder: RuntimeViewModifierBuilder {
+    let modifierName = "capsuleBackground"
+
+    @MainActor
+    func applyModifier(
+        to view: AnyView,
+        arguments: [RuntimeArgument],
+        scope: RuntimeScope
+    ) throws -> AnyView {
+        AnyView(
+            view
+                .padding(8)
+                .background(Color.blue.opacity(0.2))
+                .clipShape(Capsule())
+        )
     }
 }

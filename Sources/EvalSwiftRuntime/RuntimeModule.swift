@@ -5,12 +5,25 @@ import EvalSwiftIR
 public final class RuntimeModule: RuntimeScope {
     public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeInstance] = []
+    private var registeredModifierBuilders: [String: any RuntimeViewModifierBuilder] = [:]
 
-    public convenience init(source: String, viewBuilders: [any RuntimeViewBuilder] = []) {
-        self.init(ir: SwiftIRParser().parseModule(source: source), viewBuilders: viewBuilders)
+    public convenience init(
+        source: String,
+        viewBuilders: [any RuntimeViewBuilder] = [],
+        modifierBuilders: [any RuntimeViewModifierBuilder] = []
+    ) {
+        self.init(
+            ir: SwiftIRParser().parseModule(source: source),
+            viewBuilders: viewBuilders,
+            modifierBuilders: modifierBuilders
+        )
     }
 
-    public init(ir: ModuleIR, viewBuilders: [any RuntimeViewBuilder] = []) {
+    public init(
+        ir: ModuleIR,
+        viewBuilders: [any RuntimeViewBuilder] = [],
+        modifierBuilders: [any RuntimeViewModifierBuilder] = []
+    ) {
         let builders: [any RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
             ImageRuntimeViewBuilder(),
@@ -22,9 +35,21 @@ public final class RuntimeModule: RuntimeScope {
         for builder in builders {
             define(builder.typeName, value: .viewBuilder(builder))
         }
+
+        let modifiers: [any RuntimeViewModifierBuilder] = [
+            PaddingRuntimeViewModifierBuilder(),
+        ] + modifierBuilders
+        for modifier in modifiers {
+            registeredModifierBuilders[modifier.modifierName] = modifier
+        }
+
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
         self.runtimeViews = values ?? []
+    }
+
+    func modifierBuilder(named name: String) -> (any RuntimeViewModifierBuilder)? {
+        registeredModifierBuilders[name]
     }
 
     @MainActor

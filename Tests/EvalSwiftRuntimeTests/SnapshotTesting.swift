@@ -74,11 +74,16 @@ func assertSnapshotsMatch<V: View>(
     source: String,
     viewName: String? = nil,
     viewBuilders: [any RuntimeViewBuilder] = [],
+    modifierBuilders: [any RuntimeViewModifierBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: source)
-    let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
+    let module = RuntimeModule(
+        ir: moduleIR,
+        viewBuilders: viewBuilders,
+        modifierBuilders: modifierBuilders
+    )
     if let viewName {
         let evaluatedView = try module.makeInstance(typeName: viewName).makeSwiftUIView()
         try assertViewMatch(evaluatedView, expectedView())

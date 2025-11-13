@@ -3,6 +3,7 @@ import Foundation
 public enum RuntimeError: Error, CustomStringConvertible {
     case unknownIdentifier(String)
     case unknownFunction(String)
+    case unknownModifier(String)
     case unknownView(String)
     case invalidArgumentCount(expected: Int, got: Int, function: String)
     case unsupportedExpression(String)
@@ -17,6 +18,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             return "Unknown identifier: \(name)"
         case .unknownFunction(let name):
             return "Unknown function: \(name)"
+        case .unknownModifier(let name):
+            return "Unknown view modifier: \(name)"
         case .unknownView(let name):
             return "Unknown view: \(name)"
         case .invalidArgumentCount(let expected, let got, let function):
