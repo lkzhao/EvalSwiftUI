@@ -212,6 +212,134 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersShapesAndSpacerBuilders() throws {
+        let source = """
+        VStack(spacing: 6) {
+            Circle()
+                .foregroundStyle(.mint)
+                .frame(width: 24, height: 24)
+            Spacer(minLength: 8)
+            Rectangle()
+                .foregroundStyle(.pink)
+                .frame(width: 32, height: 8)
+            RoundedRectangle(cornerRadius: 6)
+                .foregroundStyle(.purple)
+                .frame(width: 36, height: 12)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 6) {
+                Circle()
+                    .foregroundStyle(.mint)
+                    .frame(width: 24, height: 24)
+                Spacer(minLength: 8)
+                Rectangle()
+                    .foregroundStyle(.pink)
+                    .frame(width: 32, height: 8)
+                RoundedRectangle(cornerRadius: 6)
+                    .foregroundStyle(.purple)
+                    .frame(width: 36, height: 12)
+            }
+        }
+    }
+
+    @Test func rendersZStackWithAlignment() throws {
+        let source = """
+        ZStack(alignment: .bottomTrailing) {
+            Rectangle()
+                .foregroundStyle(.blue)
+                .frame(width: 80, height: 40)
+            Text("SALE")
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .padding(4)
+                .background(.red)
+                .cornerRadius(6)
+                .padding(4)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            ZStack(alignment: .bottomTrailing) {
+                Rectangle()
+                    .foregroundStyle(.blue)
+                    .frame(width: 80, height: 40)
+                Text("SALE")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .padding(4)
+                    .background(Color.red)
+                    .cornerRadius(6)
+                    .padding(4)
+            }
+        }
+    }
+
+    @Test func rendersScrollViewWithHorizontalAxis() throws {
+        let source = """
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(0..<3) { index in
+                    Text("Card \\(index)")
+                        .padding(6)
+                        .background(.teal)
+                        .cornerRadius(8)
+                }
+            }
+            .padding(4)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(0..<3) { index in
+                        Text("Card \(index)")
+                            .padding(6)
+                            .background(Color.teal)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding(4)
+            }
+        }
+    }
+
+    @Test func rendersToggleWithStringLabel() throws {
+        let source = """
+        Toggle("Notifications", isOn: true)
+            .padding()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Toggle("Notifications", isOn: .constant(true))
+                .padding()
+        }
+    }
+
+    @Test func rendersToggleWithCustomLabelClosure() throws {
+        let source = """
+        Toggle(isOn: false) {
+            HStack(spacing: 6) {
+                Circle()
+                    .frame(width: 10, height: 10)
+                Text("Silent Mode")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Toggle(isOn: .constant(false)) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .frame(width: 10, height: 10)
+                    Text("Silent Mode")
+                }
+            }
+        }
+    }
+
     @Test func rendersPaddingModifier() throws {
         let source = """
         Text("Padded")

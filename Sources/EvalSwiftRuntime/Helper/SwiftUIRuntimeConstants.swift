@@ -6,6 +6,8 @@ enum SwiftUIRuntimeConstants {
         registerFonts(in: module)
         registerAlignments(in: module)
         registerImageScales(in: module)
+        registerAxisSets(in: module)
+        registerRoundedCornerStyles(in: module)
     }
 
     private static func registerColors(in scope: RuntimeModule) {
@@ -98,5 +100,36 @@ enum SwiftUIRuntimeConstants {
             scope.define(name, value: .swiftUI(.imageScale(scale)))
             scaleInstance.define(name, value: .swiftUI(.imageScale(scale)))
         }
+    }
+
+    private static func registerAxisSets(in scope: RuntimeModule) {
+        let axisInstance = RuntimeInstance(parent: scope)
+        let setInstance = RuntimeInstance(parent: axisInstance)
+        axisInstance.define("Set", value: .instance(setInstance))
+        scope.define("Axis", value: .instance(axisInstance))
+
+        let axisSets: [(String, Axis.Set)] = [
+            ("vertical", .vertical),
+            ("horizontal", .horizontal)
+        ]
+
+        for (name, axis) in axisSets {
+            scope.define(name, value: .swiftUI(.axisSet(axis)))
+            setInstance.define(name, value: .swiftUI(.axisSet(axis)))
+        }
+    }
+
+    private static func registerRoundedCornerStyles(in scope: RuntimeModule) {
+        let styles: [(String, RoundedCornerStyle)] = [
+            ("circular", .circular),
+            ("continuous", .continuous)
+        ]
+
+        let styleInstance = RuntimeInstance(parent: scope)
+        for (name, style) in styles {
+            scope.define(name, value: .swiftUI(.roundedCornerStyle(style)))
+            styleInstance.define(name, value: .swiftUI(.roundedCornerStyle(style)))
+        }
+        scope.define("RoundedCornerStyle", value: .instance(styleInstance))
     }
 }

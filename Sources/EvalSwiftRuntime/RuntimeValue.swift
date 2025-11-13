@@ -124,6 +124,16 @@ extension RuntimeValue {
         return scale
     }
 
+    var asAxisSet: Axis.Set? {
+        guard case .swiftUI(let value) = self, case .axisSet(let axis) = value else { return nil }
+        return axis
+    }
+
+    var asRoundedCornerStyle: RoundedCornerStyle? {
+        guard case .swiftUI(let value) = self, case .roundedCornerStyle(let style) = value else { return nil }
+        return style
+    }
+
     @MainActor
     var asSwiftUIView: AnyView? {
         if let color = asColor {
@@ -197,6 +207,8 @@ public enum SwiftUIRuntimeValue {
     case font(Font)
     case alignment(Alignment)
     case imageScale(Image.Scale)
+    case axisSet(Axis.Set)
+    case roundedCornerStyle(RoundedCornerStyle)
 }
 
 extension SwiftUIRuntimeValue: CustomStringConvertible {
@@ -210,6 +222,10 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Alignment>"
         case .imageScale:
             return "<Image.Scale>"
+        case .axisSet:
+            return "<Axis.Set>"
+        case .roundedCornerStyle:
+            return "<RoundedCornerStyle>"
         }
     }
 }

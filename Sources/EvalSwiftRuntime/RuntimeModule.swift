@@ -30,8 +30,15 @@ public final class RuntimeModule: RuntimeScope {
             ImageRuntimeViewBuilder(),
             VStackRuntimeViewBuilder(),
             HStackRuntimeViewBuilder(),
+            ZStackViewBuilder(),
             ForEachRuntimeViewBuilder(),
-            ButtonRuntimeViewBuilder(),
+            ButtonViewBuilder(),
+            CircleViewBuilder(),
+            RectangleViewBuilder(),
+            RoundedRectangleViewBuilder(),
+            ScrollViewViewBuilder(),
+            SpacerViewBuilder(),
+            ToggleViewBuilder(),
         ] + viewBuilders
         for builder in builders {
             self.viewBuilders[builder.typeName] = builder

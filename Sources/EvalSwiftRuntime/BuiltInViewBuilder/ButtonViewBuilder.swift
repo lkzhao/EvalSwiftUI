@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
+public struct ButtonViewBuilder: RuntimeViewBuilder {
     public let typeName = "Button"
 
     public init() {}
