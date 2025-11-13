@@ -74,7 +74,7 @@ func assertSnapshotsMatch<V: View>(
     source: String,
     viewName: String? = nil,
     viewBuilders: [any RuntimeViewBuilder] = [],
-    modifierBuilders: [any RuntimeViewModifierBuilder] = [],
+    modifierBuilders: [any RuntimeModifierBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let parser = SwiftIRParser()

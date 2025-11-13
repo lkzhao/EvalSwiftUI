@@ -387,7 +387,7 @@ struct RuntimeSnapshotTests {
     }
 }
 
-private struct CapsuleBackgroundModifierBuilder: RuntimeViewModifierBuilder {
+private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
     let modifierName = "capsuleBackground"
 
     @MainActor

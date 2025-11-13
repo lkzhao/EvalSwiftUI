@@ -1,6 +1,6 @@
 import SwiftUI
 
-public protocol RuntimeViewModifierBuilder {
+public protocol RuntimeModifierBuilder {
     var modifierName: String { get }
     @MainActor
     func applyModifier(

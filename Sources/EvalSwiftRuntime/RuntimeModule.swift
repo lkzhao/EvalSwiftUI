@@ -6,12 +6,12 @@ public final class RuntimeModule: RuntimeScope {
     public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeInstance] = []
     private var viewBuilders: [String: RuntimeViewBuilder] = [:]
-    private var modifierBuilders: [String: RuntimeViewModifierBuilder] = [:]
+    private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
 
     public convenience init(
         source: String,
         viewBuilders: [RuntimeViewBuilder] = [],
-        modifierBuilders: [RuntimeViewModifierBuilder] = []
+        modifierBuilders: [RuntimeModifierBuilder] = []
     ) {
         self.init(
             ir: SwiftIRParser().parseModule(source: source),
@@ -23,7 +23,7 @@ public final class RuntimeModule: RuntimeScope {
     public init(
         ir: ModuleIR,
         viewBuilders: [RuntimeViewBuilder] = [],
-        modifierBuilders: [RuntimeViewModifierBuilder] = []
+        modifierBuilders: [RuntimeModifierBuilder] = []
     ) {
         let builders: [RuntimeViewBuilder] = [
             TextRuntimeViewBuilder(),
@@ -37,8 +37,8 @@ public final class RuntimeModule: RuntimeScope {
             self.viewBuilders[builder.typeName] = builder
         }
 
-        let modifiers: [RuntimeViewModifierBuilder] = [
-            PaddingRuntimeViewModifierBuilder(),
+        let modifiers: [RuntimeModifierBuilder] = [
+            PaddingModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifiers {
             self.modifierBuilders[modifier.modifierName] = modifier
@@ -53,7 +53,7 @@ public final class RuntimeModule: RuntimeScope {
         viewBuilders[name]
     }
 
-    func modifierBuilder(named name: String) -> RuntimeViewModifierBuilder? {
+    func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {
         modifierBuilders[name]
     }
 

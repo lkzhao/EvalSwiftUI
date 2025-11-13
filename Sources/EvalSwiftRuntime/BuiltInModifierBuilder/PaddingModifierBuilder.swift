@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct PaddingRuntimeViewModifierBuilder: RuntimeViewModifierBuilder {
+public struct PaddingModifierBuilder: RuntimeModifierBuilder {
     public let modifierName = "padding"
 
     public init() {}

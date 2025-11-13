@@ -4,7 +4,7 @@ public final class RuntimeInstance: RuntimeScope {
     enum Content {
         case view
         case builder(RuntimeViewBuilder, [RuntimeArgument])
-        case modifier(RuntimeViewModifierBuilder, [RuntimeArgument])
+        case modifier(RuntimeModifierBuilder, [RuntimeArgument])
     }
     private var content: Content
 
@@ -26,7 +26,7 @@ public final class RuntimeInstance: RuntimeScope {
         self.content = .builder(builder, arguments)
     }
 
-    public init(modifierBuilder: RuntimeViewModifierBuilder, arguments: [RuntimeArgument], parent: RuntimeInstance) {
+    public init(modifierBuilder: RuntimeModifierBuilder, arguments: [RuntimeArgument], parent: RuntimeInstance) {
         self.parent = parent
         self.content = .modifier(modifierBuilder, arguments)
     }
