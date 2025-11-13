@@ -321,7 +321,8 @@ struct RuntimeViewDefinitionTests {
 
         let module = RuntimeModule(source: source)
         let type = try module.type(named: "CounterView")
-        let renderer = try RuntimeViewRenderer(type: type)
+        let instance = try type.makeInstance()
+        let renderer = try RuntimeViewRenderer(instance: instance)
 
         try assertViewMatch(renderer.renderedView, Text("Count: 0"))
 

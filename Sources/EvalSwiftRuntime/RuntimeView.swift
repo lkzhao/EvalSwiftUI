@@ -27,7 +27,8 @@ extension RuntimeView {
             return try builder.makeSwiftUIView(arguments: arguments, scope: scope)
         }
         if let type = try? scope.type(named: typeName) {
-            let renderer = try RuntimeViewRenderer(type: type, arguments: arguments)
+            let instance = try type.makeInstance()
+            let renderer = try RuntimeViewRenderer(instance: instance)
             return AnyView(RuntimeViewHost(renderer: renderer))
         }
         throw RuntimeError.unknownView(typeName)

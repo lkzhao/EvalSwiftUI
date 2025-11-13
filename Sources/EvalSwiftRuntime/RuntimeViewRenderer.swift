@@ -10,11 +10,8 @@ final class RuntimeViewRenderer: ObservableObject {
     let instance: RuntimeInstance
     var isRendering = false
 
-    init(
-        type: RuntimeType,
-        arguments: [RuntimeArgument] = []
-    ) throws {
-        self.instance = try type.makeInstance(arguments: arguments)
+    init(instance: RuntimeInstance) throws {
+        self.instance = instance
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
