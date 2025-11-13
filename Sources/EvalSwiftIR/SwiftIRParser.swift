@@ -12,8 +12,8 @@ public struct SwiftIRParser {
             let node = item.item
 
             if let structDecl = node.as(StructDeclSyntax.self),
-               let definition = makeViewDefinition(from: structDecl) {
-                statements.append(.binding(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .view(definition))))
+               let definition = makeDefinition(from: structDecl) {
+                statements.append(.binding(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .definition(definition))))
                 continue
             }
 
@@ -47,9 +47,7 @@ public struct SwiftIRParser {
         return ModuleIR(statements: statements)
     }
 
-    private func makeViewDefinition(from node: StructDeclSyntax) -> ViewDefinitionIR? {
-        guard conformsToView(node) else { return nil }
-
+    private func makeDefinition(from node: StructDeclSyntax) -> DefinitionIR? {
         let members: MemberBlockItemListSyntax = node.memberBlock.members
 
         var instanceBindings: [BindingIR] = []
@@ -58,12 +56,12 @@ public struct SwiftIRParser {
 
         for member in members {
             if let structDecl = member.decl.as(StructDeclSyntax.self),
-               let definition = makeViewDefinition(from: structDecl) {
+               let definition = makeDefinition(from: structDecl) {
                 instanceBindings.append(
                     BindingIR(
                         name: structDecl.name.text,
                         typeAnnotation: nil,
-                        initializer: .view(definition)
+                        initializer: .definition(definition)
                     )
                 )
                 continue
@@ -100,7 +98,7 @@ public struct SwiftIRParser {
             instanceBindings.insert(synthesizeInitializer(from: storedProperties), at: 0)
         }
 
-        return ViewDefinitionIR(bindings: instanceBindings)
+        return DefinitionIR(name: node.name.text, inheritedTypes: makeInheritedTypes(node), bindings: instanceBindings)
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
@@ -292,7 +290,7 @@ public struct SwiftIRParser {
         return FunctionIR(parameters: parameters, returnType: nil, body: statements)
     }
 
-    private func conformsToView(_ node: SyntaxProtocol) -> Bool {
+    private func makeInheritedTypes(_ node: SyntaxProtocol) -> [String] {
         let inheritance: InheritanceClauseSyntax?
         switch node {
         case let structDecl as StructDeclSyntax:
@@ -302,8 +300,8 @@ public struct SwiftIRParser {
         default:
             inheritance = nil
         }
-        guard let inheritance else { return false }
-        return inheritance.inheritedTypes.contains { $0.type.trimmedDescription == "View" }
+        guard let inheritance else { return [] }
+        return inheritance.inheritedTypes.map { $0.type.trimmedDescription }
     }
 
     private func makeComputedBinding(from node: VariableDeclSyntax) -> BindingIR? {

@@ -3,7 +3,9 @@ public struct ModuleIR {
     public let statements: [StatementIR]
 }
 
-public struct ViewDefinitionIR {
+public struct DefinitionIR {
+    public let name: String
+    public let inheritedTypes: [String]
     public let bindings: [BindingIR]
 }
 
@@ -67,7 +69,7 @@ public indirect enum ExprIR {
     case member(base: ExprIR, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
     case function(FunctionIR)
-    case view(ViewDefinitionIR)
+    case definition(DefinitionIR)
     case binary(op: BinaryOperatorIR, lhs: ExprIR, rhs: ExprIR)
     case unary(op: UnaryOperatorIR, operand: ExprIR)
     case unknown(String)

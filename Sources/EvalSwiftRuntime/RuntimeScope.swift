@@ -1,10 +1,3 @@
-//
-//  RuntimeScope.swift
-//  EvalSwiftUI
-//
-//  Created by Luke Zhao on 11/11/25.
-//
-
 public protocol RuntimeScope: AnyObject, CustomStringConvertible {
     var storage: [String: RuntimeValue] { get set }
     var parent: RuntimeScope? { get }
@@ -19,7 +12,7 @@ extension RuntimeScope {
     }
 
     public var description: String {
-        var desc = "\(type(of: self))(storage: \(storage)"
+        var desc = "\(Swift.type(of: self))(storage: \(storage)"
         if let parent = parent {
             desc += ", parent: \(parent)"
         }
@@ -34,6 +27,13 @@ extension RuntimeScope {
         return instance
     }
 
+    public var type: RuntimeType? {
+        guard let type = self as? RuntimeType else {
+            return parent?.type
+        }
+        return type
+    }
+
     public var module: RuntimeModule? {
         guard let module = self as? RuntimeModule else {
             return parent?.module
@@ -41,7 +41,7 @@ extension RuntimeScope {
         return module
     }
 
-    public func getFunction(_ name: String) throws -> Function {
+    public func getFunction(_ name: String) throws -> RuntimeFunction {
         let value = try get(name)
         guard case .function(let function) = value else {
             throw RuntimeError.unknownFunction(name)
@@ -50,7 +50,7 @@ extension RuntimeScope {
     }
 
     public func callFunction(_ name: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
-        return try getFunction(name).invoke(arguments: arguments, scope: self)
+        return try getFunction(name).invoke(arguments: arguments)
     }
 
     public func define(_ name: String, value: RuntimeValue) {
@@ -59,12 +59,12 @@ extension RuntimeScope {
 
     public func set(_ name: String, value: RuntimeValue) throws {
         if let existing = storage[name] {
-            if existing.runtimeType == .void {
+            if existing.valueType == .void {
                 storage[name] = value
             } else {
-                guard existing.runtimeType == value.runtimeType else {
+                guard existing.valueType == value.valueType else {
                     throw RuntimeError.unsupportedAssignment(
-                        "Type mismatch for '\(name)': expected \(existing.runtimeTypeDescription), got \(value.runtimeTypeDescription)"
+                        "Type mismatch for '\(name)': expected \(existing.valueTypeDescription), got \(value.valueTypeDescription)"
                     )
                 }
                 storage[name] = value
@@ -86,13 +86,19 @@ extension RuntimeScope {
         throw RuntimeError.unknownIdentifier(name)
     }
 
-    func viewDefinition(named name: String) -> ViewDefinition? {
-        guard let value = try? get(name), case .viewDefinition(let definition) = value else { return nil }
+    func type(named name: String) throws -> RuntimeType {
+        let value = try get(name)
+        guard case .type(let definition) = value else {
+            throw RuntimeError.unknownIdentifier(name)
+        }
         return definition
     }
 
-    func builder(named name: String) -> (any RuntimeViewBuilder)? {
-        guard let value = try? get(name), case .viewBuilder(let builder) = value else { return nil }
+    func builder(named name: String) throws -> any RuntimeViewBuilder {
+        let value = try get(name)
+        guard case .viewBuilder(let builder) = value else {
+            throw RuntimeError.unknownIdentifier(name)
+        }
         return builder
     }
 }

@@ -10,8 +10,8 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
         arguments: [RuntimeArgument],
         scope: RuntimeScope
     ) throws -> AnyView {
-        var actionFunction: Function?
-        var labelFunction: Function?
+        var actionFunction: RuntimeFunction?
+        var labelFunction: RuntimeFunction?
         var title: String?
 
         for parameter in arguments {
@@ -43,15 +43,17 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
             throw RuntimeError.invalidViewArgument("Button requires an action closure.")
         }
 
-        let action = RuntimeButtonAction(function: actionFunction, scope: scope)
+        let action = actionFunction
 
         if let labelFunction = labelFunction {
-            let labelViews = try labelFunction.renderRuntimeViews(scope: scope)
+            let labelViews = try labelFunction.renderRuntimeViews()
             guard labelViews.count == 1, let runtimeView = labelViews.first else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
             let label = try runtimeView.makeSwiftUIView()
-            return AnyView(Button(action: action.perform) {
+            return AnyView(Button(action: {
+                _ = try? action.invoke()
+            }) {
                 label
             })
         }
@@ -60,22 +62,10 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
             throw RuntimeError.invalidViewArgument("Button requires a title string when no label closure is provided.")
         }
 
-        return AnyView(Button(action: action.perform) {
+        return AnyView(Button(action: {
+            _ = try? action.invoke()
+        }) {
             Text(title)
         })
-    }
-}
-
-private final class RuntimeButtonAction {
-    private let function: Function
-    private let scope: RuntimeScope
-
-    init(function: Function, scope: RuntimeScope) {
-        self.function = function
-        self.scope = scope
-    }
-
-    func perform() {
-        _ = try? function.invoke(scope: scope)
     }
 }

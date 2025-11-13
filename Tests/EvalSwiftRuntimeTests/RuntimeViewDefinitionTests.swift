@@ -16,8 +16,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "SampleView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "SampleView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let runtimeView) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -39,8 +39,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "ImplicitView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "ImplicitView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let runtimeView) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -59,8 +59,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "TextView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "TextView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -82,8 +82,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "StackView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "StackView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -104,8 +104,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "StackSpacingView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "StackSpacingView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected view result, got \(rendered)")
@@ -126,9 +126,9 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "RequiredArgumentView", from: module)
+        let type = try module.type(named: "RequiredArgumentView")
         let arguments = [RuntimeArgument(label: "title", value: .string("Runtime"))]
-        let rendered = try instantiateView(definition: definition, arguments: arguments, scope: module)
+        let rendered = try instantiateView(type: type, arguments: arguments)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -149,9 +149,9 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "OverrideView", from: module)
+        let type = try module.type(named: "OverrideView")
         let arguments = [RuntimeArgument(label: "title", value: .string("Injected"))]
-        let rendered = try instantiateView(definition: definition, arguments: arguments, scope: module)
+        let rendered = try instantiateView(type: type, arguments: arguments)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -176,9 +176,9 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "ExplicitInitView", from: module)
+        let type = try module.type(named: "ExplicitInitView")
         let arguments = [RuntimeArgument(label: "title", value: .string("Initializer"))]
-        let rendered = try instantiateView(definition: definition, arguments: arguments, scope: module)
+        let rendered = try instantiateView(type: type, arguments: arguments)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -206,8 +206,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "ShadowedInitView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "ShadowedInitView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -236,9 +236,9 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "SelfReadView", from: module)
+        let type = try module.type(named: "SelfReadView")
         let arguments = [RuntimeArgument(label: "title", value: .string("Value"))]
-        let rendered = try instantiateView(definition: definition, arguments: arguments, scope: module)
+        let rendered = try instantiateView(type: type, arguments: arguments)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -259,8 +259,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "SynthesizedInitView", from: module)
-        let rendered = try instantiateView(definition: definition, scope: module)
+        let type = try module.type(named: "SynthesizedInitView")
+        let rendered = try instantiateView(type: type)
 
         guard case .view(let view) = rendered else {
             throw TestFailure.expected("Expected runtime view result, got \(rendered)")
@@ -287,8 +287,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let outerDefinition = try viewDefinition(named: "OuterView", from: module)
-        let outerInstance = try outerDefinition.makeInstance(scope: module)
+        let outerType = try module.type(named: "OuterView")
+        let outerInstance = try outerType.makeInstance()
         let outerRendererd = try outerInstance.callFunction("body")!
 
         guard case .view(let outerViewContent) = outerRendererd else {
@@ -296,8 +296,8 @@ struct RuntimeViewDefinitionTests {
         }
 
         #expect(outerViewContent.typeName == "InnerView")
-        let innerDefinition = try viewDefinition(named: "InnerView", from: outerInstance)
-        let innerInstance = try innerDefinition.makeInstance(scope: outerInstance)
+        let innerType = try outerInstance.type(named: "InnerView")
+        let innerInstance = try innerType.makeInstance()
         let innerRendererd = try innerInstance.callFunction("body")!
 
         guard case .view(let innerViewContent) = innerRendererd else {
@@ -320,11 +320,8 @@ struct RuntimeViewDefinitionTests {
         """
 
         let module = RuntimeModule(source: source)
-        let definition = try viewDefinition(named: "CounterView", from: module)
-        let renderer = try RuntimeViewRenderer(
-            definition: definition,
-            scope: module,
-        )
+        let type = try module.type(named: "CounterView")
+        let renderer = try RuntimeViewRenderer(type: type)
 
         try assertViewMatch(renderer.renderedView, Text("Count: 0"))
 
@@ -335,19 +332,11 @@ struct RuntimeViewDefinitionTests {
 
     // MARK: - Helpers
 
-    private func viewDefinition(named name: String, from scope: RuntimeScope) throws -> ViewDefinition {
-        guard let definition = scope.viewDefinition(named: name) else {
-            throw TestFailure.expected("Expected definition view binding for \(name)")
-        }
-        return definition
-    }
-
     private func instantiateView(
-        definition: ViewDefinition,
+        type: RuntimeType,
         arguments: [RuntimeArgument] = [],
-        scope: RuntimeScope,
     ) throws -> RuntimeValue {
-        let instance = try definition.makeInstance(arguments: arguments, scope: scope)
+        let instance = try type.makeInstance(arguments: arguments)
         return try instance.callFunction("body")!
     }
 }

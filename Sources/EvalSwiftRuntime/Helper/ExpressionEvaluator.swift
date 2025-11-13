@@ -36,10 +36,10 @@ struct ExpressionEvaluator {
                 }
             }.joined()
             return .string(resolved)
-        case .view(let definition):
-            return .viewDefinition(definition)
+        case .definition(let definition):
+            return .type(RuntimeType(ir: definition, parent: scope))
         case .function(let function):
-            return .function(function)
+            return .function(RuntimeFunction(ir: function, parent: scope))
         case .unary(let op, let operandExpr):
             guard let operand = try evaluate(operandExpr, scope: scope) else {
                 throw RuntimeError.unsupportedExpression("Unary operator \(op.rawValue) requires a value")
@@ -72,7 +72,7 @@ struct ExpressionEvaluator {
                     return conversion
                 }
 
-                if scope.builder(named: identifier) != nil || scope.viewDefinition(named: identifier) != nil {
+                if (try? scope.builder(named: identifier)) != nil || (try? scope.type(named: identifier)) != nil {
                     return .view(RuntimeView(typeName: identifier, arguments: evaluatedArguments, scope: scope))
                 }
             }
@@ -81,7 +81,7 @@ struct ExpressionEvaluator {
                   case .function(let function) = calleeValue else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
-            return try function.invoke(arguments: evaluatedArguments, scope: scope)
+            return try function.invoke(arguments: evaluatedArguments)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
@@ -98,7 +98,7 @@ struct ExpressionEvaluator {
                 return operand
             default:
                 guard let numeric = operand.asDouble else {
-                    throw RuntimeError.unsupportedExpression("Unary + is not supported for \(operand.runtimeTypeDescription)")
+                    throw RuntimeError.unsupportedExpression("Unary + is not supported for \(operand.valueTypeDescription)")
                 }
                 return .double(numeric)
             }
@@ -110,7 +110,7 @@ struct ExpressionEvaluator {
                 return .double(-number)
             default:
                 guard let numeric = operand.asDouble else {
-                    throw RuntimeError.unsupportedExpression("Unary - is not supported for \(operand.runtimeTypeDescription)")
+                    throw RuntimeError.unsupportedExpression("Unary - is not supported for \(operand.valueTypeDescription)")
                 }
                 return .double(-numeric)
             }
@@ -136,7 +136,7 @@ struct ExpressionEvaluator {
             guard let left = lhs.asDouble,
                   let right = rhs.asDouble else {
                 throw RuntimeError.unsupportedExpression(
-                    "Binary operator \(op.rawValue) is not supported between \(lhs.runtimeTypeDescription) and \(rhs.runtimeTypeDescription)"
+                    "Binary operator \(op.rawValue) is not supported between \(lhs.valueTypeDescription) and \(rhs.valueTypeDescription)"
                 )
             }
             return try evaluateFloatingBinary(op: op, lhs: left, rhs: right)
@@ -221,12 +221,12 @@ struct ExpressionEvaluator {
         switch numericType {
         case .int:
             guard let intValue = value.asInt ?? value.asDouble.map(Int.init) else {
-                throw RuntimeError.unsupportedExpression("Cannot convert \(value.runtimeTypeDescription) to Int")
+                throw RuntimeError.unsupportedExpression("Cannot convert \(value.valueTypeDescription) to Int")
             }
             return .int(intValue)
         case .double, .float, .cgfloat:
             guard let doubleValue = value.asDouble else {
-                throw RuntimeError.unsupportedExpression("Cannot convert \(value.runtimeTypeDescription) to \(name)")
+                throw RuntimeError.unsupportedExpression("Cannot convert \(value.valueTypeDescription) to \(name)")
             }
             return .double(doubleValue)
         }

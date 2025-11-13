@@ -7,9 +7,9 @@ public enum RuntimeValue {
     case string(String)
     case bool(Bool)
     case keyPath(RuntimeKeyPath)
-    case viewDefinition(ViewDefinition)
+    case type(RuntimeType)
     case viewBuilder(any RuntimeViewBuilder)
-    case function(Function)
+    case function(RuntimeFunction)
     case view(RuntimeView)
     case array([RuntimeValue])
     case void
@@ -28,8 +28,8 @@ extension RuntimeValue: CustomStringConvertible {
             return String(bool)
         case .keyPath:
             return "<KeyPath>"
-        case .viewDefinition:
-            return "<ViewDefinition>"
+        case .type(let type):
+            return "<Type \(type.name)>"
         case .viewBuilder(let builder):
             return "<ViewBuilder \(builder.typeName)>"
         case .view(let view):
@@ -90,13 +90,13 @@ extension RuntimeValue {
 }
 
 extension RuntimeValue {
-    enum RuntimeType: String {
+    enum RuntimeValueType: String {
         case int = "Int"
         case double = "Double"
         case string = "String"
         case bool = "Bool"
         case keyPath = "KeyPath"
-        case viewDefinition = "ViewDefinition"
+        case type = "Type"
         case viewBuilder = "ViewBuilder"
         case view = "RuntimeView"
         case array = "Array"
@@ -104,7 +104,7 @@ extension RuntimeValue {
         case void = "Void"
     }
 
-    var runtimeType: RuntimeType {
+    var valueType: RuntimeValueType {
         switch self {
         case .int:
             return .int
@@ -116,8 +116,8 @@ extension RuntimeValue {
             return .bool
         case .keyPath:
             return .keyPath
-        case .viewDefinition:
-            return .viewDefinition
+        case .type:
+            return .type
         case .viewBuilder:
             return .viewBuilder
         case .view:
@@ -131,7 +131,7 @@ extension RuntimeValue {
         }
     }
 
-    var runtimeTypeDescription: String {
-        runtimeType.rawValue
+    var valueTypeDescription: String {
+        valueType.rawValue
     }
 }

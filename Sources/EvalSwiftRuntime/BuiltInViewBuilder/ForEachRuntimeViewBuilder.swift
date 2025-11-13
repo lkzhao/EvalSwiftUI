@@ -11,7 +11,7 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
         scope: RuntimeScope
     ) throws -> AnyView {
         var dataValue: RuntimeValue?
-        var contentFunction: Function?
+        var contentFunction: RuntimeFunction?
         var idStrategy: IDStrategy = .index
 
         for argument in arguments {
@@ -47,8 +47,7 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
             let content = try renderContent(
                 for: element,
                 index: index,
-                function: contentFunction,
-                scope: scope
+                function: contentFunction
             )
             let elementID = makeElementIdentifier(
                 element: element,
@@ -85,15 +84,14 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
     private func renderContent(
         for element: RuntimeValue,
         index: Int,
-        function: Function,
-        scope: RuntimeScope
+        function: RuntimeFunction
     ) throws -> AnyView {
         let arguments = makeContentArguments(
             for: element,
             index: index,
             function: function
         )
-        let runtimeViews = try function.renderRuntimeViews(arguments: arguments, scope: scope)
+        let runtimeViews = try function.renderRuntimeViews(arguments: arguments)
         guard !runtimeViews.isEmpty else {
             throw RuntimeError.invalidViewArgument("ForEach content closures must produce at least one view.")
         }
@@ -106,7 +104,7 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
     private func makeContentArguments(
         for element: RuntimeValue,
         index: Int,
-        function: Function
+        function: RuntimeFunction
     ) -> [RuntimeArgument] {
         var arguments: [RuntimeArgument] = []
         let firstLabel = function.parameters.first?.label

@@ -7,17 +7,14 @@ import EvalSwiftIR
 final class RuntimeViewRenderer: ObservableObject {
     @Published private(set) var renderedView: AnyView
 
-    let definition: ViewDefinition
     let instance: RuntimeInstance
     var isRendering = false
 
     init(
-        definition: ViewDefinition,
-        arguments: [RuntimeArgument] = [],
-        scope: RuntimeScope,
+        type: RuntimeType,
+        arguments: [RuntimeArgument] = []
     ) throws {
-        self.definition = definition
-        self.instance = try definition.makeInstance(arguments: arguments, scope: scope)
+        self.instance = try type.makeInstance(arguments: arguments)
         self.renderedView = AnyView(EmptyView())
 
         try rerender()
@@ -39,7 +36,7 @@ final class RuntimeViewRenderer: ObservableObject {
         defer { isRendering = false }
 
         let bodyFunction = try instance.getFunction("body")
-        let views = try bodyFunction.renderRuntimeViews(scope: instance).map {
+        let views = try bodyFunction.renderRuntimeViews().map {
             try $0.makeSwiftUIView()
         }
         renderedView = AnyView(ForEach(Array(views.enumerated()), id: \.0) { _, view in
