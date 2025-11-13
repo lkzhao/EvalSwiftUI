@@ -3,7 +3,7 @@ import EvalSwiftIR
 public final class RuntimeType: RuntimeScope {
     private var ir: DefinitionIR
     public var storage: [String: RuntimeValue] = [:]
-    public weak var parent: RuntimeScope?
+    public var parent: RuntimeScope?
 
     public var name: String {
         ir.name

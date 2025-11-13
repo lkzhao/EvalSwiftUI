@@ -10,7 +10,7 @@ public enum RuntimeValue {
     case type(RuntimeType)
     case viewBuilder(any RuntimeViewBuilder)
     case function(RuntimeFunction)
-    case view(RuntimeView)
+    case instance(RuntimeInstance)
     case array([RuntimeValue])
     case void
 }
@@ -32,8 +32,8 @@ extension RuntimeValue: CustomStringConvertible {
             return "<Type \(type.name)>"
         case .viewBuilder(let builder):
             return "<ViewBuilder \(builder.typeName)>"
-        case .view(let view):
-            return String(describing: view)
+        case .instance(let instance):
+            return String(describing: instance)
         case .array(let values):
             return values.map { "\($0)" }.joined(separator: ",")
         case .function:
@@ -98,7 +98,7 @@ extension RuntimeValue {
         case keyPath = "KeyPath"
         case type = "Type"
         case viewBuilder = "ViewBuilder"
-        case view = "RuntimeView"
+        case instance = "Instance"
         case array = "Array"
         case function = "Function"
         case void = "Void"
@@ -120,8 +120,8 @@ extension RuntimeValue {
             return .type
         case .viewBuilder:
             return .viewBuilder
-        case .view:
-            return .view
+        case .instance:
+            return .instance
         case .array:
             return .array
         case .function:

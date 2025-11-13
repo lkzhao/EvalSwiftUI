@@ -4,7 +4,7 @@ import EvalSwiftIR
 
 public final class RuntimeModule: RuntimeScope {
     public var storage: [String: RuntimeValue] = [:]
-    public var runtimeViews: [RuntimeView] = []
+    public var runtimeViews: [RuntimeInstance] = []
 
     public convenience init(source: String, viewBuilders: [any RuntimeViewBuilder] = []) {
         self.init(ir: SwiftIRParser().parseModule(source: source), viewBuilders: viewBuilders)
@@ -22,7 +22,7 @@ public final class RuntimeModule: RuntimeScope {
         }
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
-        self.runtimeViews = values ??  []
+        self.runtimeViews = values ?? []
     }
 
     @MainActor
@@ -31,8 +31,8 @@ public final class RuntimeModule: RuntimeScope {
             throw RuntimeError.invalidViewResult("Top-level statements did not produce any SwiftUI views")
         }
 
-        let swiftUIViews = try runtimeViews.map { runtimeView in
-            try runtimeView.makeSwiftUIView()
+        let swiftUIViews = try runtimeViews.map {
+            try $0.makeSwiftUIView()
         }
 
         return AnyView(ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in

@@ -72,8 +72,8 @@ struct ExpressionEvaluator {
                     return conversion
                 }
 
-                if (try? scope.builder(named: identifier)) != nil || (try? scope.type(named: identifier)) != nil {
-                    return .view(RuntimeView(typeName: identifier, arguments: evaluatedArguments, scope: scope))
+                if let instance = try? scope.makeInstance(typeName: identifier, arguments: evaluatedArguments) {
+                    return .instance(instance)
                 }
             }
 

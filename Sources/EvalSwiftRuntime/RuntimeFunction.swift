@@ -1,9 +1,10 @@
 import EvalSwiftIR
+import SwiftUI
 
 public final class RuntimeFunction: RuntimeScope {
     private var ir: FunctionIR
     public var storage: [String: RuntimeValue] = [:]
-    public weak var parent: RuntimeScope?
+    public var parent: RuntimeScope?
 
     public init(ir: FunctionIR, parent: RuntimeScope?) {
         self.ir = ir
@@ -22,7 +23,7 @@ public final class RuntimeFunction: RuntimeScope {
         return try interpreter.execute(statements: ir.body)
     }
 
-    public func renderRuntimeViews(arguments: [RuntimeArgument] = []) throws -> [RuntimeView] {
+    public func renderRuntimeViews(arguments: [RuntimeArgument] = []) throws -> [RuntimeInstance] {
         storage.removeAll()
         let parser = ArgumentParser(parameters: ir.parameters)
         try parser.bind(arguments: arguments, into: self)

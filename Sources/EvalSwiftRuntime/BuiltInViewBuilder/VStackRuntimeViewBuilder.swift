@@ -27,13 +27,13 @@ public struct VStackRuntimeViewBuilder: RuntimeViewBuilder {
             switch parameter.value {
             case .array(let values):
                 for value in values {
-                    guard case .view(let runtimeView) = value else {
+                    guard case .instance(let instance) = value else {
                         throw RuntimeError.invalidViewArgument("VStack only accepts views as children.")
                     }
-                    childViews.append(try runtimeView.makeSwiftUIView())
+                    childViews.append(try instance.makeSwiftUIView())
                 }
-            case .view(let runtimeView):
-                childViews.append(try runtimeView.makeSwiftUIView())
+            case .instance(let instance):
+                childViews.append(try instance.makeSwiftUIView())
             case .function(let function):
                 let views = try function.renderRuntimeViews()
                 for runtimeView in views {

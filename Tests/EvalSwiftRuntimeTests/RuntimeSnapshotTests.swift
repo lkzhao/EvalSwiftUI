@@ -301,4 +301,27 @@ struct RuntimeSnapshotTests {
             }
         }
     }
+
+    @Test func stateMutationTriggersViewRerender() throws {
+        let source = """
+        struct CounterView: View {
+            var count: Int = 0
+
+            var body: some View {
+                Text("Count: \\(count)")
+            }
+        }
+        """
+
+        let module = RuntimeModule(source: source)
+        let type = try module.type(named: "CounterView")
+        let instance = try type.makeInstance()
+        let renderer = try RuntimeViewRenderer(instance: instance)
+
+        try assertViewMatch(renderer.renderedView, Text("Count: 0"))
+
+        try renderer.instance.set("count", value: .int(5))
+
+        try assertViewMatch(renderer.renderedView, Text("Count: 5"))
+    }
 }

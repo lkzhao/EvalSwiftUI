@@ -1,5 +1,6 @@
 import Foundation
 import EvalSwiftIR
+import SwiftUI
 
 final class StatementInterpreter {
     private let scope: RuntimeScope
@@ -43,10 +44,10 @@ final class StatementInterpreter {
         return collectedValues
     }
 
-    func executeAndCollectRuntimeViews(statements: [StatementIR]) throws -> [RuntimeView] {
+    func executeAndCollectRuntimeViews(statements: [StatementIR]) throws -> [RuntimeInstance] {
         try executeAndCollectResultBuilderValues(statements: statements).compactMap {
-            if case .view(let runtimeView) = $0 {
-                return runtimeView
+            if case .instance(let instance) = $0 {
+                return instance
             }
             return nil
         }

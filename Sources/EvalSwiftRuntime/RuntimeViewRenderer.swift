@@ -17,12 +17,10 @@ final class RuntimeViewRenderer: ObservableObject {
         try rerender()
         instance.mutationHandler = { [weak self] in
             guard let self else { return }
-            if Thread.isMainThread {
-                try? self.rerender()
-            } else {
-                Task { @MainActor in
-                    try? self.rerender()
-                }
+            do {
+                try self.rerender()
+            } catch {
+                self.renderedView = AnyView(Text("Error: \(String(describing: error))"))
             }
         }
     }

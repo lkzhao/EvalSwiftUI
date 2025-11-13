@@ -2,6 +2,23 @@ import Testing
 @testable import EvalSwiftRuntime
 
 struct ExpressionEvaluatorTests {
+    @Test func structTest() throws {
+        let source = """
+        struct Counter {
+            var count: Int = 0
+        }
+
+        let k = Counter()
+        k.count += 1
+        """
+
+        let module = RuntimeModule(source: source)
+        guard case .instance(let instance) = try module.get("k"), case .int(let count) = try instance.get("count") else {
+            throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
+        }
+
+        #expect(count == 1)
+    }
     @Test func supportsBasicArithmeticExpressions() throws {
         let source = """
         var count: Int = 0

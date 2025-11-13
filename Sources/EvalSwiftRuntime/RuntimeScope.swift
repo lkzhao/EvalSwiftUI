@@ -1,3 +1,5 @@
+import SwiftUI
+
 public protocol RuntimeScope: AnyObject, CustomStringConvertible {
     var storage: [String: RuntimeValue] { get set }
     var parent: RuntimeScope? { get }
@@ -86,7 +88,7 @@ extension RuntimeScope {
         throw RuntimeError.unknownIdentifier(name)
     }
 
-    func type(named name: String) throws -> RuntimeType {
+    public func type(named name: String) throws -> RuntimeType {
         let value = try get(name)
         guard case .type(let definition) = value else {
             throw RuntimeError.unknownIdentifier(name)
@@ -94,11 +96,21 @@ extension RuntimeScope {
         return definition
     }
 
-    func builder(named name: String) throws -> any RuntimeViewBuilder {
+    public func builder(named name: String) throws -> any RuntimeViewBuilder {
         let value = try get(name)
         guard case .viewBuilder(let builder) = value else {
             throw RuntimeError.unknownIdentifier(name)
         }
         return builder
+    }
+
+    func makeInstance(typeName: String, arguments: [RuntimeArgument] = []) throws -> RuntimeInstance {
+        if let builder = try? builder(named: typeName) {
+            return .init(builder: builder, arguments: arguments, parent: self)
+        }
+        if let type = try? type(named: typeName) {
+            return try type.makeInstance()
+        }
+        throw RuntimeError.unknownView(typeName)
     }
 }
