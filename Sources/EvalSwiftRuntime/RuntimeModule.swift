@@ -32,13 +32,11 @@ public final class RuntimeModule: RuntimeScope {
         }
 
         let swiftUIViews = try runtimeViews.map { runtimeView in
-            try runtimeView.makeSwiftUIView(scope: self)
+            try runtimeView.makeSwiftUIView()
         }
 
-        return AnyView(VStack {
-            ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
-                view
-            }
+        return AnyView(ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
+            view
         })
     }
 }

@@ -54,5 +54,9 @@ struct ArgumentParser {
                 scope.define(parameter.name, value: .void)
             }
         }
+
+        for (index, argument) in arguments.enumerated() {
+            scope.define("$\(index)", value: argument.value)
+        }
     }
 }

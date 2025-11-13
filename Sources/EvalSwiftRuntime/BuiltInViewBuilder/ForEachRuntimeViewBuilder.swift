@@ -97,12 +97,7 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
         guard !runtimeViews.isEmpty else {
             throw RuntimeError.invalidViewArgument("ForEach content closures must produce at least one view.")
         }
-
-        if runtimeViews.count == 1 {
-            return try runtimeViews[0].makeSwiftUIView(scope: scope)
-        }
-
-        let swiftUIViews = try runtimeViews.map { try $0.makeSwiftUIView(scope: scope) }
+        let swiftUIViews = try runtimeViews.map { try $0.makeSwiftUIView() }
         return AnyView(ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in
             view
         })
@@ -113,16 +108,12 @@ public struct ForEachRuntimeViewBuilder: RuntimeViewBuilder {
         index: Int,
         function: Function
     ) -> [RuntimeArgument] {
-        guard !function.parameters.isEmpty else { return [] }
-
         var arguments: [RuntimeArgument] = []
-        let firstParameter = function.parameters[0]
-        arguments.append(RuntimeArgument(label: firstParameter.label, value: element))
+        let firstLabel = function.parameters.first?.label
+        arguments.append(RuntimeArgument(label: firstLabel, value: element))
 
-        if function.parameters.count > 1 {
-            let second = function.parameters[1]
-            arguments.append(RuntimeArgument(label: second.label, value: .int(index)))
-        }
+        let secondLabel = function.parameters.dropFirst().first?.label
+        arguments.append(RuntimeArgument(label: secondLabel, value: .int(index)))
 
         return arguments
     }

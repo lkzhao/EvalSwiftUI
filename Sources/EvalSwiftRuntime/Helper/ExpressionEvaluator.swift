@@ -73,7 +73,7 @@ struct ExpressionEvaluator {
                 }
 
                 if scope.builder(named: identifier) != nil || scope.viewDefinition(named: identifier) != nil {
-                    return .view(RuntimeView(typeName: identifier, arguments: evaluatedArguments))
+                    return .view(RuntimeView(typeName: identifier, arguments: evaluatedArguments, scope: scope))
                 }
             }
 

@@ -257,4 +257,27 @@ struct RuntimeSnapshotTests {
             }
         }
     }
+
+    @Test func rendersForEachUsingNestedShorthandParameters() throws {
+        let source = """
+        struct ShorthandList: View {
+            var body: some View {
+                VStack {
+                    ForEach(0..<2) {
+                        VStack {
+                            Text("Value \\($0)")
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source, viewName: "ShorthandList") {
+            VStack {
+                Text("Value 0")
+                Text("Value 1")
+            }
+        }
+    }
 }

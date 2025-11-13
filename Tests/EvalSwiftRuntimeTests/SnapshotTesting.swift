@@ -80,7 +80,7 @@ func assertSnapshotsMatch<V: View>(
     let moduleIR = parser.parseModule(source: source)
     let module = RuntimeModule(ir: moduleIR, viewBuilders: viewBuilders)
     if let viewName {
-        let evaluatedView = try RuntimeView(typeName: viewName).makeSwiftUIView(scope: module)
+        let evaluatedView = try RuntimeView(typeName: viewName, scope: module).makeSwiftUIView()
         try assertViewMatch(evaluatedView, expectedView())
     } else {
         let evaluatedView = try module.makeTopLevelSwiftUIViews()

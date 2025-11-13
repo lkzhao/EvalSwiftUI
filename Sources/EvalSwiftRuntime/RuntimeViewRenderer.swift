@@ -40,7 +40,7 @@ final class RuntimeViewRenderer: ObservableObject {
 
         let bodyFunction = try instance.getFunction("body")
         let views = try bodyFunction.renderRuntimeViews(scope: instance).map {
-            try $0.makeSwiftUIView(scope: instance)
+            try $0.makeSwiftUIView()
         }
         renderedView = AnyView(ForEach(Array(views.enumerated()), id: \.0) { _, view in
             view

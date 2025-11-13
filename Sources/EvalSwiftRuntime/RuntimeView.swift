@@ -3,10 +3,12 @@ import SwiftUI
 public struct RuntimeView: CustomStringConvertible {
     public let typeName: String
     public let arguments: [RuntimeArgument]
+    public let scope: RuntimeScope
 
-    public init(typeName: String, arguments: [RuntimeArgument] = []) {
+    public init(typeName: String, arguments: [RuntimeArgument] = [], scope: RuntimeScope) {
         self.typeName = typeName
         self.arguments = arguments
+        self.scope = scope
     }
 
     public var description: String {
@@ -20,7 +22,7 @@ public struct RuntimeView: CustomStringConvertible {
 
 extension RuntimeView {
     @MainActor
-    func makeSwiftUIView(scope: RuntimeScope) throws -> AnyView {
+    func makeSwiftUIView() throws -> AnyView {
         if let builder = scope.builder(named: typeName) {
             return try builder.makeSwiftUIView(arguments: arguments, scope: scope)
         }
