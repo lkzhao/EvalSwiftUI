@@ -5,17 +5,11 @@ import Testing
 @MainActor
 struct RuntimeSnapshotTests {
     @Test func rendersTopLevelVStackExpression() throws {
-        let source = """
-        VStack {
-            Text("Hello world!")
-        }
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             VStack {
                 Text("Hello world!")
             }
-        }
+        )
     }
 
     @Test func rendersInterpolatedTextLiteral() throws {
@@ -99,13 +93,9 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersTextSnapshotMatchesExpectedView() throws {
-        let source = """
-        Text("Runtime Snapshot")
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Text("Runtime Snapshot")
-        }
+        )
     }
 
     @Test func rendersViewDefinitionWithStoredProperty() throws {
@@ -231,22 +221,7 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersZStackWithAlignment() throws {
-        let source = """
-        ZStack(alignment: .bottomTrailing) {
-            Rectangle()
-                .foregroundStyle(.blue)
-                .frame(width: 80, height: 40)
-            Text("SALE")
-                .font(.caption)
-                .foregroundStyle(.white)
-                .padding(4)
-                .background(.red)
-                .cornerRadius(6)
-                .padding(4)
-        }
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             ZStack(alignment: .bottomTrailing) {
                 Rectangle()
                     .foregroundStyle(.blue)
@@ -255,41 +230,27 @@ struct RuntimeSnapshotTests {
                     .font(.caption)
                     .foregroundStyle(.white)
                     .padding(4)
-                    .background(Color.red)
+                    .background(.red)
                     .cornerRadius(6)
                     .padding(4)
             }
-        }
+        )
     }
 
     @Test func rendersScrollViewWithHorizontalAxis() throws {
-        let source = """
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(0..<3) { index in
-                    Text("Card \\(index)")
-                        .padding(6)
-                        .background(.teal)
-                        .cornerRadius(8)
-                }
-            }
-            .padding(4)
-        }
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(0..<3) { index in
                         Text("Card \(index)")
                             .padding(6)
-                            .background(Color.teal)
+                            .background(.teal)
                             .cornerRadius(8)
                     }
                 }
                 .padding(4)
             }
-        }
+        )
     }
 
     @Test func rendersToggleWithStringLabel() throws {
@@ -327,15 +288,10 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersPaddingModifier() throws {
-        let source = """
-        Text("Padded")
-            .padding(12)
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Text("Padded")
                 .padding(12)
-        }
+        )
     }
 
     @Test func rendersViewReturnedFromGlobalFunction() throws {
@@ -361,13 +317,9 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersImageSystemSymbol() throws {
-        let source = """
-        Image(systemName: "globe")
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Image(systemName: "globe")
-        }
+        )
     }
 
     @Test func rendersCustomModifierBuilder() throws {
@@ -388,93 +340,46 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func rendersForEachOverRange() throws {
-        let source = """
-        struct RangeList: View {
-            var body: some View {
-                VStack {
-                    ForEach(0..<3) { index in
-                        Text("Row \\(index)")
-                    }
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<3) { index in
+                    Text("Row \(index)")
                 }
             }
-        }
-        """
-
-        try assertSnapshotsMatch(source: source, viewName: "RangeList") {
-            VStack {
-                Text("Row 0")
-                Text("Row 1")
-                Text("Row 2")
-            }
-        }
+        )
     }
 
     @Test func rendersForEachWithExplicitID() throws {
-        let source = """
-        struct ExplicitIDList: View {
-            let items = ["Alpha", "Beta", "Gamma"]
-
-            var body: some View {
-                VStack {
-                    ForEach(items, id: \\.self) { item in
-                        Text(item)
-                    }
+        #expectSnapshot(
+            VStack {
+                ForEach(["Alpha", "Beta", "Gamma"], id: \.self) { item in
+                    Text(item)
                 }
             }
-        }
-        """
-
-        try assertSnapshotsMatch(source: source, viewName: "ExplicitIDList") {
-            VStack {
-                Text("Alpha")
-                Text("Beta")
-                Text("Gamma")
-            }
-        }
+        )
     }
 
     @Test func rendersForEachUsingShorthandParameters() throws {
-        let source = """
-        struct ShorthandList: View {
-            var body: some View {
-                VStack {
-                    ForEach(0..<2) {
-                        Text("Value \\($0)")
-                    }
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<2) {
+                    Text("Value \($0)")
                 }
             }
-        }
-        """
-
-        try assertSnapshotsMatch(source: source, viewName: "ShorthandList") {
-            VStack {
-                Text("Value 0")
-                Text("Value 1")
-            }
-        }
+        )
     }
 
     @Test func rendersForEachUsingNestedShorthandParameters() throws {
-        let source = """
-        struct ShorthandList: View {
-            var body: some View {
-                VStack {
-                    ForEach(0..<2) {
-                        VStack {
-                            Text("Value \\($0)")
-                        }
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<2) {
+                    let value = $0
+                    VStack {
+                        Text("Value \(value)")
                     }
                 }
             }
-        }
-        """
-
-        try assertSnapshotsMatch(source: source, viewName: "ShorthandList") {
-            VStack {
-                Text("Value 0")
-                Text("Value 1")
-            }
-        }
+        )
     }
 
     @Test func stateMutationTriggersViewRerender() throws {
@@ -501,77 +406,44 @@ struct RuntimeSnapshotTests {
     }
 
     @Test func appliesFontOpacityAndForegroundStyleModifiers() throws {
-        let source = """
-        Text("Styled")
-            .font(.title2)
-            .foregroundStyle(.pink)
-            .opacity(0.65)
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Text("Styled")
                 .font(.title2)
                 .foregroundStyle(.pink)
                 .opacity(0.65)
-        }
+        )
     }
 
     @Test func appliesFrameCornerRadiusAndShadowModifiers() throws {
-        let source = """
-        Image(systemName: "star.fill")
-            .frame(width: 64, height: 64)
-            .cornerRadius(12)
-            .shadow(color: .black, radius: 4, x: 2, y: 3)
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Image(systemName: "star.fill")
                 .frame(width: 64, height: 64)
                 .cornerRadius(12)
                 .shadow(color: .black, radius: 4, x: 2, y: 3)
-        }
+        )
     }
 
     @Test func appliesBackgroundAndOverlayViews() throws {
-        let source = """
-        Text("Badge")
-            .padding(8)
-            .background(.blue)
-            .overlay(alignment: .topTrailing) {
-                Text("NEW")
-                    .font(.caption)
-                    .padding(4)
-                    .background(.white)
-                    .cornerRadius(8)
-            }
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Text("Badge")
                 .padding(8)
-                .background(Color.blue)
+                .background(.blue)
                 .overlay(alignment: .topTrailing) {
                     Text("NEW")
                         .font(.caption)
                         .padding(4)
-                        .background(Color.white)
+                        .background(.white)
                         .cornerRadius(8)
                 }
-        }
+        )
     }
 
     @Test func appliesImageScaleModifier() throws {
-        let source = """
-        Image(systemName: "globe")
-            .imageScale(.large)
-            .foregroundStyle(.mint)
-        """
-
-        try assertSnapshotsMatch(source: source) {
+        #expectSnapshot(
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.mint)
-        }
+        )
     }
 }
 
