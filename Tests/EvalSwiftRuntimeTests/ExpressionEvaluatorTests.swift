@@ -19,6 +19,42 @@ struct ExpressionEvaluatorTests {
 
         #expect(count == 1)
     }
+    @Test func nestedStructTest() throws {
+        let source = """
+        struct Counter {
+            var count: Int = 0
+        }
+        struct Outer {
+            var counter = Counter()
+        }
+
+        let k = Outer()
+        k.counter.count += 1
+        """
+
+        let module = RuntimeModule(source: source)
+        guard case .instance(let instance) = try module.get("k"), case .instance(let counter) = try instance.get("counter"), case .int(let count) = try counter.get("count") else {
+            throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
+        }
+
+        #expect(count == 1)
+    }
+    @Test func staticStructTest() throws {
+        let source = """
+        struct Counter {
+            static var count: Int = 0
+        }
+
+        Counter.count += 1
+        """
+
+        let module = RuntimeModule(source: source)
+        guard case .type(let type) = try module.get("Counter"), case .int(let count) = try type.get("count") else {
+            throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
+        }
+
+        #expect(count == 1)
+    }
     @Test func supportsBasicArithmeticExpressions() throws {
         let source = """
         var count: Int = 0

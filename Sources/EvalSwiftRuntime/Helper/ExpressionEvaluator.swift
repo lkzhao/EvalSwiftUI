@@ -56,11 +56,28 @@ struct ExpressionEvaluator {
                 if let instance = scope.instance {
                     return try instance.get(name)
                 }
-                throw RuntimeError.unknownIdentifier(name)
+                throw RuntimeError.unknownIdentifier("self.\(name)")
+            } else if case .identifier("Self") = base {
+                if let type = scope.type {
+                    return try type.get(name)
+                }
+                throw RuntimeError.unknownIdentifier("Self.\(name)")
+            } else {
+                guard let baseValue = try evaluate(base, scope: scope) else {
+                    throw RuntimeError.unsupportedExpression("Member access for '\(name)' requires a value")
+                }
+
+                switch baseValue {
+                case .instance(let instance):
+                    return try instance.get(name)
+                case .type(let type):
+                    return try type.get(name)
+                default:
+                    throw RuntimeError.unsupportedExpression(
+                        "Cannot access member '\(name)' on \(baseValue.valueTypeDescription)"
+                    )
+                }
             }
-            let baseValue = try evaluate(base, scope: scope)
-            let description = "\(baseValue?.description ?? "nil").\(name)"
-            return .string(description)
         case .call(let callee, let arguments):
             let evaluatedArguments = try arguments.map { argument in
                 let value = try evaluate(argument.value, scope: scope) ?? .void

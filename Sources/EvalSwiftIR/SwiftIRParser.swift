@@ -34,12 +34,20 @@ public struct SwiftIRParser {
             }
 
             if let expressionStmt = node.as(ExpressionStmtSyntax.self) {
-                statements.append(.expression(makeExpr(expressionStmt.expression)))
+                if let assignment = makeAssignment(from: expressionStmt.expression) {
+                    statements.append(.assignment(assignment))
+                } else {
+                    statements.append(.expression(makeExpr(expressionStmt.expression)))
+                }
                 continue
             }
 
             if let expression = node.as(ExprSyntax.self) {
-                statements.append(.expression(makeExpr(expression)))
+                if let assignment = makeAssignment(from: expression) {
+                    statements.append(.assignment(assignment))
+                } else {
+                    statements.append(.expression(makeExpr(expression)))
+                }
                 continue
             }
         }
@@ -365,7 +373,12 @@ public struct SwiftIRParser {
     }
 
     private func makeAssignment(from item: CodeBlockItemSyntax) -> AssignmentIR? {
-        guard let sequence = item.item.as(SequenceExprSyntax.self) else { return nil }
+        guard let expression = item.item.as(ExprSyntax.self) else { return nil }
+        return makeAssignment(from: expression)
+    }
+
+    private func makeAssignment(from expression: ExprSyntax) -> AssignmentIR? {
+        guard let sequence = expression.as(SequenceExprSyntax.self) else { return nil }
         let elements = Array(sequence.elements)
         if let assignmentIndex = elements.firstIndex(where: { $0.as(AssignmentExprSyntax.self) != nil }),
            assignmentIndex > 0,

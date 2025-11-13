@@ -58,10 +58,33 @@ final class StatementInterpreter {
         case .identifier(let name):
             try scope.set(name, value: value)
         case .member(let base, let name):
-            if case .identifier("self") = base, let instance = scope.instance {
-                try instance.set(name, value: value)
+            if case .identifier("self") = base {
+                if let instance = scope.instance {
+                    try instance.set(name, value: value)
+                } else {
+                    throw RuntimeError.unsupportedAssignment("self is not bound to an instance")
+                }
+            } else if case .identifier("Self") = base {
+                if let instance = scope.type {
+                    try instance.set(name, value: value)
+                } else {
+                    throw RuntimeError.unsupportedAssignment("Self is not bound to an Type")
+                }
             } else {
-                throw RuntimeError.unsupportedAssignment("Assignments only support self member targets")
+                guard let baseValue = try ExpressionEvaluator.evaluate(base, scope: scope) else {
+                    throw RuntimeError.unsupportedAssignment("Member assignment requires a base value")
+                }
+
+                switch baseValue {
+                case .instance(let instance):
+                    try instance.set(name, value: value)
+                case .type(let type):
+                    try type.set(name, value: value)
+                default:
+                    throw RuntimeError.unsupportedAssignment(
+                        "Cannot assign to member '\(name)' on \(baseValue.valueTypeDescription)"
+                    )
+                }
             }
         default:
             throw RuntimeError.unsupportedAssignment("Unsupported assignment target")
