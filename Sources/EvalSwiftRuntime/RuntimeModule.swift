@@ -39,10 +39,21 @@ public final class RuntimeModule: RuntimeScope {
 
         let modifiers: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
+            BackgroundModifierBuilder(),
+            CornerRadiusModifierBuilder(),
+            FontModifierBuilder(),
+            ForegroundStyleModifierBuilder(),
+            FrameModifierBuilder(),
+            ImageScaleModifierBuilder(),
+            OpacityModifierBuilder(),
+            OverlayModifierBuilder(),
+            ShadowModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifiers {
             self.modifierBuilders[modifier.modifierName] = modifier
         }
+
+        SwiftUIRuntimeConstants.register(in: self)
 
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)

@@ -46,11 +46,9 @@ public struct ButtonRuntimeViewBuilder: RuntimeViewBuilder {
         let action = actionFunction
 
         if let labelFunction = labelFunction {
-            let labelViews = try labelFunction.renderRuntimeViews()
-            guard labelViews.count == 1, let runtimeView = labelViews.first else {
+            guard let label = RuntimeValue.function(labelFunction).asSwiftUIView else {
                 throw RuntimeError.invalidViewArgument("Button label closures must return exactly one view.")
             }
-            let label = try runtimeView.makeSwiftUIView()
             return AnyView(Button(action: {
                 _ = try? action.invoke()
             }) {

@@ -291,6 +291,13 @@ public struct SwiftIRParser {
             return .identifier(member.declName.baseName.text)
         }
 
+        let trimmed = expr.trimmedDescription
+        if trimmed.hasPrefix("."), trimmed.count > 1 {
+            let nextIndex = trimmed.index(after: trimmed.startIndex)
+            let identifier = String(trimmed[nextIndex...])
+            return .identifier(identifier)
+        }
+
         if let call = expr.as(FunctionCallExprSyntax.self) {
             var arguments = call.arguments.map {
                 FunctionCallArgumentIR(label: $0.label?.text, value: makeExpr($0.expression))

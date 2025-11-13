@@ -385,6 +385,80 @@ struct RuntimeSnapshotTests {
 
         try assertViewMatch(renderer.renderedView, Text("Count: 5"))
     }
+
+    @Test func appliesFontOpacityAndForegroundStyleModifiers() throws {
+        let source = """
+        Text("Styled")
+            .font(.title2)
+            .foregroundStyle(.pink)
+            .opacity(0.65)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Styled")
+                .font(.title2)
+                .foregroundStyle(.pink)
+                .opacity(0.65)
+        }
+    }
+
+    @Test func appliesFrameCornerRadiusAndShadowModifiers() throws {
+        let source = """
+        Image(systemName: "star.fill")
+            .frame(width: 64, height: 64)
+            .cornerRadius(12)
+            .shadow(color: .black, radius: 4, x: 2, y: 3)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Image(systemName: "star.fill")
+                .frame(width: 64, height: 64)
+                .cornerRadius(12)
+                .shadow(color: .black, radius: 4, x: 2, y: 3)
+        }
+    }
+
+    @Test func appliesBackgroundAndOverlayViews() throws {
+        let source = """
+        Text("Badge")
+            .padding(8)
+            .background(.blue)
+            .overlay(alignment: .topTrailing) {
+                Text("NEW")
+                    .font(.caption)
+                    .padding(4)
+                    .background(.white)
+                    .cornerRadius(8)
+            }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Badge")
+                .padding(8)
+                .background(Color.blue)
+                .overlay(alignment: .topTrailing) {
+                    Text("NEW")
+                        .font(.caption)
+                        .padding(4)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                }
+        }
+    }
+
+    @Test func appliesImageScaleModifier() throws {
+        let source = """
+        Image(systemName: "globe")
+            .imageScale(.large)
+            .foregroundStyle(.mint)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Image(systemName: "globe")
+                .imageScale(.large)
+                .foregroundStyle(.mint)
+        }
+    }
 }
 
 private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
