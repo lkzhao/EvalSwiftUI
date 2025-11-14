@@ -13,7 +13,7 @@ public struct SwiftIRParser {
 
             if let structDecl = node.as(StructDeclSyntax.self),
                let definition = makeDefinition(from: structDecl) {
-                statements.append(.binding(BindingIR(name: structDecl.name.text, typeAnnotation: nil, initializer: .definition(definition))))
+                statements.append(.binding(BindingIR(name: structDecl.name.text, type: nil, initializer: .definition(definition))))
                 continue
             }
 
@@ -21,7 +21,7 @@ public struct SwiftIRParser {
                 let functionIR = makeFunctionIR(from: functionDecl)
                 let binding = BindingIR(
                     name: functionDecl.name.text,
-                    typeAnnotation: nil,
+                    type: nil,
                     initializer: .function(functionIR)
                 )
                 statements.append(.binding(binding))
@@ -69,7 +69,7 @@ public struct SwiftIRParser {
                 staticBindings.append(
                     BindingIR(
                         name: structDecl.name.text,
-                        typeAnnotation: nil,
+                        type: nil,
                         initializer: .definition(definition)
                     )
                 )
@@ -144,7 +144,7 @@ public struct SwiftIRParser {
         let label = firstName == "_" ? nil : firstName
         let name = parameter.secondName?.text ?? firstName
         let defaultValue = parameter.defaultValue.map { makeExpr($0.value) }
-        return FunctionParameterIR(label: label, name: name, defaultValue: defaultValue)
+        return FunctionParameterIR(label: label, name: name, type: parameter.type.trimmedDescription, defaultValue: defaultValue)
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
@@ -154,7 +154,7 @@ public struct SwiftIRParser {
             let typeAnnotation = binding.typeAnnotation?.type.trimmedDescription
             return BindingIR(
                 name: identifierPattern.identifier.text,
-                typeAnnotation: typeAnnotation,
+                type: typeAnnotation,
                 initializer: initializerExpr
             )
         }
@@ -164,7 +164,7 @@ public struct SwiftIRParser {
         let functionIR = makeFunctionIR(from: node)
         return BindingIR(
             name: node.name.text,
-            typeAnnotation: nil,
+            type: nil,
             initializer: .function(functionIR)
         )
     }
@@ -211,7 +211,7 @@ public struct SwiftIRParser {
 
         return BindingIR(
             name: identifier.identifier.text,
-            typeAnnotation: typeAnnotation,
+            type: typeAnnotation,
             initializer: initializer
         )
     }
@@ -285,17 +285,7 @@ public struct SwiftIRParser {
         }
 
         if let member = expr.as(MemberAccessExprSyntax.self) {
-            if let base = member.base {
-                return .member(base: makeExpr(base), name: member.declName.baseName.text)
-            }
-            return .identifier(member.declName.baseName.text)
-        }
-
-        let trimmed = expr.trimmedDescription
-        if trimmed.hasPrefix("."), trimmed.count > 1 {
-            let nextIndex = trimmed.index(after: trimmed.startIndex)
-            let identifier = String(trimmed[nextIndex...])
-            return .identifier(identifier)
+            return .member(base: member.base.map(makeExpr), name: member.declName.baseName.text)
         }
 
         if let call = expr.as(FunctionCallExprSyntax.self) {
@@ -358,7 +348,7 @@ public struct SwiftIRParser {
 
         return BindingIR(
             name: pattern.identifier.text,
-            typeAnnotation: binding.typeAnnotation?.type.trimmedDescription,
+            type: binding.typeAnnotation?.type.trimmedDescription,
             initializer: .function(functionIR)
         )
     }
@@ -367,12 +357,12 @@ public struct SwiftIRParser {
         let params = node.signature.parameterClause.parameters.map(makeParameter)
         let bodyStatements = node.body.map(makeStatements) ?? []
         let functionIR = FunctionIR(parameters: params, returnType: nil, body: bodyStatements)
-        return BindingIR(name: "init", typeAnnotation: nil, initializer: .function(functionIR))
+        return BindingIR(name: "init", type: nil, initializer: .function(functionIR))
     }
 
     private func synthesizeInitializer(from properties: [BindingIR]) -> BindingIR {
         let parameters = properties.map { property in
-            FunctionParameterIR(label: property.name, name: property.name, defaultValue: property.initializer)
+            FunctionParameterIR(label: property.name, name: property.name, type: property.type, defaultValue: property.initializer)
         }
         let assignments: [StatementIR] = properties.map { property in
             let target = ExprIR.member(base: .identifier("self"), name: property.name)
@@ -380,7 +370,7 @@ public struct SwiftIRParser {
             return .assignment(AssignmentIR(target: target, value: value))
         }
         let functionIR = FunctionIR(parameters: parameters, returnType: nil, body: assignments)
-        return BindingIR(name: "init", typeAnnotation: nil, initializer: .function(functionIR))
+        return BindingIR(name: "init", type: nil, initializer: .function(functionIR))
     }
 
     private func makeAccessorStatements(from binding: PatternBindingSyntax) -> [StatementIR]? {
@@ -530,7 +520,7 @@ public struct SwiftIRParser {
             return shorthandList.map { shorthand in
                 let name = shorthand.name.text
                 let label = name == "_" ? nil : name
-                return FunctionParameterIR(label: label, name: name, defaultValue: nil)
+                return FunctionParameterIR(label: label, name: name, type: nil, defaultValue: nil)
             }
         }
     }
@@ -539,6 +529,6 @@ public struct SwiftIRParser {
         let firstName = parameter.firstName.text
         let label = firstName == "_" ? nil : firstName
         let name = parameter.secondName?.text ?? firstName
-        return FunctionParameterIR(label: label, name: name, defaultValue: nil)
+        return FunctionParameterIR(label: label, name: name, type: parameter.type?.trimmedDescription, defaultValue: nil)
     }
 }

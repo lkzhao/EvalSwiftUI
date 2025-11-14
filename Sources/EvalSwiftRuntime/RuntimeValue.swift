@@ -134,6 +134,11 @@ extension RuntimeValue {
         return style
     }
 
+    var asInstance: RuntimeInstance? {
+        guard case .instance(let instance) = self else { return nil }
+        return instance
+    }
+
     @MainActor
     var asSwiftUIView: AnyView? {
         if let color = asColor {

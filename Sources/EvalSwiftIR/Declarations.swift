@@ -12,7 +12,7 @@ public struct DefinitionIR {
 
 public struct BindingIR {
     public let name: String
-    public let typeAnnotation: String?
+    public let type: String?
     public let initializer: ExprIR?
 }
 
@@ -25,7 +25,15 @@ public struct FunctionIR {
 public struct FunctionParameterIR {
     public let label: String?
     public let name: String
+    public let type: String?
     public let defaultValue: ExprIR?
+
+    public init(label: String?, name: String, type: String?, defaultValue: ExprIR?) {
+        self.label = label
+        self.name = name
+        self.type = type
+        self.defaultValue = defaultValue
+    }
 }
 
 public enum BinaryOperatorIR: String {
@@ -67,7 +75,7 @@ public indirect enum ExprIR {
     case array([ExprIR])
     case keyPath(KeyPathIR)
     case stringInterpolation([StringInterpolationSegmentIR])
-    case member(base: ExprIR, name: String)
+    case member(base: ExprIR?, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
     case function(FunctionIR)
     case definition(DefinitionIR)

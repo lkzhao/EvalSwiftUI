@@ -84,8 +84,8 @@ func assertSnapshotsMatch<V: View>(
         viewBuilders: viewBuilders,
         modifierBuilders: modifierBuilders
     )
-    if let viewName {
-        let evaluatedView = try module.makeInstance(typeName: viewName).makeSwiftUIView()
+    if let viewName, case let .instance(instance) = try module.makeInstance(typeName: viewName) {
+        let evaluatedView = try instance.makeSwiftUIView()
         try assertViewMatch(evaluatedView, expectedView())
     } else {
         let evaluatedView = try module.makeTopLevelSwiftUIViews()

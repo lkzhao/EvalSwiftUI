@@ -2,32 +2,62 @@ import EvalSwiftIR
 import SwiftUI
 
 public final class RuntimeFunction: RuntimeScope {
-    private var ir: FunctionIR
     public var storage: [String: RuntimeValue] = [:]
     public var parent: RuntimeScope?
 
+    public enum Content {
+        case definition(FunctionIR)
+        case builtIn(RuntimeBuiltInFunction)
+
+        var parameters: [FunctionParameterIR] {
+            switch self {
+            case .definition(let ir):
+                return ir.parameters
+            case .builtIn(let builtIn):
+                return builtIn.parameters
+            }
+        }
+    }
+
+    public var content: Content
+
     public init(ir: FunctionIR, parent: RuntimeScope?) {
-        self.ir = ir
+        self.content = .definition(ir)
+        self.parent = parent
+    }
+
+    public init(builtInFunction: RuntimeBuiltInFunction, parent: RuntimeScope?) {
+        self.content = .builtIn(builtInFunction)
         self.parent = parent
     }
 
     public var parameters: [FunctionParameterIR] {
-        ir.parameters
+        content.parameters
     }
 
     public func invoke(arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
         storage.removeAll()
-        let parser = ArgumentParser(parameters: ir.parameters)
-        try parser.bind(arguments: arguments, into: self)
-        let interpreter = StatementInterpreter(scope: self)
-        return try interpreter.execute(statements: ir.body)
+        switch content {
+        case .definition(let ir):
+            let parser = ArgumentParser(parameters: ir.parameters)
+            try parser.bind(arguments: arguments, into: self)
+            let interpreter = StatementInterpreter(scope: self)
+            return try interpreter.execute(statements: ir.body)
+        case .builtIn(let function):
+            return try function.call(arguments: arguments, scope: self)
+        }
     }
 
     public func renderRuntimeViews(arguments: [RuntimeArgument] = []) throws -> [RuntimeInstance] {
         storage.removeAll()
-        let parser = ArgumentParser(parameters: ir.parameters)
-        try parser.bind(arguments: arguments, into: self)
-        let interpreter = StatementInterpreter(scope: self)
-        return try interpreter.executeAndCollectRuntimeViews(statements: ir.body)
+        switch content {
+        case .definition(let ir):
+            let parser = ArgumentParser(parameters: ir.parameters)
+            try parser.bind(arguments: arguments, into: self)
+            let interpreter = StatementInterpreter(scope: self)
+            return try interpreter.executeAndCollectRuntimeViews(statements: ir.body)
+        case .builtIn(let function):
+            throw RuntimeError.unknownFunction("Rendering views is not supported for built-in functions.")
+        }
     }
 }

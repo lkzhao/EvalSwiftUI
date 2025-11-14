@@ -5,7 +5,6 @@ import EvalSwiftIR
 public final class RuntimeModule: RuntimeScope {
     public var storage: [String: RuntimeValue] = [:]
     public var runtimeViews: [RuntimeInstance] = []
-    private var viewBuilders: [String: RuntimeViewBuilder] = [:]
     private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
 
     public convenience init(
@@ -41,7 +40,19 @@ public final class RuntimeModule: RuntimeScope {
             ToggleViewBuilder(),
         ] + viewBuilders
         for builder in builders {
-            self.viewBuilders[builder.typeName] = builder
+            define(builder.typeName, value: .type(RuntimeType(builder: builder, parent: self)))
+        }
+
+        let builtInTypes: [RuntimeBuiltInType] = [
+            IntValueType(),
+            FloatValueType(name: "Float"),
+            FloatValueType(name: "Double"),
+            FloatValueType(name: "CGFloat"),
+            ColorValueType(),
+            ImageValueType(),
+        ]
+        for type in builtInTypes {
+            define(type.name, value: .type(RuntimeType(builtInType: type, parent: self)))
         }
 
         let modifiers: [RuntimeModifierBuilder] = [
@@ -65,10 +76,6 @@ public final class RuntimeModule: RuntimeScope {
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
         self.runtimeViews = values ?? []
-    }
-
-    func viewBuilder(named name: String) -> RuntimeViewBuilder? {
-        viewBuilders[name]
     }
 
     func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {

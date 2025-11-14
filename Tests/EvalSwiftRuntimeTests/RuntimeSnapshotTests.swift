@@ -395,7 +395,9 @@ struct RuntimeSnapshotTests {
 
         let module = RuntimeModule(source: source)
         let type = try module.type(named: "CounterView")
-        let instance = try type.makeInstance()
+        guard let instance = try type.makeInstance().asInstance else {
+            throw RuntimeError.invalidViewArgument("Expected CounterView instance.")
+        }
         let renderer = try RuntimeViewRenderer(instance: instance)
 
         try assertViewMatch(renderer.renderedView, Text("Count: 0"))
@@ -441,7 +443,7 @@ struct RuntimeSnapshotTests {
     @Test func appliesImageScaleModifier() throws {
         #expectSnapshot(
             Image(systemName: "globe")
-                .imageScale(.large)
+                .imageScale(Image.Scale.large)
                 .foregroundStyle(.mint)
         )
     }

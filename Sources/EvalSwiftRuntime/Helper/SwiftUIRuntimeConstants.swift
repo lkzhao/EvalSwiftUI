@@ -2,44 +2,61 @@ import SwiftUI
 
 enum SwiftUIRuntimeConstants {
     static func register(in module: RuntimeModule) {
-        registerColors(in: module)
+//        registerColors(in: module)
         registerFonts(in: module)
         registerAlignments(in: module)
-        registerImageScales(in: module)
+//        registerImageScales(in: module)
         registerAxisSets(in: module)
         registerRoundedCornerStyles(in: module)
     }
 
-    private static func registerColors(in scope: RuntimeModule) {
-        let colors: [(String, Color)] = [
-            ("clear", .clear),
-            ("black", .black),
-            ("blue", .blue),
-            ("brown", .brown),
-            ("cyan", .cyan),
-            ("gray", .gray),
-            ("green", .green),
-            ("indigo", .indigo),
-            ("mint", .mint),
-            ("orange", .orange),
-            ("pink", .pink),
-            ("purple", .purple),
-            ("red", .red),
-            ("teal", .teal),
-            ("white", .white),
-            ("yellow", .yellow),
-            ("primary", .primary),
-            ("secondary", .secondary),
-            ("accentColor", .accentColor)
-        ]
-
-        let colorInstance = RuntimeInstance(parent: scope)
-        for (name, color) in colors {
-            scope.define(name, value: .swiftUI(.color(color)))
-            colorInstance.define(name, value: .swiftUI(.color(color)))
-        }
-        scope.define("Color", value: .instance(colorInstance))
-    }
+//    private static func registerColors(in scope: RuntimeModule) {
+//        let colors: [(String, Color)] = [
+//            ("clear", .clear),
+//            ("black", .black),
+//            ("blue", .blue),
+//            ("brown", .brown),
+//            ("cyan", .cyan),
+//            ("gray", .gray),
+//            ("green", .green),
+//            ("indigo", .indigo),
+//            ("mint", .mint),
+//            ("orange", .orange),
+//            ("pink", .pink),
+//            ("purple", .purple),
+//            ("red", .red),
+//            ("teal", .teal),
+//            ("white", .white),
+//            ("yellow", .yellow),
+//            ("primary", .primary),
+//            ("secondary", .secondary),
+//            ("accentColor", .accentColor)
+//        ]
+//
+//        let colorInstance = RuntimeInstance(parent: scope)
+//        for (name, color) in colors {
+//            scope.define(name, value: .swiftUI(.color(color)))
+//            colorInstance.define(name, value: .swiftUI(.color(color)))
+//        }
+//        scope.define("Color", value: .instance(colorInstance))
+//    }
+//
+//    private static func registerImageScales(in scope: RuntimeModule) {
+//        let scales: [(String, Image.Scale)] = [
+//            ("small", .small),
+//            ("medium", .medium),
+//            ("large", .large)
+//        ]
+//
+//        let imageInstance = RuntimeInstance(parent: scope)
+//        let scaleInstance = RuntimeInstance(parent: imageInstance)
+//        imageInstance.define("Scale", value: .instance(scaleInstance))
+//        scope.define("Image", value: .instance(imageInstance))
+//        for (name, scale) in scales {
+//            scope.define(name, value: .swiftUI(.imageScale(scale)))
+//            scaleInstance.define(name, value: .swiftUI(.imageScale(scale)))
+//        }
+//    }
 
     private static func registerFonts(in scope: RuntimeModule) {
         let fonts: [(String, Font)] = [
@@ -83,23 +100,6 @@ enum SwiftUIRuntimeConstants {
             alignmentInstance.define(name, value: .swiftUI(.alignment(alignment)))
         }
         scope.define("Alignment", value: .instance(alignmentInstance))
-    }
-
-    private static func registerImageScales(in scope: RuntimeModule) {
-        let scales: [(String, Image.Scale)] = [
-            ("small", .small),
-            ("medium", .medium),
-            ("large", .large)
-        ]
-
-        let imageInstance = RuntimeInstance(parent: scope)
-        let scaleInstance = RuntimeInstance(parent: imageInstance)
-        imageInstance.define("Scale", value: .instance(scaleInstance))
-        scope.define("Image", value: .instance(imageInstance))
-        for (name, scale) in scales {
-            scope.define(name, value: .swiftUI(.imageScale(scale)))
-            scaleInstance.define(name, value: .swiftUI(.imageScale(scale)))
-        }
     }
 
     private static func registerAxisSets(in scope: RuntimeModule) {

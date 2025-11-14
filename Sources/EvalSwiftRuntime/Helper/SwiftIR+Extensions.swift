@@ -29,7 +29,7 @@ extension BindingIR {
     }
 
     private var preferredNumericType: PreferredNumericType? {
-        guard let annotation = typeAnnotation?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+        guard let annotation = type?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
             return nil
         }
 

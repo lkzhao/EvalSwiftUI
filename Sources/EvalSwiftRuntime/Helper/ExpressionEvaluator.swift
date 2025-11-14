@@ -62,7 +62,7 @@ struct ExpressionEvaluator {
                     return try type.get(name)
                 }
                 throw RuntimeError.unknownIdentifier("Self.\(name)")
-            } else {
+            } else if let base {
                 guard let baseValue = try evaluate(base, scope: scope) else {
                     throw RuntimeError.unsupportedExpression("Member access for '\(name)' requires a value")
                 }
@@ -77,8 +77,11 @@ struct ExpressionEvaluator {
                         "Cannot access member '\(name)' on \(baseValue.valueTypeDescription)"
                     )
                 }
+            } else {
+                return try scope.get(name)
             }
         case .call(let callee, let arguments):
+            // TODO: calculate evaluated arguments based on function parameter
             let evaluatedArguments = try arguments.map { argument in
                 let value = try evaluate(argument.value, scope: scope) ?? .void
                 return RuntimeArgument(label: argument.label, value: value)
@@ -94,14 +97,8 @@ struct ExpressionEvaluator {
                 return .instance(modifiedInstance)
             }
 
-            if case .identifier(let identifier) = callee {
-                if let conversion = try evaluateTypeInitializer(name: identifier, arguments: evaluatedArguments) {
-                    return conversion
-                }
-
-                if let instance = try? scope.makeInstance(typeName: identifier, arguments: evaluatedArguments) {
-                    return .instance(instance)
-                }
+            if case .identifier(let identifier) = callee, let value = try? scope.makeInstance(typeName: identifier, arguments: evaluatedArguments) {
+                return value
             }
 
             guard let calleeValue = try evaluate(callee, scope: scope),
@@ -230,39 +227,5 @@ struct ExpressionEvaluator {
             throw RuntimeError.unsupportedExpression("Range operators require integer operands")
         }
         return .double(result)
-    }
-
-    private static func evaluateTypeInitializer(
-        name: String,
-        arguments: [RuntimeArgument]
-    ) throws -> RuntimeValue? {
-        guard let numericType = NumericTypeInitializer(rawValue: name) else {
-            return nil
-        }
-
-        guard arguments.count == 1,
-              let value = arguments.first?.value else {
-            throw RuntimeError.unsupportedExpression("\(name) initializer expects exactly one argument")
-        }
-
-        switch numericType {
-        case .int:
-            guard let intValue = value.asInt ?? value.asDouble.map(Int.init) else {
-                throw RuntimeError.unsupportedExpression("Cannot convert \(value.valueTypeDescription) to Int")
-            }
-            return .int(intValue)
-        case .double, .float, .cgfloat:
-            guard let doubleValue = value.asDouble else {
-                throw RuntimeError.unsupportedExpression("Cannot convert \(value.valueTypeDescription) to \(name)")
-            }
-            return .double(doubleValue)
-        }
-    }
-
-    private enum NumericTypeInitializer: String {
-        case int = "Int"
-        case double = "Double"
-        case float = "Float"
-        case cgfloat = "CGFloat"
     }
 }

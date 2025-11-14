@@ -97,14 +97,8 @@ extension RuntimeScope {
         return definition
     }
 
-    func makeInstance(typeName: String, arguments: [RuntimeArgument] = []) throws -> RuntimeInstance {
-        if let builder = module?.viewBuilder(named: typeName) {
-            return .init(builder: builder, arguments: arguments, parent: self)
-        }
-        if let type = try? type(named: typeName) {
-            return try type.makeInstance()
-        }
-        throw RuntimeError.unknownView(typeName)
+    func makeInstance(typeName: String, arguments: [RuntimeArgument] = []) throws -> RuntimeValue {
+        try type(named: typeName).makeInstance(arguments: arguments)
     }
 
     func define(binding: BindingIR) throws {
