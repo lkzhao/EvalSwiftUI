@@ -14,7 +14,7 @@ import EvalSwiftIR
 public func evalSwiftUI(
     _ source: String
 ) throws -> AnyView {
-    let module = RuntimeModule(source: source)
+    let module = try RuntimeModule(source: source)
     return try module.makeTopLevelSwiftUIViews()
 }
 

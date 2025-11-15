@@ -11,8 +11,8 @@ public final class RuntimeModule: RuntimeScope {
         source: String,
         viewBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
-    ) {
-        self.init(
+    ) throws {
+        try self.init(
             ir: SwiftIRParser().parseModule(source: source),
             viewBuilders: viewBuilders,
             modifierBuilders: modifierBuilders
@@ -23,7 +23,7 @@ public final class RuntimeModule: RuntimeScope {
         ir: ModuleIR,
         viewBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
-    ) {
+    ) throws {
 //        let builders: [RuntimeViewBuilder] = [
 //            TextRuntimeViewBuilder(),
 //            ImageRuntimeViewBuilder(),
@@ -65,8 +65,8 @@ public final class RuntimeModule: RuntimeScope {
         define(imageBuilder.name, value: .type(RuntimeType(builder: imageBuilder, parent: self)))
 
         let statementInterpreter = StatementInterpreter(scope: self)
-        let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
-        self.runtimeViews = values ?? []
+        let values = try statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
+        self.runtimeViews = values
     }
 
     func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {

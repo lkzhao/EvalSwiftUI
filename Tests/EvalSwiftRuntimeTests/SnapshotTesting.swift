@@ -79,7 +79,7 @@ func assertSnapshotsMatch<V: View>(
 ) throws {
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: source)
-    let module = RuntimeModule(
+    let module = try RuntimeModule(
         ir: moduleIR,
 //        viewBuilders: viewBuilders,
 //        modifierBuilders: modifierBuilders

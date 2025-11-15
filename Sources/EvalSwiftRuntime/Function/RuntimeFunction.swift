@@ -39,8 +39,9 @@ public final class RuntimeFunction: RuntimeScope {
         storage.removeAll()
         switch content {
         case .definition(let ir):
-            let parser = ArgumentParser(parameters: ir.parameters)
-            try parser.bind(arguments: arguments, into: self)
+            for argument in arguments {
+                define(argument.name, value: argument.value)
+            }
             let interpreter = StatementInterpreter(scope: self)
             return try interpreter.execute(statements: ir.body)
         case .builtIn(let function):
@@ -52,11 +53,12 @@ public final class RuntimeFunction: RuntimeScope {
         storage.removeAll()
         switch content {
         case .definition(let ir):
-            let parser = ArgumentParser(parameters: ir.parameters)
-            try parser.bind(arguments: arguments, into: self)
+            for argument in arguments {
+                define(argument.name, value: argument.value)
+            }
             let interpreter = StatementInterpreter(scope: self)
             return try interpreter.executeAndCollectRuntimeViews(statements: ir.body)
-        case .builtIn(let function):
+        case .builtIn:
             throw RuntimeError.unknownFunction("Rendering views is not supported for built-in functions.")
         }
     }

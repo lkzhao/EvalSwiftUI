@@ -12,7 +12,7 @@ struct ExpressionEvaluatorTests {
         k.count += 1
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .instance(let instance) = try module.get("k"), case .int(let count) = try instance.get("count") else {
             throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
         }
@@ -32,7 +32,7 @@ struct ExpressionEvaluatorTests {
         k.counter.count += 1
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .instance(let instance) = try module.get("k"), case .instance(let counter) = try instance.get("counter"), case .int(let count) = try counter.get("count") else {
             throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
         }
@@ -48,7 +48,7 @@ struct ExpressionEvaluatorTests {
         Counter.count += 1
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .type(let type) = try module.get("Counter"), case .int(let count) = try type.get("count") else {
             throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
         }
@@ -68,7 +68,7 @@ struct ExpressionEvaluatorTests {
         increment()
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .int(let value) = try module.get("count") else {
             throw TestFailure.expected("Expected stored count value to be an Int, got \\(try module.get(\"count\"))")
         }
@@ -92,7 +92,7 @@ struct ExpressionEvaluatorTests {
         mutate()
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .int(let value) = try module.get("count") else {
             throw TestFailure.expected("Expected count to be an Int")
         }
@@ -114,7 +114,7 @@ struct ExpressionEvaluatorTests {
         flip()
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .int(let negated) = try module.get("negated"),
               case .int(let positive) = try module.get("positive") else {
             throw TestFailure.expected("Expected negated and positive to both be Ints")
@@ -132,7 +132,7 @@ struct ExpressionEvaluatorTests {
         var cgValue: CGFloat = CGFloat(4.25)
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
 
         guard case .int(let intValue) = try module.get("intValue"),
               case .double(let doubleValue) = try module.get("doubleValue"),
@@ -159,7 +159,7 @@ struct ExpressionEvaluatorTests {
         adjust()
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
         guard case .double(let spacing) = try module.get("spacing") else {
             throw TestFailure.expected("Expected spacing to be stored as Double")
         }
@@ -174,7 +174,7 @@ struct ExpressionEvaluatorTests {
         var finalValue = value + Double(value) / 2
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
 
         guard case .double(let newValue) = try module.get("newValue"),
               case .double(let finalValue) = try module.get("finalValue") else {
@@ -191,7 +191,7 @@ struct ExpressionEvaluatorTests {
         var inclusive = 1...3
         """
 
-        let module = RuntimeModule(source: source)
+        let module = try RuntimeModule(source: source)
 
         guard case .array(let exclusiveValues) = try module.get("exclusive"),
               case .array(let inclusiveValues) = try module.get("inclusive") else {
@@ -211,5 +211,45 @@ struct ExpressionEvaluatorTests {
 
         #expect(exclusiveInts == [0, 1, 2])
         #expect(inclusiveInts == [1, 2, 3])
+    }
+
+    @Test func supportsDefaultedFunctionArguments() throws {
+        let source = """
+        func greet(greeting: String = "Hello", name: String) -> String {
+            "\\(greeting), \\(name)"
+        }
+
+        let implicit = greet(name: "Eval")
+        let explicit = greet(greeting: "Hi", name: "Swift")
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .string(let implicit) = try module.get("implicit"),
+              case .string(let explicit) = try module.get("explicit") else {
+            throw TestFailure.expected("Expected greeting strings to be stored")
+        }
+
+        #expect(implicit == "Hello, Eval")
+        #expect(explicit == "Hi, Swift")
+    }
+
+    @Test func allowsTrailingClosureAfterDefaultedParameters() throws {
+        let source = """
+        func run(count: Int = 1, action: () -> Int) -> Int {
+            action() + count
+        }
+
+        let once = run { 5 }
+        let twice = run(count: 2) { 3 }
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .int(let once) = try module.get("once"),
+              case .int(let twice) = try module.get("twice") else {
+            throw TestFailure.expected("Expected run results to be Int values")
+        }
+
+        #expect(once == 6)
+        #expect(twice == 5)
     }
 }
