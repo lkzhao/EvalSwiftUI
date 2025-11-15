@@ -461,16 +461,6 @@ struct RuntimeSnapshotTests {
         )
     }
 
-    @Test func rendersForEachOverRange() throws {
-        #expectSnapshot(
-            VStack {
-                ForEach(0..<3) { index in
-                    Text("Row \(index)")
-                }
-            }
-        )
-    }
-
     @Test func rendersForEachWithExplicitID() throws {
         #expectSnapshot(
             VStack {

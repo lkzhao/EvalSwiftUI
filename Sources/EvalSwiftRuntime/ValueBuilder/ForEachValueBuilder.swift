@@ -151,6 +151,9 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
     }
 
     private static func makeIdentifiableIdentifier(for value: RuntimeValue) throws -> AnyHashable? {
+        if let hashableValue = value.asAnyHashable {
+            return hashableValue
+        }
         guard case .instance(let instance) = value else {
             return nil
         }
