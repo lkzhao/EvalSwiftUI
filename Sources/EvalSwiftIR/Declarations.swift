@@ -62,8 +62,24 @@ public enum UnaryOperatorIR: String {
     case minus = "-"
 }
 
-public enum KeyPathIR: Equatable {
+public enum KeyPathIR: Hashable {
     case `self`
+    case components([Component])
+
+    public enum Component: Hashable {
+        case property(name: String)
+        case optionalChain
+        case forceUnwrap
+    }
+
+    public var components: [Component] {
+        switch self {
+        case .self:
+            return []
+        case .components(let components):
+            return components
+        }
+    }
 }
 
 public indirect enum ExprIR: Hashable {

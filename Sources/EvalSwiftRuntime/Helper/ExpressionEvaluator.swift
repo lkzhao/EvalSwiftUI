@@ -129,7 +129,12 @@ struct ExpressionEvaluator {
                 let type = try? scope.type(named: typeName) {
                 let definitions = type.definitions
                 for definition in definitions {
-                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(parameters: definition.parameters, arguments: arguments, scope: scope), let result = try? definition.build(evaluatedArguments, scope) {
+                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(
+                        parameters: definition.parameters,
+                        arguments: arguments,
+                        scope: scope
+                    ),
+                       let result = try? definition.build(evaluatedArguments, scope) {
                         return result
                     }
                 }

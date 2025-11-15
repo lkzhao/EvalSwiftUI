@@ -126,12 +126,13 @@ public struct SwiftIRParser {
             instanceBindings.insert(synthesizeInitializer(from: storedProperties), at: 0)
         }
 
-        return DefinitionIR(
+        let definition = DefinitionIR(
             name: node.name.text,
             inheritedTypes: makeInheritedTypes(node),
             bindings: instanceBindings,
             staticBindings: staticBindings
         )
+        return definition
     }
 
     private func makeFunctionIR(from node: FunctionDeclSyntax) -> FunctionIR {
@@ -331,8 +332,11 @@ public struct SwiftIRParser {
             return .array(elements)
         }
 
-        if expr.trimmedDescription == "\\.self" {
-            return .keyPath(.self)
+        if let keyPathExpr = expr.as(KeyPathExprSyntax.self) {
+            guard let keyPath = makeKeyPath(from: keyPathExpr) else {
+                return .unknown(keyPathExpr.trimmedDescription)
+            }
+            return .keyPath(keyPath)
         }
 
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),
@@ -381,6 +385,43 @@ public struct SwiftIRParser {
         }
 
         return .unknown(expr.trimmedDescription)
+    }
+
+    private func makeKeyPath(from node: KeyPathExprSyntax) -> KeyPathIR? {
+        guard node.root == nil else {
+            return nil
+        }
+
+        var components: [KeyPathIR.Component] = []
+
+        for component in node.components {
+            switch component.component {
+            case .property(let property):
+                let name = property.declName.baseName.text
+                if name == "self", components.isEmpty {
+                    continue
+                }
+                components.append(.property(name: name))
+            case .optional(let optionalComponent):
+                let symbol = optionalComponent.questionOrExclamationMark.text
+                switch symbol {
+                case "?":
+                    components.append(.optionalChain)
+                case "!":
+                    components.append(.forceUnwrap)
+                default:
+                    return nil
+                }
+            default:
+                return nil
+            }
+        }
+
+        if components.isEmpty {
+            return .self
+        }
+
+        return .components(components)
     }
 
     private func makeClosureFunction(_ closure: ClosureExprSyntax) -> FunctionIR {

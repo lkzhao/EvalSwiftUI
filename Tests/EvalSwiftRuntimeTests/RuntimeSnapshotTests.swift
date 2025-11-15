@@ -405,6 +405,46 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersForEachWithModelKeyPathID() throws {
+        let source = """
+        struct TodoItem {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        let todos = [
+            TodoItem(id: 1, label: "First"),
+            TodoItem(id: 2, label: "Second"),
+            TodoItem(id: 3, label: "Third")
+        ]
+
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(todos, id: \\.id) { todo in
+                Text(todo.label)
+            }
+        }
+        """
+
+        struct SnapshotTodo {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        let todos = [
+            SnapshotTodo(id: 1, label: "First"),
+            SnapshotTodo(id: 2, label: "Second"),
+            SnapshotTodo(id: 3, label: "Third")
+        ]
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(todos, id: \.id) { todo in
+                    Text(todo.label)
+                }
+            }
+        }
+    }
+
     @Test func rendersForEachUsingShorthandParameters() throws {
         #expectSnapshot(
             VStack {

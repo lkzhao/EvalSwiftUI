@@ -104,6 +104,12 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
                 throw RuntimeError.invalidArgument("ForEach(id: \\.self) requires Hashable elements.")
             }
             return hashable
+        case .components:
+            let resolvedValue = try resolveKeyPath(keyPath, on: value)
+            guard let hashable = hashableValue(from: resolvedValue) else {
+                throw RuntimeError.invalidArgument("ForEach(id:) key path must resolve to a Hashable value.")
+            }
+            return hashable
         }
     }
 
@@ -120,6 +126,54 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
         default:
             return nil
         }
+    }
+
+    private static func resolveKeyPath(
+        _ keyPath: RuntimeKeyPath,
+        on value: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch keyPath {
+        case .self:
+            return value
+        case .components(let components):
+            var current = value
+            for component in components {
+                switch component {
+                case .property(let name):
+                    current = try propertyValue(named: name, from: current)
+                case .optionalChain:
+                    guard !isNil(current) else {
+                        return .void
+                    }
+                case .forceUnwrap:
+                    guard !isNil(current) else {
+                        throw RuntimeError.invalidArgument("KeyPath force-unwrapped a nil value.")
+                    }
+                }
+            }
+            return current
+        }
+    }
+
+    private static func propertyValue(
+        named name: String,
+        from value: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch value {
+        case .instance(let instance):
+            return try instance.get(name)
+        case .type(let type):
+            return try type.get(name)
+        default:
+            throw RuntimeError.invalidArgument("Cannot access member '\(name)' on \(value.valueType).")
+        }
+    }
+
+    private static func isNil(_ value: RuntimeValue) -> Bool {
+        if case .void = value {
+            return true
+        }
+        return false
     }
 }
 
