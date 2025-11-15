@@ -1,10 +1,3 @@
-//
-//  ArgumentEvaluator.swift
-//  EvalSwiftUI
-//
-//  Created by Luke Zhao on 11/14/25.
-//
-
 import EvalSwiftIR
 
 struct ArgumentEvaluator {
