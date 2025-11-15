@@ -1,7 +1,5 @@
 import EvalSwiftIR
 
-//public typealias RuntimeParameter = FunctionParameterIR
-
 public struct RuntimeParameter: Hashable {
     public let label: String?
     public let name: String
