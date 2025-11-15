@@ -145,6 +145,20 @@ extension RuntimeValue {
         return alignment
     }
 
+    var asHorizontalAlignment: HorizontalAlignment? {
+        guard case .swiftUI(let value) = self, case .horizontalAlignment(let alignment) = value else {
+            return nil
+        }
+        return alignment
+    }
+
+    var asVerticalAlignment: VerticalAlignment? {
+        guard case .swiftUI(let value) = self, case .verticalAlignment(let alignment) = value else {
+            return nil
+        }
+        return alignment
+    }
+
     var asImageScale: Image.Scale? {
         guard case .swiftUI(let value) = self, case .imageScale(let scale) = value else { return nil }
         return scale
@@ -254,6 +268,8 @@ public enum SwiftUIRuntimeValue {
     case color(Color)
     case font(Font)
     case alignment(Alignment)
+    case horizontalAlignment(HorizontalAlignment)
+    case verticalAlignment(VerticalAlignment)
     case imageScale(Image.Scale)
     case axisSet(Axis.Set)
     case roundedCornerStyle(RoundedCornerStyle)
@@ -270,6 +286,10 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Font>"
         case .alignment:
             return "<Alignment>"
+        case .horizontalAlignment:
+            return "<HorizontalAlignment>"
+        case .verticalAlignment:
+            return "<VerticalAlignment>"
         case .imageScale:
             return "<Image.Scale>"
         case .axisSet:

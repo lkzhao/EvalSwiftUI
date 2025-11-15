@@ -89,6 +89,31 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersVStackAlignment() throws {
+        #expectSnapshot(
+            VStack(alignment: .leading) {
+                Text("Header")
+                HStack(spacing: 4) {
+                    Text("Left")
+                    Text("Right")
+                }
+            }
+        )
+    }
+
+    @Test func rendersHStackAlignmentAndSpacing() throws {
+        #expectSnapshot(
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(spacing: 2) {
+                    Text("Top")
+                    Text("Bottom")
+                }
+                Text("Trailing")
+                    .font(.headline)
+            }
+        )
+    }
+
     @Test func rendersNestedVStacks() throws {
         #expectSnapshot(
             VStack(spacing: 8) {
