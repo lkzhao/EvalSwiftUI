@@ -53,6 +53,7 @@ public final class RuntimeModule: RuntimeScope {
             ButtonValueBuilder(),
             VStackValueBuilder(),
             HStackValueBuilder(),
+            ZStackValueBuilder(),
             ForEachValueBuilder(),
             ColorValueBuilder(),
             FontValueBuilder(),

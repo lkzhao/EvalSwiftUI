@@ -114,6 +114,18 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersZStackAlignment() throws {
+        #expectSnapshot(
+            ZStack(alignment: .topLeading) {
+                Color.blue
+                    .frame(width: 80, height: 80)
+                Text("Badge")
+                    .padding(4)
+                    .background(Color.white)
+            }
+        )
+    }
+
     @Test func rendersNestedVStacks() throws {
         #expectSnapshot(
             VStack(spacing: 8) {
