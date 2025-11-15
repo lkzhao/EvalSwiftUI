@@ -24,6 +24,19 @@ public final class RuntimeType: RuntimeScope {
         content.name
     }
 
+    var inheritedTypeNames: [String] {
+        switch content {
+        case .builder:
+            return []
+        case .definition(let ir):
+            return ir.inheritedTypes
+        }
+    }
+
+    func conforms(to typeName: String) -> Bool {
+        inheritedTypeNames.contains(typeName)
+    }
+
     public init(ir: DefinitionIR, parent: RuntimeScope?) throws {
         self.content = .definition(ir)
         self.parent = parent

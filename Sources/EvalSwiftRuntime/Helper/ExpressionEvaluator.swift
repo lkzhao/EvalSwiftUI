@@ -128,15 +128,23 @@ struct ExpressionEvaluator {
             if case .identifier(let typeName) = callee,
                 let type = try? scope.type(named: typeName) {
                 let definitions = type.definitions
+                var lastError: Error?
                 for definition in definitions {
                     if let evaluatedArguments = try? ArgumentEvaluator.evaluate(
                         parameters: definition.parameters,
                         arguments: arguments,
                         scope: scope
-                    ),
-                       let result = try? definition.build(evaluatedArguments, scope) {
-                        return result
+                    ) {
+                        do {
+                            let result = try definition.build(evaluatedArguments, scope)
+                            return result
+                        } catch {
+                            lastError = error
+                        }
                     }
+                }
+                if let lastError {
+                    throw lastError
                 }
             }
 

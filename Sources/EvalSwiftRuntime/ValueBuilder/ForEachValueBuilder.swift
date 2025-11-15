@@ -95,7 +95,10 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
         fallbackIndex: Int
     ) throws -> AnyHashable {
         guard let keyPath else {
-            return AnyHashable(fallbackIndex)
+            if let identifiableID = try makeIdentifiableIdentifier(for: value) {
+                return identifiableID
+            }
+            throw RuntimeError.invalidArgument("ForEach requires items to be Identifiable or an id keyPath.")
         }
 
         let resolvedValue = try resolveKeyPath(keyPath, on: value)
@@ -145,6 +148,20 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
         }
 
         return current
+    }
+
+    private static func makeIdentifiableIdentifier(for value: RuntimeValue) throws -> AnyHashable? {
+        guard case .instance(let instance) = value else {
+            return nil
+        }
+        guard instance.type?.conforms(to: "Identifiable") == true else {
+            return nil
+        }
+        guard let idValue = try? instance.get("id"),
+              let hashable = idValue.asAnyHashable else {
+            throw RuntimeError.invalidArgument("ForEach data elements conforming to Identifiable must provide a Hashable 'id'.")
+        }
+        return hashable
     }
 
     private static func propertyValue(

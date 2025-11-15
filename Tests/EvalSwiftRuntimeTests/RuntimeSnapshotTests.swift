@@ -576,6 +576,44 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersForEachWithIdentifiableStructs() throws {
+        let source = """
+        struct TodoItem: Identifiable {
+            var id: UUID = UUID()
+            var label: String = ""
+        }
+
+        let todos = [
+            TodoItem(label: "Identifiable One"),
+            TodoItem(label: "Identifiable Two")
+        ]
+
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(todos) { todo in
+                Text(todo.label)
+            }
+        }
+        """
+
+        struct SnapshotTodo: Identifiable {
+            var id: UUID = UUID()
+            var label: String = ""
+        }
+
+        let todos = [
+            SnapshotTodo(label: "Identifiable One"),
+            SnapshotTodo(label: "Identifiable Two")
+        ]
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(todos) { todo in
+                    Text(todo.label)
+                }
+            }
+        }
+    }
+
     @Test func rendersForEachUsingShorthandParameters() throws {
         #expectSnapshot(
             VStack {
@@ -593,6 +631,18 @@ struct RuntimeSnapshotTests {
                     let value = $0
                     VStack {
                         Text("Value \(value)")
+                    }
+                }
+            }
+        )
+    }
+
+    @Test func rendersForEachUsingParameters() throws {
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<2) { item in
+                    VStack {
+                        Text("Value \(item)")
                     }
                 }
             }
