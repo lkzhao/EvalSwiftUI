@@ -148,119 +148,12 @@ struct RuntimeSnapshotTests {
         )
     }
 
-//    @Test func rendersShapesAndSpacerBuilders() throws {
-//        #expectSnapshot(
-//            HStack(spacing: 0) {
-//                Circle()
-//                    .foregroundStyle(.mint)
-//                    .frame(width: 20, height: 20)
-//                Spacer(minLength: 12)
-//                Rectangle()
-//                    .foregroundStyle(.pink)
-//                    .frame(width: 16, height: 10)
-//                RoundedRectangle(cornerRadius: 4)
-//                    .foregroundStyle(.purple)
-//                    .frame(width: 18, height: 12)
-//            }
-//            .frame(width: 120, height: 24)
-//        )
-//    }
-//
-//    @Test func rendersZStackWithAlignment() throws {
-//        #expectSnapshot(
-//            ZStack(alignment: .bottomTrailing) {
-//                Rectangle()
-//                    .foregroundStyle(.blue)
-//                    .frame(width: 80, height: 40)
-//                Text("SALE")
-//                    .font(.caption)
-//                    .foregroundStyle(.white)
-//                    .padding(4)
-//                    .background(.red)
-//                    .cornerRadius(6)
-//                    .padding(4)
-//            }
-//        )
-//    }
-//
-//    @Test func rendersScrollViewWithHorizontalAxis() throws {
-//        #expectSnapshot(
-//            ScrollView(.horizontal, showsIndicators: false) {
-//                HStack(spacing: 8) {
-//                    ForEach(0..<3) { index in
-//                        Text("Card \(index)")
-//                            .padding(6)
-//                            .background(.teal)
-//                            .cornerRadius(8)
-//                    }
-//                }
-//                .padding(4)
-//            }
-//        )
-//    }
-//
-//    @Test func rendersToggleWithStringLabel() throws {
-//        let source = """
-//        Toggle("Notifications", isOn: true)
-//            .padding()
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            Toggle("Notifications", isOn: .constant(true))
-//                .padding()
-//        }
-//    }
-//
-//    @Test func rendersToggleWithCustomLabelClosure() throws {
-//        let source = """
-//        Toggle(isOn: false) {
-//            HStack(spacing: 6) {
-//                Circle()
-//                    .frame(width: 10, height: 10)
-//                Text("Silent Mode")
-//            }
-//        }
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            Toggle(isOn: .constant(false)) {
-//                HStack(spacing: 6) {
-//                    Circle()
-//                        .frame(width: 10, height: 10)
-//                    Text("Silent Mode")
-//                }
-//            }
-//        }
-//    }
-//
-//    @Test func rendersPaddingModifier() throws {
-//        #expectSnapshot(
-//            Text("Padded")
-//                .padding(12)
-//        )
-//    }
-//
-//    @Test func rendersViewReturnedFromGlobalFunction() throws {
-//        let source = """
-//        var globalText: String = ""
-//
-//        func globalFunction(value: Int) -> Int {
-//            return value
-//        }
-//
-//        func globalFunctionProducingView(value: Int) -> some View {
-//            Text("value is \\(value)")
-//        }
-//
-//        globalFunctionProducingView(value: globalFunction(value: 5))
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            VStack {
-//                Text("value is 5")
-//            }
-//        }
-//    }
+    @Test func appliesForegroundStyleModifier() throws {
+        #expectSnapshot(
+            Text("Tinted")
+                .foregroundStyle(.pink)
+        )
+    }
 
     @Test func rendersImageSystemSymbol() throws {
         #expectSnapshot(
@@ -268,23 +161,6 @@ struct RuntimeSnapshotTests {
         )
     }
 
-//    @Test func rendersCustomModifierBuilder() throws {
-//        let source = """
-//        Text("Badge")
-//            .capsuleBackground()
-//        """
-//
-//        try assertSnapshotsMatch(
-//            source: source,
-//            modifierBuilders: [CapsuleBackgroundModifierBuilder()]
-//        ) {
-//            Text("Badge")
-//                .padding(8)
-//                .background(Color.blue.opacity(0.2))
-//                .clipShape(Capsule())
-//        }
-//    }
-//
     @Test func rendersForEachOverRange() throws {
         #expectSnapshot(
             VStack {
@@ -327,32 +203,32 @@ struct RuntimeSnapshotTests {
             }
         )
     }
-//
-//    @Test func stateMutationTriggersViewRerender() throws {
-//        let source = """
-//        struct CounterView: View {
-//            var count: Int = 0
-//
-//            var body: some View {
-//                Text("Count: \\(count)")
-//            }
-//        }
-//        """
-//
-//        let module = try RuntimeModule(source: source)
-//        let type = try module.type(named: "CounterView")
-//        guard let instance = try type.makeInstance().asInstance else {
-//            throw RuntimeError.invalidArgument("Expected CounterView instance.")
-//        }
-//        let renderer = try RuntimeViewRenderer(instance: instance)
-//
-//        try assertViewMatch(renderer.renderedView, Text("Count: 0"))
-//
-//        try renderer.instance.set("count", value: .int(5))
-//
-//        try assertViewMatch(renderer.renderedView, Text("Count: 5"))
-//    }
-//
+
+    @Test func stateMutationTriggersViewRerender() throws {
+        let source = """
+        struct CounterView: View {
+            var count: Int = 0
+
+            var body: some View {
+                Text("Count: \\(count)")
+            }
+        }
+        """
+
+        let module = try RuntimeModule(source: source)
+        let type = try module.type(named: "CounterView")
+        guard let instance = try type.definitions.first!.build([], type).asInstance else {
+            throw RuntimeError.invalidArgument("Expected CounterView instance.")
+        }
+        let renderer = try RuntimeViewRenderer(instance: instance)
+
+        try assertViewMatch(renderer.renderedView, Text("Count: 0"))
+
+        try renderer.instance.set("count", value: .int(5))
+
+        try assertViewMatch(renderer.renderedView, Text("Count: 5"))
+    }
+
 //    @Test func appliesFontOpacityAndForegroundStyleModifiers() throws {
 //        #expectSnapshot(
 //            Text("Styled")

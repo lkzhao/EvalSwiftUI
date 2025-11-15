@@ -63,6 +63,7 @@ public final class RuntimeModule: RuntimeScope {
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
             FontModifierBuilder(),
+            ForegroundStyleModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
