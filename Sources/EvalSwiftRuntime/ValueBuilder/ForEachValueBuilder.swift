@@ -99,25 +99,10 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
         }
 
         let resolvedValue = try resolveKeyPath(keyPath, on: value)
-        guard let hashable = hashableValue(from: resolvedValue) else {
+        guard let hashable = resolvedValue.asAnyHashable else {
             throw RuntimeError.invalidArgument("ForEach(id:) key path must resolve to a Hashable value.")
         }
         return hashable
-    }
-
-    private static func hashableValue(from value: RuntimeValue) -> AnyHashable? {
-        switch value {
-        case .int(let int):
-            return AnyHashable(int)
-        case .double(let double):
-            return AnyHashable(double)
-        case .string(let string):
-            return AnyHashable(string)
-        case .bool(let bool):
-            return AnyHashable(bool)
-        default:
-            return nil
-        }
     }
 
     private static func resolveKeyPath(
@@ -154,6 +139,8 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
                 }
             case .subscriptIndex(let index):
                 current = try subscriptValue(at: index, from: current)
+            case .subscriptKey(let key):
+                current = try subscriptValue(key: AnyHashable(key), from: current)
             }
         }
 
@@ -184,6 +171,20 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
                 throw RuntimeError.invalidArgument("KeyPath subscript index \(index) is out of bounds.")
             }
             return values[index]
+        case .dictionary(let dictionary):
+            return dictionary[AnyHashable(index)] ?? .void
+        default:
+            throw RuntimeError.invalidArgument("Cannot subscript \(value.valueType).")
+        }
+    }
+
+    private static func subscriptValue(
+        key: AnyHashable,
+        from value: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch value {
+        case .dictionary(let dictionary):
+            return dictionary[key] ?? .void
         default:
             throw RuntimeError.invalidArgument("Cannot subscript \(value.valueType).")
         }

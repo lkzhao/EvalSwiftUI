@@ -1,4 +1,5 @@
 import Testing
+@testable import EvalSwiftIR
 @testable import EvalSwiftRuntime
 
 struct ExpressionEvaluatorTests {
@@ -274,5 +275,31 @@ struct ExpressionEvaluatorTests {
 
         #expect(once == 6)
         #expect(twice == 5)
+    }
+
+    @Test func supportsDictionarySubscripts() throws {
+        let module = try RuntimeModule(ir: ModuleIR(statements: []))
+        let storage: [AnyHashable: RuntimeValue] = [
+            AnyHashable("primary"): .string("Alpha"),
+            AnyHashable(2): .int(20)
+        ]
+        module.define("lookup", value: .dictionary(storage))
+
+        let stringLookup = ExprIR.`subscript`(
+            base: .identifier("lookup"),
+            arguments: [FunctionCallArgumentIR(label: nil, value: .string("primary"))]
+        )
+        guard case .string(let primaryValue)? = try ExpressionEvaluator.evaluate(stringLookup, scope: module) else {
+            throw TestFailure.expected("Expected dictionary lookup to return stored string value.")
+        }
+        #expect(primaryValue == "Alpha")
+
+        let missingLookup = ExprIR.`subscript`(
+            base: .identifier("lookup"),
+            arguments: [FunctionCallArgumentIR(label: nil, value: .string("missing"))]
+        )
+        guard case .void? = try ExpressionEvaluator.evaluate(missingLookup, scope: module) else {
+            throw TestFailure.expected("Missing dictionary keys should evaluate to void.")
+        }
     }
 }

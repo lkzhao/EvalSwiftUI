@@ -417,10 +417,10 @@ public struct SwiftIRParser {
                     return nil
                 }
             case .subscript(let subscriptComponent):
-                guard let index = makeKeyPathSubscriptIndex(from: subscriptComponent) else {
+                guard let component = makeKeyPathSubscriptComponent(from: subscriptComponent) else {
                     return nil
                 }
-                components.append(.subscriptIndex(index))
+                components.append(component)
             default:
                 return nil
             }
@@ -437,18 +437,43 @@ public struct SwiftIRParser {
         return .relative(components)
     }
 
-    private func makeKeyPathSubscriptIndex(
+    private func makeKeyPathSubscriptComponent(
         from component: KeyPathSubscriptComponentSyntax
-    ) -> Int? {
+    ) -> KeyPathIR.Component? {
         guard component.arguments.count == 1,
               let argument = component.arguments.first,
-              argument.label == nil,
-              let literal = argument.expression.as(IntegerLiteralExprSyntax.self) else {
+              argument.label == nil else {
             return nil
         }
 
-        let raw = literal.literal.text.filter { $0 != "_" }
-        return Int(raw)
+        if let literal = argument.expression.as(IntegerLiteralExprSyntax.self) {
+            let raw = literal.literal.text.filter { $0 != "_" }
+            guard let index = Int(raw) else {
+                return nil
+            }
+            return .subscriptIndex(index)
+        }
+
+        if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self),
+           let value = makeStringLiteral(from: stringLiteral) {
+            return .subscriptKey(value)
+        }
+
+        return nil
+    }
+
+    private func makeStringLiteral(from literal: StringLiteralExprSyntax) -> String? {
+        var result = ""
+
+        for segment in literal.segments {
+            if let stringSegment = segment.as(StringSegmentSyntax.self) {
+                result.append(stringSegment.content.text)
+            } else {
+                return nil
+            }
+        }
+
+        return result
     }
 
     private func makeClosureFunction(_ closure: ClosureExprSyntax) -> FunctionIR {

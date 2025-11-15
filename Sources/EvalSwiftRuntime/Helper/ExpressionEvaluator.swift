@@ -226,6 +226,14 @@ struct ExpressionEvaluator {
                 throw RuntimeError.invalidArgument("Array index \(index) out of range.")
             }
             return values[index]
+        case .dictionary(let dictionary):
+            guard arguments.count == 1 else {
+                throw RuntimeError.invalidArgument("Dictionary subscript expects exactly one argument.")
+            }
+            guard let key = arguments.first?.asAnyHashable else {
+                throw RuntimeError.invalidArgument("Dictionary subscript requires a Hashable key.")
+            }
+            return dictionary[key] ?? .void
         default:
             throw RuntimeError.invalidArgument("Subscript is not supported for \(base.valueType).")
         }

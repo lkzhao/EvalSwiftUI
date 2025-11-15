@@ -72,6 +72,7 @@ public enum KeyPathIR: Hashable {
         case optionalChain
         case forceUnwrap
         case subscriptIndex(Int)
+        case subscriptKey(String)
     }
 }
 

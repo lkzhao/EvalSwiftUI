@@ -12,6 +12,7 @@ public enum RuntimeValue {
     case function(RuntimeFunction)
     case instance(RuntimeInstance)
     case array([RuntimeValue])
+    case dictionary([AnyHashable: RuntimeValue])
     case binding(RuntimeBinding)
     case void
     case swiftUI(SwiftUIRuntimeValue)
@@ -36,6 +37,8 @@ extension RuntimeValue: CustomStringConvertible {
             return String(describing: instance)
         case .array(let values):
             return values.map { "\($0)" }.joined(separator: ",")
+        case .dictionary:
+            return "<Dictionary>"
         case .function:
             return "<Function>"
         case .binding:
@@ -107,6 +110,15 @@ extension RuntimeValue {
     var asArray: [RuntimeValue]? {
         switch self {
         case .array(let values):
+            return values
+        default:
+            return nil
+        }
+    }
+
+    var asDictionary: [AnyHashable: RuntimeValue]? {
+        switch self {
+        case .dictionary(let values):
             return values
         default:
             return nil
@@ -237,6 +249,7 @@ extension RuntimeValue {
         case type
         case instance
         case array
+        case dictionary
         case function([RuntimeParameter])
         case binding
         case void
@@ -260,6 +273,8 @@ extension RuntimeValue {
                 "Instance"
             case .array:
                 "Array"
+            case .dictionary:
+                "Dictionary"
             case .function(let params):
                 "(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", "))) -> Unknown"
             case .binding:
@@ -290,6 +305,8 @@ extension RuntimeValue {
             return .instance
         case .array:
             return .array
+        case .dictionary:
+            return .dictionary
         case .function(let function):
             return .function(function.parameters)
         case .binding:
@@ -298,6 +315,23 @@ extension RuntimeValue {
             return .void
         case .swiftUI:
             return .swiftUI
+        }
+    }
+}
+
+extension RuntimeValue {
+    var asAnyHashable: AnyHashable? {
+        switch self {
+        case .int(let value):
+            return AnyHashable(value)
+        case .double(let number):
+            return AnyHashable(number)
+        case .string(let string):
+            return AnyHashable(string)
+        case .bool(let bool):
+            return AnyHashable(bool)
+        default:
+            return nil
         }
     }
 }
