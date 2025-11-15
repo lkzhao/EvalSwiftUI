@@ -192,6 +192,17 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesColorOpacityModifier() throws {
+        #expectSnapshot(
+            Color.red.opacity(0.4)
+        )
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 12)
+                .frame(width: 48, height: 24)
+                .foregroundStyle(Color.blue.opacity(0.3))
+        )
+    }
+
     @Test func rendersRoundedRectangleWithCornerRadius() throws {
         #expectSnapshot(
             RoundedRectangle(cornerRadius: 16)
@@ -204,7 +215,7 @@ struct RuntimeSnapshotTests {
         #expectSnapshot(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .frame(width: 60, height: 60)
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(Color.orange.opacity(0.7))
         )
     }
 
@@ -337,7 +348,7 @@ private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
 
     var definitions: [RuntimeModifierDefinition] {
         [
-            RuntimeModifierDefinition(parameters: []) { view, _, _ in
+            RuntimeViewModifierDefinition(parameters: []) { view, _, _ in
                 AnyView(
                     view
                         .padding(8)

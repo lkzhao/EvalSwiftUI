@@ -6,15 +6,21 @@ public struct OpacityModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeValueModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "value", type: "Double")
                 ],
-                apply: { view, arguments, _ in
+                apply: { base, arguments, _ in
                     guard let value = arguments.value(named: "value")?.asDouble else {
                         throw RuntimeError.invalidArgument("opacity expects a numeric value.")
                     }
-                    return AnyView(view.opacity(value))
+                    if let color = base.asColor {
+                        return .swiftUI(.color(color.opacity(value)))
+                    }
+                    if let view = base.asSwiftUIView {
+                        return .swiftUI(.view(AnyView(view.opacity(value))))
+                    }
+                    throw RuntimeError.invalidArgument("opacity modifier requires a SwiftUI view or Color.")
                 }
             )
         ]

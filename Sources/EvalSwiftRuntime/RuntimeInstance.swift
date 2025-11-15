@@ -41,7 +41,16 @@ extension RuntimeInstance {
                 throw RuntimeError.invalidArgument("Modifier can only apply to View instance")
             }
             let view = try wrapped.makeSwiftUIView()
-            return try definition.apply(view, arguments, self)
+            let baseValue = RuntimeValue.swiftUI(.view(view))
+            let modifiedValue = try definition.apply(
+                to: baseValue,
+                arguments: arguments,
+                scope: self
+            )
+            guard let modifiedView = modifiedValue.asSwiftUIView else {
+                throw RuntimeError.invalidArgument("Modifier did not return a SwiftUI view.")
+            }
+            return modifiedView
         }
     }
 }

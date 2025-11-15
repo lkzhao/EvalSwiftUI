@@ -6,7 +6,7 @@ public struct BackgroundModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "content", type: "Any")
                 ],

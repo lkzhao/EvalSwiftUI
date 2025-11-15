@@ -6,13 +6,13 @@ public struct PaddingModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [],
                 apply: { view, _, _ in
                     AnyView(view.padding())
                 }
             ),
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "value", type: "Double")
                 ],

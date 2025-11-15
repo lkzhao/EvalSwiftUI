@@ -6,7 +6,7 @@ public struct ImageScaleModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "scale", type: "Image.Scale")
                 ],

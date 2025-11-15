@@ -6,7 +6,7 @@ public struct FrameModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(name: "width", type: "Double", defaultValue: .void),
                     RuntimeParameter(name: "height", type: "Double", defaultValue: .void),
@@ -27,7 +27,7 @@ public struct FrameModifierBuilder: RuntimeModifierBuilder {
                     )
                 }
             ),
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(name: "minWidth", type: "Double", defaultValue: .void),
                     RuntimeParameter(name: "idealWidth", type: "Double", defaultValue: .void),

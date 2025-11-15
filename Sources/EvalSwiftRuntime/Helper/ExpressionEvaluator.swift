@@ -112,12 +112,11 @@ struct ExpressionEvaluator {
                     return .instance(modifiedInstance)
                 }
 
-                if let baseView = baseValue.asSwiftUIView {
-                    let modifiedView = try definition.apply(baseView, evaluatedArguments, scope)
-                    return .swiftUI(.view(modifiedView))
-                }
-
-                throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
+                return try definition.apply(
+                    to: baseValue,
+                    arguments: evaluatedArguments,
+                    scope: scope
+                )
             }
 
             if case .identifier(let typeName) = callee,

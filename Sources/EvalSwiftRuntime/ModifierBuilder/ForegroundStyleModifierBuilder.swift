@@ -6,7 +6,7 @@ public struct ForegroundStyleModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "style", type: "Color")
                 ],

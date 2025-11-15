@@ -6,7 +6,7 @@ public struct FontModifierBuilder: RuntimeModifierBuilder {
 
     public init() {
         definitions = [
-            RuntimeModifierDefinition(
+            RuntimeViewModifierDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "font", type: "Font")
                 ],
