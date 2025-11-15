@@ -42,6 +42,8 @@ public final class RuntimeModule: RuntimeScope {
             AlignmentValueBuilder(),
             HorizontalAlignmentValueBuilder(),
             VerticalAlignmentValueBuilder(),
+            RoundedCornerStyleValueBuilder(),
+            RoundedRectangleValueBuilder(),
         ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))

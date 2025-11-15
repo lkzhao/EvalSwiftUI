@@ -192,6 +192,22 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersRoundedRectangleWithCornerRadius() throws {
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 16)
+                .frame(width: 80, height: 40)
+                .foregroundStyle(.mint)
+        )
+    }
+
+    @Test func rendersRoundedRectangleWithContinuousStyle() throws {
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .frame(width: 60, height: 60)
+                .foregroundStyle(Color.orange)
+        )
+    }
+
     @Test func appliesImageScaleModifier() throws {
         #expectSnapshot(
             Image(systemName: "globe")
