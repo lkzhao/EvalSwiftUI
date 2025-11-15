@@ -9,40 +9,21 @@ public final class RuntimeModule: RuntimeScope {
 
     public convenience init(
         source: String,
-        viewBuilders: [RuntimeValueBuilder] = [],
+        valueBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) throws {
         try self.init(
             ir: SwiftIRParser().parseModule(source: source),
-            viewBuilders: viewBuilders,
+            valueBuilders: valueBuilders,
             modifierBuilders: modifierBuilders
         )
     }
 
     public init(
         ir: ModuleIR,
-        viewBuilders: [RuntimeValueBuilder] = [],
+        valueBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) throws {
-//        let builders: [RuntimeViewBuilder] = [
-//            TextRuntimeViewBuilder(),
-//            ImageRuntimeViewBuilder(),
-//            VStackRuntimeViewBuilder(),
-//            HStackRuntimeViewBuilder(),
-//            ZStackViewBuilder(),
-//            ForEachRuntimeViewBuilder(),
-//            ButtonViewBuilder(),
-//            CircleViewBuilder(),
-//            RectangleViewBuilder(),
-//            RoundedRectangleViewBuilder(),
-//            ScrollViewViewBuilder(),
-//            SpacerViewBuilder(),
-//            ToggleViewBuilder(),
-//        ] + viewBuilders
-//        for builder in builders {
-//            define(builder.typeName, value: .type(RuntimeType(builder: builder, parent: self)))
-//        }
-//
 //        let modifiers: [RuntimeModifierBuilder] = [
 //            PaddingModifierBuilder(),
 //            BackgroundModifierBuilder(),
@@ -70,7 +51,7 @@ public final class RuntimeModule: RuntimeScope {
             TextValueBuilder(),
             ButtonValueBuilder(),
             VStackValueBuilder(),
-        ]
+        ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
         }

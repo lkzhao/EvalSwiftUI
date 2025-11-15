@@ -80,152 +80,27 @@ struct RuntimeSnapshotTests {
         )
     }
 
-//    @Test func wrapsMultipleTopLevelViewsInVStack() throws {
-//        let source = """
-//        Text("First")
-//        Text("Second")
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            VStack {
-//                Text("First")
-//                Text("Second")
-//            }
-//        }
-//    }
-//
-//    @Test func rendersTopLevelStructInvocation() throws {
-//        let source = """
-//        struct CountView: View {
-//            var count: Int = 0
-//
-//            var body: some View {
-//                VStack(spacing: 4) {
-//                    Text("Count: \\(count)")
-//                }
-//            }
-//        }
-//
-//        CountView()
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            VStack(spacing: 4) {
-//                Text("Count: 0")
-//            }
-//        }
-//    }
-//
-//    @Test func rendersTextSnapshotMatchesExpectedView() throws {
-//        #expectSnapshot(
-//            Text("Runtime Snapshot")
-//        )
-//    }
-//
-//    @Test func rendersViewDefinitionWithStoredProperty() throws {
-//        let source = """
-//        struct GreetingView: View {
-//            var message: String = "Hello Runtime"
-//
-//            var body: some View {
-//                Text(message)
-//            }
-//        }
-//        """
-//
-//        try assertSnapshotsMatch(source: source, viewName: "GreetingView") {
-//            Text("Hello Runtime")
-//        }
-//    }
-//
-//    @Test func rendersVStackCollectingChildText() throws {
-//        let source = """
-//        struct StackView: View {
-//            var body: some View {
-//                VStack(spacing: 6) {
-//                    Text("First")
-//                    Text("Second")
-//                }
-//            }
-//        }
-//        """
-//
-//        try assertSnapshotsMatch(source: source, viewName: "StackView") {
-//            VStack(spacing: 6) {
-//                Text("First")
-//                Text("Second")
-//            }
-//        }
-//    }
-//
-//    @Test func rendersVStackSpacingArgument() throws {
-//        let source = """
-//        struct SpacingView: View {
-//            var body: some View {
-//                VStack(spacing: 16) {
-//                    Text("Top")
-//                    Text("Bottom")
-//                }
-//            }
-//        }
-//        """
-//
-//        try assertSnapshotsMatch(source: source, viewName: "SpacingView") {
-//            VStack(spacing: 16) {
-//                Text("Top")
-//                Text("Bottom")
-//            }
-//        }
-//    }
-//
-//    @Test func rendersHStackSpacingArgument() throws {
-//        let source = """
-//        struct RowView: View {
-//            var body: some View {
-//                HStack(spacing: 12) {
-//                    Text("Leading")
-//                    Text("Trailing")
-//                }
-//            }
-//        }
-//
-//        RowView()
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            HStack(spacing: 12) {
-//                Text("Leading")
-//                Text("Trailing")
-//            }
-//        }
-//    }
-//
-//    @Test func rendersNestedVStacks() throws {
-//        let source = """
-//        struct NestedStackView: View {
-//            var body: some View {
-//                VStack(spacing: 8) {
-//                    Text("Header")
-//                    VStack(spacing: 4) {
-//                        Text("Row 1")
-//                        Text("Row 2")
-//                    }
-//                }
-//            }
-//        }
-//        """
-//
-//        try assertSnapshotsMatch(source: source, viewName: "NestedStackView") {
-//            VStack(spacing: 8) {
-//                Text("Header")
-//                VStack(spacing: 4) {
-//                    Text("Row 1")
-//                    Text("Row 2")
-//                }
-//            }
-//        }
-//    }
-//
+    @Test func rendersVStackSpacingArgument() throws {
+        #expectSnapshot(
+            VStack(spacing: 16) {
+                Text("Top")
+                Text("Bottom")
+            }
+        )
+    }
+
+    @Test func rendersNestedVStacks() throws {
+        #expectSnapshot(
+            VStack(spacing: 8) {
+                Text("Header")
+                VStack(spacing: 4) {
+                    Text("Row 1")
+                    Text("Row 2")
+                }
+            }
+        )
+    }
+
 //    @Test func rendersShapesAndSpacerBuilders() throws {
 //        #expectSnapshot(
 //            HStack(spacing: 0) {
@@ -339,13 +214,13 @@ struct RuntimeSnapshotTests {
 //            }
 //        }
 //    }
-//
-//    @Test func rendersImageSystemSymbol() throws {
-//        #expectSnapshot(
-//            Image(systemName: "globe")
-//        )
-//    }
-//
+
+    @Test func rendersImageSystemSymbol() throws {
+        #expectSnapshot(
+            Image(systemName: "globe")
+        )
+    }
+
 //    @Test func rendersCustomModifierBuilder() throws {
 //        let source = """
 //        Text("Badge")
