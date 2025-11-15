@@ -87,19 +87,14 @@ struct ExpressionEvaluator {
                 return try scope.get(name)
             }
         case .call(let callee, let arguments):
-            var lastError: Error?
+            // TODO: Make this part integrated with the next `if let calleeValue = try evaluate(callee, scope: scope) {` part
             if case .member(let baseExpr, let name) = callee {
-                guard let baseValue = try evaluate(baseExpr, scope: scope) else {
-                    throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
-                }
-                if case .type(let type) = baseValue, case .type(let subType) = try type.get(name) {
-                    return try makeValue(type: subType, arguments: arguments, scope: scope)
-                }
                 if let modifierBuilder = scope.module?.modifierBuilder(named: name) {
                     guard let baseValue = try evaluate(baseExpr, scope: scope) else {
                         throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
                     }
 
+                    var lastError: Error?
                     var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
                     for definition in modifierBuilder.definitions {
                         do {
@@ -136,15 +131,13 @@ struct ExpressionEvaluator {
                 }
             }
 
-            if case .identifier(let typeName) = callee,
-                let type = try? scope.type(named: typeName) {
-                return try makeValue(type: type, arguments: arguments, scope: scope)
-            }
-
-            if let calleeValue = try evaluate(callee, scope: scope),
-                      case .function(let function) = calleeValue {
-                let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: function.parameters, arguments: arguments, scope: scope)
-                return try function.invoke(arguments: evaluatedArguments)
+            if let calleeValue = try evaluate(callee, scope: scope) {
+                if case .function(let function) = calleeValue {
+                    let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: function.parameters, arguments: arguments, scope: scope)
+                    return try function.invoke(arguments: evaluatedArguments)
+                } else if case .type(let type) = calleeValue {
+                    return try makeValue(type: type, arguments: arguments, scope: scope)
+                }
             }
 
             throw RuntimeError.unsupportedExpression("No matching call for \(callee) arguments: \(arguments)")
