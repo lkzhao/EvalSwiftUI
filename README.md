@@ -1,10 +1,10 @@
 # EvalSwiftUI
 
-EvalSwiftUI is a lightweight Swift package that parses SwiftUI source strings at runtime, builds a typed intermediate representation, and renders the resulting views. The design focuses on extensibility (via registries for builders/modifiers) and high test coverage to make iterative SwiftUI experiments safe.
+EvalSwiftUI is a lightweight Swift package that parses SwiftUI source strings at runtime, builds a typed intermediate representation, and renders the resulting views.
 
 ## Language Scope
 
-EvalSwiftUI intentionally implements a simplified SwiftUI-like language. It interprets a subset of Swift syntax (expressions, closures, inline `struct View` declarations, and basic state) and only knows about a curated set of view constructors and modifiers. Advanced Swift features—such as generics, result builders, async/await, custom property wrappers, or the full SwiftUI runtime—are out of scope unless you provide custom builders through the registries. Keep this in mind when pasting SwiftUI samples: if a construct is missing from the lists below, you will need to stub or rework it before evaluation will succeed.
+EvalSwiftUI intentionally implements a simplified SwiftUI-like language. It interprets a subset of Swift syntax (expressions, closures, inline `struct View` declarations, and basic state) and only knows about a curated set of view constructors and modifiers. Advanced Swift features—such as generics, result builders, async/await, custom property wrappers, or the full SwiftUI runtime—are out of scope unless you provide custom builders through the registries. 
 
 ## Getting Started
 
