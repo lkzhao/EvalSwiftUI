@@ -8,7 +8,7 @@ public struct GradientValueBuilder: RuntimeValueBuilder {
         definitions = [
             RuntimeBuilderDefinition(
                 parameters: [
-                    RuntimeParameter(name: "colors", type: "[Color]")
+                    RuntimeParameter(name: "colors", type: "Color")
                 ],
                 build: { arguments, _ in
                     let colors = try Self.resolveColors(from: arguments.value(named: "colors"))
@@ -17,7 +17,7 @@ public struct GradientValueBuilder: RuntimeValueBuilder {
             ),
             RuntimeBuilderDefinition(
                 parameters: [
-                    RuntimeParameter(name: "stops", type: "[Gradient.Stop]")
+                    RuntimeParameter(name: "stops", type: "Gradient.Stop")
                 ],
                 build: { arguments, _ in
                     let stops = try Self.resolveStops(from: arguments.value(named: "stops"))
