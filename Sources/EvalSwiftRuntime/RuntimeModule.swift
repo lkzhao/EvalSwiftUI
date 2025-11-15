@@ -51,6 +51,7 @@ public final class RuntimeModule: RuntimeScope {
             TextValueBuilder(),
             ButtonValueBuilder(),
             VStackValueBuilder(),
+            ForEachValueBuilder(),
         ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))

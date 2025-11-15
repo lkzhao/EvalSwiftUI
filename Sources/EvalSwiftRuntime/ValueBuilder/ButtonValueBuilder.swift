@@ -74,9 +74,3 @@ public struct ButtonValueBuilder: RuntimeValueBuilder {
         return AnyView(EmptyView())
     }
 }
-
-private extension Array where Element == RuntimeArgument {
-    func value(named name: String) -> RuntimeValue? {
-        first(where: { $0.name == name })?.value
-    }
-}

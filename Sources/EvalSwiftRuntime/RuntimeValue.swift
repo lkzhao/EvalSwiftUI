@@ -61,6 +61,11 @@ extension RuntimeValue {
         }
     }
 
+    var asKeyPath: RuntimeKeyPath? {
+        guard case .keyPath(let keyPath) = self else { return nil }
+        return keyPath
+    }
+
     var asDouble: Double? {
         switch self {
         case .int(let value):

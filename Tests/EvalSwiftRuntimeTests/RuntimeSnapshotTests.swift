@@ -238,48 +238,48 @@ struct RuntimeSnapshotTests {
 //        }
 //    }
 //
-//    @Test func rendersForEachOverRange() throws {
-//        #expectSnapshot(
-//            VStack {
-//                ForEach(0..<3) { index in
-//                    Text("Row \(index)")
-//                }
-//            }
-//        )
-//    }
-//
-//    @Test func rendersForEachWithExplicitID() throws {
-//        #expectSnapshot(
-//            VStack {
-//                ForEach(["Alpha", "Beta", "Gamma"], id: \.self) { item in
-//                    Text(item)
-//                }
-//            }
-//        )
-//    }
-//
-//    @Test func rendersForEachUsingShorthandParameters() throws {
-//        #expectSnapshot(
-//            VStack {
-//                ForEach(0..<2) {
-//                    Text("Value \($0)")
-//                }
-//            }
-//        )
-//    }
-//
-//    @Test func rendersForEachUsingNestedShorthandParameters() throws {
-//        #expectSnapshot(
-//            VStack {
-//                ForEach(0..<2) {
-//                    let value = $0
-//                    VStack {
-//                        Text("Value \(value)")
-//                    }
-//                }
-//            }
-//        )
-//    }
+    @Test func rendersForEachOverRange() throws {
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<3) { index in
+                    Text("Row \(index)")
+                }
+            }
+        )
+    }
+
+    @Test func rendersForEachWithExplicitID() throws {
+        #expectSnapshot(
+            VStack {
+                ForEach(["Alpha", "Beta", "Gamma"], id: \.self) { item in
+                    Text(item)
+                }
+            }
+        )
+    }
+
+    @Test func rendersForEachUsingShorthandParameters() throws {
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<2) {
+                    Text("Value \($0)")
+                }
+            }
+        )
+    }
+
+    @Test func rendersForEachUsingNestedShorthandParameters() throws {
+        #expectSnapshot(
+            VStack {
+                ForEach(0..<2) {
+                    let value = $0
+                    VStack {
+                        Text("Value \(value)")
+                    }
+                }
+            }
+        )
+    }
 //
 //    @Test func stateMutationTriggersViewRerender() throws {
 //        let source = """
