@@ -296,6 +296,16 @@ public struct SwiftIRParser {
             if let trailingClosure = call.trailingClosure {
                 let functionIR = makeClosureFunction(trailingClosure)
                 arguments.append(FunctionCallArgumentIR(label: nil, value: .function(functionIR)))
+
+                for closure in call.additionalTrailingClosures {
+                    let functionIR = makeClosureFunction(closure.closure)
+                    arguments.append(
+                        FunctionCallArgumentIR(
+                            label: closure.label.text,
+                            value: .function(functionIR)
+                        )
+                    )
+                }
             }
 
             return .call(callee: makeExpr(call.calledExpression), arguments: arguments)

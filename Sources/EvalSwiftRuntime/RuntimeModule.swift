@@ -68,9 +68,8 @@ public final class RuntimeModule: RuntimeScope {
             FloatValueBuilder(name: "CGFloat"),
             ImageValueBuilder(),
             TextValueBuilder(),
+            ButtonValueBuilder(),
             VStackValueBuilder(),
-//            ColorValueType(),
-//            ImageValueType(),
         ]
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))

@@ -62,6 +62,24 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersStandaloneButton() throws {
+        #expectSnapshot(
+            Button("Tap") {}
+        )
+    }
+
+    @Test func rendersButtonWithLabelBuilder() throws {
+        #expectSnapshot(
+            Button {
+            } label: {
+                VStack {
+                    Image(systemName: "plus")
+                    Text("Tap")
+                }
+            }
+        )
+    }
+
 //    @Test func wrapsMultipleTopLevelViewsInVStack() throws {
 //        let source = """
 //        Text("First")
