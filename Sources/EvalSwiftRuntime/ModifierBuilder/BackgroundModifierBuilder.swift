@@ -8,22 +8,15 @@ public struct BackgroundModifierBuilder: RuntimeModifierBuilder {
         definitions = [
             RuntimeModifierDefinition(
                 parameters: [
-                    RuntimeParameter(label: "_", name: "content", type: "() -> Content")
+                    RuntimeParameter(label: "_", name: "content", type: "Any")
                 ],
                 apply: { view, arguments, _ in
-                    let backgroundView = try Self.makeBackgroundView(
-                        from: arguments.value(named: "content")?.asFunction
-                    )
-                    return AnyView(view.background(backgroundView))
-                }
-            ),
-            RuntimeModifierDefinition(
-                parameters: [
-                    RuntimeParameter(label: "_", name: "view", type: "Any")
-                ],
-                apply: { view, arguments, _ in
-                    guard let background = arguments.value(named: "view")?.asSwiftUIView else {
-                        throw RuntimeError.invalidArgument("background(_:) expects a SwiftUI view.")
+                    if let function = arguments.value(named: "content")?.asFunction {
+                        let backgroundView = try Self.makeBackgroundView(from: function)
+                        return AnyView(view.background(backgroundView))
+                    }
+                    guard let background = arguments.value(named: "content")?.asSwiftUIView else {
+                        throw RuntimeError.invalidArgument("background expects a SwiftUI view.")
                     }
                     return AnyView(view.background(background))
                 }
@@ -31,10 +24,7 @@ public struct BackgroundModifierBuilder: RuntimeModifierBuilder {
         ]
     }
 
-    private static func makeBackgroundView(from function: RuntimeFunction?) throws -> AnyView {
-        guard let function else {
-            throw RuntimeError.invalidArgument("background requires a view-building closure.")
-        }
+    private static func makeBackgroundView(from function: RuntimeFunction) throws -> AnyView {
         let renderedValues = try function.renderRuntimeViews()
         if let view = renderedValues.compactMap({ $0.asSwiftUIView }).first {
             return view

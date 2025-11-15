@@ -121,6 +121,26 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersColorConstant() throws {
+        #expectSnapshot(
+            Color.blue
+        )
+    }
+
+    @Test func rendersColorFromRGBInitializer() throws {
+        #expectSnapshot(
+            Color(red: 0.2, green: 0.4, blue: 0.6, opacity: 0.8)
+        )
+    }
+
+    @Test func appliesBackgroundColor() throws {
+        #expectSnapshot(
+            Text("Tinted")
+                .padding(4)
+                .background(Color.red)
+        )
+    }
+
 //    @Test func rendersShapesAndSpacerBuilders() throws {
 //        #expectSnapshot(
 //            HStack(spacing: 0) {
