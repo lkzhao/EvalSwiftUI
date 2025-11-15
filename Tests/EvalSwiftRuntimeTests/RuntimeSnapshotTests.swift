@@ -108,6 +108,19 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesBackgroundModifier() throws {
+        #expectSnapshot(
+            Text("Foreground")
+                .padding(6)
+                .background {
+                    VStack(spacing: 0) {
+                        Text("BG")
+                        Text("BG")
+                    }
+                }
+        )
+    }
+
 //    @Test func rendersShapesAndSpacerBuilders() throws {
 //        #expectSnapshot(
 //            HStack(spacing: 0) {

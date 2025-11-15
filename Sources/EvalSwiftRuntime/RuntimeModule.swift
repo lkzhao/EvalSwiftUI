@@ -59,6 +59,7 @@ public final class RuntimeModule: RuntimeScope {
 
         let modifierBuilderList: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
+            BackgroundModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
