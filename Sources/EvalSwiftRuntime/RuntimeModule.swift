@@ -44,6 +44,7 @@ public final class RuntimeModule: RuntimeScope {
             AlignmentValueBuilder(),
             HorizontalAlignmentValueBuilder(),
             VerticalAlignmentValueBuilder(),
+            BlendModeValueBuilder(),
             RoundedCornerStyleValueBuilder(),
             RoundedRectangleValueBuilder(),
             CircleValueBuilder(),
@@ -59,11 +60,15 @@ public final class RuntimeModule: RuntimeScope {
         let modifierBuilderList: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
+            BorderModifierBuilder(),
+            ClipShapeModifierBuilder(),
+            MaskModifierBuilder(),
             OverlayModifierBuilder(),
             FontModifierBuilder(),
             ForegroundStyleModifierBuilder(),
             FrameModifierBuilder(),
             ImageScaleModifierBuilder(),
+            BlendModeModifierBuilder(),
             OpacityModifierBuilder(),
             ShadowModifierBuilder(),
         ] + modifierBuilders

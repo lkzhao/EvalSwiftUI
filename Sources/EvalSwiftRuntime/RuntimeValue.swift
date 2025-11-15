@@ -201,6 +201,11 @@ extension RuntimeValue {
         return scale
     }
 
+    var asBlendMode: BlendMode? {
+        guard case .swiftUI(let value) = self, case .blendMode(let mode) = value else { return nil }
+        return mode
+    }
+
     var asAxisSet: Axis.Set? {
         guard case .swiftUI(let value) = self, case .axisSet(let axis) = value else { return nil }
         return axis
@@ -380,6 +385,7 @@ public enum SwiftUIRuntimeValue {
     case horizontalAlignment(HorizontalAlignment)
     case verticalAlignment(VerticalAlignment)
     case imageScale(Image.Scale)
+    case blendMode(BlendMode)
     case axisSet(Axis.Set)
     case roundedCornerStyle(RoundedCornerStyle)
     case shapeStyle(AnyShapeStyle)
@@ -403,6 +409,8 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<VerticalAlignment>"
         case .imageScale:
             return "<Image.Scale>"
+        case .blendMode:
+            return "<BlendMode>"
         case .axisSet:
             return "<Axis.Set>"
         case .roundedCornerStyle:

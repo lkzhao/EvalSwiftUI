@@ -224,6 +224,58 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesBorderModifier() throws {
+        #expectSnapshot(
+            Text("Bordered")
+                .padding(6)
+                .border(.purple, width: 2)
+        )
+    }
+
+    @Test func appliesClipShapeModifier() throws {
+        #expectSnapshot(
+            Color.blue
+                .frame(width: 60, height: 60)
+                .clipShape(Circle())
+        )
+    }
+
+    @Test func appliesMaskModifier() throws {
+        #expectSnapshot(
+            Text("Masked")
+                .padding(8)
+                .background(Color.orange.opacity(0.7))
+                .mask {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 90, height: 36)
+                }
+        )
+        #expectSnapshot(
+            Color.mint
+                .frame(width: 64, height: 32)
+                .mask(
+                    Text("Hi")
+                        .font(.title3)
+                )
+        )
+    }
+
+    @Test func appliesBlendModeModifier() throws {
+        #expectSnapshot(
+            ZStack {
+                Color.black
+                RoundedRectangle(cornerRadius: 12)
+                    .frame(width: 96, height: 48)
+                    .foregroundStyle(.blue)
+                Text("Glow")
+                    .font(.headline)
+                    .padding(4)
+                    .foregroundStyle(.white)
+                    .blendMode(.plusLighter)
+            }
+        )
+    }
+
     @Test func rendersToggleWithTitleBinding() throws {
         let source = """
         @State var isOn: Bool = true
