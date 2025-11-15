@@ -388,17 +388,14 @@ public struct SwiftIRParser {
     }
 
     private func makeKeyPath(from node: KeyPathExprSyntax) -> KeyPathIR? {
-        guard node.root == nil else {
-            return nil
-        }
-
+        let rootName = node.root?.trimmedDescription
         var components: [KeyPathIR.Component] = []
 
         for component in node.components {
             switch component.component {
             case .property(let property):
                 let name = property.declName.baseName.text
-                if name == "self", components.isEmpty {
+                if name == "self", rootName == nil, components.isEmpty {
                     continue
                 }
                 components.append(.property(name: name))
@@ -412,6 +409,11 @@ public struct SwiftIRParser {
                 default:
                     return nil
                 }
+            case .subscript(let subscriptComponent):
+                guard let index = makeKeyPathSubscriptIndex(from: subscriptComponent) else {
+                    return nil
+                }
+                components.append(.subscriptIndex(index))
             default:
                 return nil
             }
@@ -421,7 +423,25 @@ public struct SwiftIRParser {
             return .self
         }
 
-        return .components(components)
+        if let rootName {
+            return .absolute(root: rootName, components: components)
+        }
+
+        return .relative(components)
+    }
+
+    private func makeKeyPathSubscriptIndex(
+        from component: KeyPathSubscriptComponentSyntax
+    ) -> Int? {
+        guard component.arguments.count == 1,
+              let argument = component.arguments.first,
+              argument.label == nil,
+              let literal = argument.expression.as(IntegerLiteralExprSyntax.self) else {
+            return nil
+        }
+
+        let raw = literal.literal.text.filter { $0 != "_" }
+        return Int(raw)
     }
 
     private func makeClosureFunction(_ closure: ClosureExprSyntax) -> FunctionIR {

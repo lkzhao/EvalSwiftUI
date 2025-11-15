@@ -445,6 +445,92 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersForEachWithExplicitRootKeyPathID() throws {
+        let source = """
+        struct TodoItem {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        let todos = [
+            TodoItem(id: 10, label: "One"),
+            TodoItem(id: 11, label: "Two")
+        ]
+
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(todos, id: \\TodoItem.id) { todo in
+                Text(todo.label)
+            }
+        }
+        """
+
+        struct SnapshotTodo {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        let todos = [
+            SnapshotTodo(id: 10, label: "One"),
+            SnapshotTodo(id: 11, label: "Two")
+        ]
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(todos, id: \.id) { todo in
+                    Text(todo.label)
+                }
+            }
+        }
+    }
+
+    @Test func rendersForEachWithSubscriptKeyPathID() throws {
+        let source = """
+        struct TodoItem {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        struct Group {
+            var items: [TodoItem] = []
+            var title: String = ""
+        }
+
+        let groups = [
+            Group(items: [TodoItem(id: 101, label: "Alpha")], title: "Alpha"),
+            Group(items: [TodoItem(id: 102, label: "Beta")], title: "Beta")
+        ]
+
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(groups, id: \\.items[0].id) { group in
+                Text(group.title)
+            }
+        }
+        """
+
+        struct SnapshotTodo {
+            var id: Int = 0
+            var label: String = ""
+        }
+
+        struct SnapshotGroup {
+            var items: [SnapshotTodo] = []
+            var title: String = ""
+        }
+
+        let groups = [
+            SnapshotGroup(items: [SnapshotTodo(id: 101, label: "Alpha")], title: "Alpha"),
+            SnapshotGroup(items: [SnapshotTodo(id: 102, label: "Beta")], title: "Beta")
+        ]
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(groups, id: \.items[0].id) { group in
+                    Text(group.title)
+                }
+            }
+        }
+    }
+
     @Test func rendersForEachUsingShorthandParameters() throws {
         #expectSnapshot(
             VStack {

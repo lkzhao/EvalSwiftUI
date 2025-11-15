@@ -98,19 +98,11 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
             return AnyHashable(fallbackIndex)
         }
 
-        switch keyPath {
-        case .self:
-            guard let hashable = hashableValue(from: value) else {
-                throw RuntimeError.invalidArgument("ForEach(id: \\.self) requires Hashable elements.")
-            }
-            return hashable
-        case .components:
-            let resolvedValue = try resolveKeyPath(keyPath, on: value)
-            guard let hashable = hashableValue(from: resolvedValue) else {
-                throw RuntimeError.invalidArgument("ForEach(id:) key path must resolve to a Hashable value.")
-            }
-            return hashable
+        let resolvedValue = try resolveKeyPath(keyPath, on: value)
+        guard let hashable = hashableValue(from: resolvedValue) else {
+            throw RuntimeError.invalidArgument("ForEach(id:) key path must resolve to a Hashable value.")
         }
+        return hashable
     }
 
     private static func hashableValue(from value: RuntimeValue) -> AnyHashable? {
@@ -135,24 +127,37 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
         switch keyPath {
         case .self:
             return value
-        case .components(let components):
-            var current = value
-            for component in components {
-                switch component {
-                case .property(let name):
-                    current = try propertyValue(named: name, from: current)
-                case .optionalChain:
-                    guard !isNil(current) else {
-                        return .void
-                    }
-                case .forceUnwrap:
-                    guard !isNil(current) else {
-                        throw RuntimeError.invalidArgument("KeyPath force-unwrapped a nil value.")
-                    }
-                }
-            }
-            return current
+        case .relative(let components):
+            return try apply(components: components, to: value)
+        case .absolute(_, let components):
+            return try apply(components: components, to: value)
         }
+    }
+
+    private static func apply(
+        components: [RuntimeKeyPath.Component],
+        to initialValue: RuntimeValue
+    ) throws -> RuntimeValue {
+        var current = initialValue
+
+        for component in components {
+            switch component {
+            case .property(let name):
+                current = try propertyValue(named: name, from: current)
+            case .optionalChain:
+                guard !isNil(current) else {
+                    return .void
+                }
+            case .forceUnwrap:
+                guard !isNil(current) else {
+                    throw RuntimeError.invalidArgument("KeyPath force-unwrapped a nil value.")
+                }
+            case .subscriptIndex(let index):
+                current = try subscriptValue(at: index, from: current)
+            }
+        }
+
+        return current
     }
 
     private static func propertyValue(
@@ -166,6 +171,21 @@ public struct ForEachValueBuilder: RuntimeValueBuilder {
             return try type.get(name)
         default:
             throw RuntimeError.invalidArgument("Cannot access member '\(name)' on \(value.valueType).")
+        }
+    }
+
+    private static func subscriptValue(
+        at index: Int,
+        from value: RuntimeValue
+    ) throws -> RuntimeValue {
+        switch value {
+        case .array(let values):
+            guard values.indices.contains(index) else {
+                throw RuntimeError.invalidArgument("KeyPath subscript index \(index) is out of bounds.")
+            }
+            return values[index]
+        default:
+            throw RuntimeError.invalidArgument("Cannot subscript \(value.valueType).")
         }
     }
 
