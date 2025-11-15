@@ -12,6 +12,7 @@ public enum RuntimeValue {
     case function(RuntimeFunction)
     case instance(RuntimeInstance)
     case array([RuntimeValue])
+    case binding(RuntimeBinding)
     case void
     case swiftUI(SwiftUIRuntimeValue)
 }
@@ -37,6 +38,8 @@ extension RuntimeValue: CustomStringConvertible {
             return values.map { "\($0)" }.joined(separator: ",")
         case .function:
             return "<Function>"
+        case .binding:
+            return "<Binding>"
         case .void:
             return "void"
         case .swiftUI(let value):
@@ -202,6 +205,11 @@ extension RuntimeValue {
         return instance
     }
 
+    var asBinding: RuntimeBinding? {
+        guard case .binding(let binding) = self else { return nil }
+        return binding
+    }
+
     var asSwiftUIView: AnyView? {
         if let color = asColor {
             return AnyView(color)
@@ -230,6 +238,7 @@ extension RuntimeValue {
         case instance
         case array
         case function([RuntimeParameter])
+        case binding
         case void
         case swiftUI
 
@@ -253,6 +262,8 @@ extension RuntimeValue {
                 "Array"
             case .function(let params):
                 "(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", "))) -> Unknown"
+            case .binding:
+                "Binding"
             case .void:
                 "Void"
             case .swiftUI:
@@ -281,6 +292,8 @@ extension RuntimeValue {
             return .array
         case .function(let function):
             return .function(function.parameters)
+        case .binding:
+            return .binding
         case .void:
             return .void
         case .swiftUI:

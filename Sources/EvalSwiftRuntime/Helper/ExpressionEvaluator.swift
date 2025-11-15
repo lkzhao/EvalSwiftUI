@@ -6,6 +6,10 @@ struct ExpressionEvaluator {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
+            if name.hasPrefix("$") {
+                let identifier = String(name.dropFirst())
+                return try Self.makeBinding(named: identifier, scope: scope)
+            }
             return try scope.get(name)
         case .int(let value):
             return .int(value)
@@ -139,6 +143,18 @@ struct ExpressionEvaluator {
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
+    }
+
+    private static func makeBinding(named name: String, scope: RuntimeScope) throws -> RuntimeValue {
+        let binding = RuntimeBinding(
+            getter: {
+                try scope.get(name)
+            },
+            setter: { newValue in
+                try scope.set(name, value: newValue)
+            }
+        )
+        return .binding(binding)
     }
 
     private static func evaluateUnary(

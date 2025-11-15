@@ -33,6 +33,7 @@ public final class RuntimeModule: RuntimeScope {
             ImageValueBuilder(),
             TextValueBuilder(),
             ButtonValueBuilder(),
+            ToggleValueBuilder(),
             VStackValueBuilder(),
             HStackValueBuilder(),
             ZStackValueBuilder(),

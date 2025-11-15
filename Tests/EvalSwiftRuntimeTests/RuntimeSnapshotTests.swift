@@ -224,6 +224,40 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersToggleWithTitleBinding() throws {
+        let source = """
+        @State var isOn: Bool = true
+
+        Toggle("Enabled", isOn: $isOn)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Toggle("Enabled", isOn: .constant(true))
+        }
+    }
+
+    @Test func rendersToggleWithCustomLabel() throws {
+        let source = """
+        @State var isOn: Bool = false
+
+        Toggle(isOn: $isOn) {
+            HStack {
+                Image(systemName: "checkmark.circle")
+                Text("Custom")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Toggle(isOn: .constant(false)) {
+                HStack {
+                    Image(systemName: "checkmark.circle")
+                    Text("Custom")
+                }
+            }
+        }
+    }
+
     @Test func appliesColorOpacityModifier() throws {
         #expectSnapshot(
             Color.red.opacity(0.4)
