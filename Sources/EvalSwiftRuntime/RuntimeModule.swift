@@ -68,6 +68,7 @@ public final class RuntimeModule: RuntimeScope {
             ForegroundStyleModifierBuilder(),
             FrameModifierBuilder(),
             ImageScaleModifierBuilder(),
+            OpacityModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier

@@ -166,6 +166,13 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesOpacityModifier() throws {
+        #expectSnapshot(
+            Text("Ghost")
+                .opacity(0.35)
+        )
+    }
+
     @Test func appliesFrameModifier() throws {
         #expectSnapshot(
             Text("Boxed")
