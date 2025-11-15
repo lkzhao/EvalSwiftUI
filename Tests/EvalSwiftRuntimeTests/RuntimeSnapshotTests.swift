@@ -224,6 +224,96 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesLinearGradientForegroundStyle() throws {
+        let source = """
+        Text("Linear")
+            .padding(6)
+            .foregroundStyle(
+                LinearGradient(
+                    gradient: Gradient(colors: [.red, .blue]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Linear")
+                .padding(6)
+                .foregroundStyle(
+                    LinearGradient(
+                        gradient: Gradient(colors: [.red, .blue]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
+    }
+
+    @Test func appliesRadialGradientForegroundStyle() throws {
+        let source = """
+        Circle()
+            .frame(width: 72, height: 72)
+            .foregroundStyle(
+                RadialGradient(
+                    gradient: Gradient(stops: [
+                        Gradient.Stop(color: .yellow, location: 0.0),
+                        Gradient.Stop(color: .orange, location: 0.6),
+                        Gradient.Stop(color: .red, location: 1.0)
+                    ]),
+                    center: .center,
+                    startRadius: 6,
+                    endRadius: 36
+                )
+            )
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Circle()
+                .frame(width: 72, height: 72)
+                .foregroundStyle(
+                    RadialGradient(
+                        gradient: Gradient(stops: [
+                            Gradient.Stop(color: .yellow, location: 0.0),
+                            Gradient.Stop(color: .orange, location: 0.6),
+                            Gradient.Stop(color: .red, location: 1.0)
+                        ]),
+                        center: .center,
+                        startRadius: 6,
+                        endRadius: 36
+                    )
+                )
+        }
+    }
+
+    @Test func appliesAngularGradientForegroundStyle() throws {
+        let source = """
+        RoundedRectangle(cornerRadius: 20)
+            .frame(width: 96, height: 48)
+            .foregroundStyle(
+                AngularGradient(
+                    gradient: Gradient(colors: [.pink, .purple, .pink]),
+                    center: .center,
+                    startAngle: Angle(degrees: 0),
+                    endAngle: Angle(degrees: 360)
+                )
+            )
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            RoundedRectangle(cornerRadius: 20)
+                .frame(width: 96, height: 48)
+                .foregroundStyle(
+                    AngularGradient(
+                        gradient: Gradient(colors: [.pink, .purple, .pink]),
+                        center: .center,
+                        startAngle: Angle(degrees: 0),
+                        endAngle: Angle(degrees: 360)
+                    )
+                )
+        }
+    }
+
     @Test func appliesBorderModifier() throws {
         #expectSnapshot(
             Text("Bordered")

@@ -221,6 +221,26 @@ extension RuntimeValue {
         return style
     }
 
+    var asUnitPoint: UnitPoint? {
+        guard case .swiftUI(let value) = self, case .unitPoint(let point) = value else { return nil }
+        return point
+    }
+
+    var asAngle: Angle? {
+        guard case .swiftUI(let value) = self, case .angle(let angle) = value else { return nil }
+        return angle
+    }
+
+    var asGradient: Gradient? {
+        guard case .swiftUI(let value) = self, case .gradient(let gradient) = value else { return nil }
+        return gradient
+    }
+
+    var asGradientStop: Gradient.Stop? {
+        guard case .swiftUI(let value) = self, case .gradientStop(let stop) = value else { return nil }
+        return stop
+    }
+
     var asShapeStyle: AnyShapeStyle? {
         switch self {
         case .swiftUI(let value):
@@ -394,6 +414,10 @@ public enum SwiftUIRuntimeValue {
     case blendMode(BlendMode)
     case axisSet(Axis.Set)
     case roundedCornerStyle(RoundedCornerStyle)
+    case unitPoint(UnitPoint)
+    case angle(Angle)
+    case gradient(Gradient)
+    case gradientStop(Gradient.Stop)
     case shapeStyle(AnyShapeStyle)
     case shape(AnyShape)
 }
@@ -423,6 +447,14 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Axis.Set>"
         case .roundedCornerStyle:
             return "<RoundedCornerStyle>"
+        case .unitPoint:
+            return "<UnitPoint>"
+        case .angle:
+            return "<Angle>"
+        case .gradient:
+            return "<Gradient>"
+        case .gradientStop:
+            return "<Gradient.Stop>"
         case .shapeStyle:
             return "<ShapeStyle>"
         case .shape:
