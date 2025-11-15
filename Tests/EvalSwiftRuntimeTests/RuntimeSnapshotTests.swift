@@ -155,6 +155,25 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesFrameModifier() throws {
+        #expectSnapshot(
+            Text("Boxed")
+                .frame(width: 80, height: 32, alignment: .center)
+        )
+        #expectSnapshot(
+            Text("Boxed")
+                .frame(height: 32, alignment: .center)
+        )
+        #expectSnapshot(
+            Text("Boxed")
+                .frame(height: 32, alignment: .center)
+        )
+        #expectSnapshot(
+            Text("Boxed")
+                .frame(alignment: .center)
+        )
+    }
+
     @Test func rendersImageSystemSymbol() throws {
         #expectSnapshot(
             Image(systemName: "globe")
@@ -228,47 +247,6 @@ struct RuntimeSnapshotTests {
 
         try assertViewMatch(renderer.renderedView, Text("Count: 5"))
     }
-
-//    @Test func appliesFontOpacityAndForegroundStyleModifiers() throws {
-//        #expectSnapshot(
-//            Text("Styled")
-//                .font(.title2)
-//                .foregroundStyle(.pink)
-//                .opacity(0.65)
-//        )
-//    }
-//
-//    @Test func appliesFrameCornerRadiusAndShadowModifiers() throws {
-//        #expectSnapshot(
-//            Image(systemName: "star.fill")
-//                .frame(width: 64, height: 64)
-//                .cornerRadius(12)
-//                .shadow(color: .black, radius: 4, x: 2, y: 3)
-//        )
-//    }
-//
-//    @Test func appliesBackgroundAndOverlayViews() throws {
-//        #expectSnapshot(
-//            Text("Badge")
-//                .padding(8)
-//                .background(.blue)
-//                .overlay(alignment: .topTrailing) {
-//                    Text("NEW")
-//                        .font(.caption)
-//                        .padding(4)
-//                        .background(.white)
-//                        .cornerRadius(8)
-//                }
-//        )
-//    }
-//
-//    @Test func appliesImageScaleModifier() throws {
-//        #expectSnapshot(
-//            Image(systemName: "globe")
-//                .imageScale(Image.Scale.large)
-//                .foregroundStyle(.mint)
-//        )
-//    }
 }
 
 private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {

@@ -54,6 +54,7 @@ public final class RuntimeModule: RuntimeScope {
             ForEachValueBuilder(),
             ColorValueBuilder(),
             FontValueBuilder(),
+            AlignmentValueBuilder(),
         ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
@@ -64,6 +65,7 @@ public final class RuntimeModule: RuntimeScope {
             BackgroundModifierBuilder(),
             FontModifierBuilder(),
             ForegroundStyleModifierBuilder(),
+            FrameModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
