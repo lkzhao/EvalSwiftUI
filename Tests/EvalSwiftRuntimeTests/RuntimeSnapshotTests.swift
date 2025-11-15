@@ -172,6 +172,18 @@ struct RuntimeSnapshotTests {
             Text("Boxed")
                 .frame(alignment: .center)
         )
+        #expectSnapshot(
+            Text("Boxed")
+                .frame(
+                    minWidth: 40,
+                    idealWidth: 80,
+                    maxWidth: 120,
+                    minHeight: 20,
+                    idealHeight: 40,
+                    maxHeight: 60,
+                    alignment: .topLeading
+                )
+        )
     }
 
     @Test func rendersImageSystemSymbol() throws {

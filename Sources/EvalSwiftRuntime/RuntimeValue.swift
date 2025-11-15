@@ -79,6 +79,13 @@ extension RuntimeValue {
         }
     }
 
+    var asCGFloat: CGFloat? {
+        guard let doubleValue = asDouble else {
+            return nil
+        }
+        return CGFloat(doubleValue)
+    }
+
     var asInt: Int? {
         switch self {
         case .int(let value):
