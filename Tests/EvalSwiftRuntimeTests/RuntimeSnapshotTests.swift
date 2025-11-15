@@ -492,17 +492,16 @@ struct RuntimeSnapshotTests {
 
         struct Group {
             var items: [TodoItem] = []
-            var title: String = ""
         }
 
         let groups = [
-            Group(items: [TodoItem(id: 101, label: "Alpha")], title: "Alpha"),
-            Group(items: [TodoItem(id: 102, label: "Beta")], title: "Beta")
+            Group(items: [TodoItem(id: 101, label: "Alpha")]),
+            Group(items: [TodoItem(id: 102, label: "Beta")])
         ]
 
         VStack(alignment: .leading, spacing: 4) {
             ForEach(groups, id: \\.items[0].id) { group in
-                Text(group.title)
+                Text(group.items[0].label)
             }
         }
         """
@@ -514,18 +513,17 @@ struct RuntimeSnapshotTests {
 
         struct SnapshotGroup {
             var items: [SnapshotTodo] = []
-            var title: String = ""
         }
 
         let groups = [
-            SnapshotGroup(items: [SnapshotTodo(id: 101, label: "Alpha")], title: "Alpha"),
-            SnapshotGroup(items: [SnapshotTodo(id: 102, label: "Beta")], title: "Beta")
+            SnapshotGroup(items: [SnapshotTodo(id: 101, label: "Alpha")]),
+            SnapshotGroup(items: [SnapshotTodo(id: 102, label: "Beta")])
         ]
 
         try assertSnapshotsMatch(source: source) {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(groups, id: \.items[0].id) { group in
-                    Text(group.title)
+                    Text(group.items[0].label)
                 }
             }
         }

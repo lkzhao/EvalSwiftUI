@@ -380,6 +380,13 @@ public struct SwiftIRParser {
             return .call(callee: makeExpr(call.calledExpression), arguments: arguments)
         }
 
+        if let subscriptCall = expr.as(SubscriptCallExprSyntax.self) {
+            let arguments = subscriptCall.arguments.map {
+                FunctionCallArgumentIR(label: $0.label?.text, value: makeExpr($0.expression))
+            }
+            return .`subscript`(base: makeExpr(subscriptCall.calledExpression), arguments: arguments)
+        }
+
         if let closure = expr.as(ClosureExprSyntax.self) {
             return .function(makeClosureFunction(closure))
         }

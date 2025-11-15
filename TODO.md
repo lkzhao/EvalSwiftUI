@@ -4,7 +4,8 @@
 - [x] Parse key paths that specify explicit roots or subscript components (e.g. `\Todo.id`, `\.items[0].label`)
     - [x] Extend `KeyPathIR` to capture type roots and subscript arguments
     - [x] Teach the parser to surface those components (detect literal indices, labels)
-    - [x] Add runtime evaluation for subscripts (array/dictionary lookups) and root lookups *(arrays supported; dictionary handling still pending alongside Hashable improvements)*
+    - [x] Add runtime evaluation for array subscripts and root lookups
+    - [ ] Extend subscript evaluation to dictionary lookups once broader Hashable support lands
     - [x] Snapshot tests covering `\.items[0].id`, `\TodoItem.id`, and optional chaining combos
 - [ ] Allow `ForEach(id:)` to accept Hashable values beyond primitives (UUID/custom structs)
     - [ ] Surface `UUID`, `Date`, and other Foundation literals as Hashable runtime values

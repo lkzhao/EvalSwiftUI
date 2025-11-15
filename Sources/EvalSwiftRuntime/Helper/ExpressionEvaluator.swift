@@ -149,6 +149,17 @@ struct ExpressionEvaluator {
             throw RuntimeError.unsupportedExpression("No matching call for \(callee) arguments: \(arguments)")
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
+        case .`subscript`(let baseExpr, let arguments):
+            guard let baseValue = try evaluate(baseExpr, scope: scope) else {
+                throw RuntimeError.unsupportedExpression("Subscript requires a base value.")
+            }
+            let resolvedArguments = try arguments.map { argument -> RuntimeValue in
+                guard let value = try evaluate(argument.value, scope: scope) else {
+                    throw RuntimeError.unsupportedExpression("Subscript argument requires a value.")
+                }
+                return value
+            }
+            return try evaluateSubscript(base: baseValue, arguments: resolvedArguments)
         }
     }
 
@@ -199,6 +210,24 @@ struct ExpressionEvaluator {
                 }
                 return .double(-numeric)
             }
+        }
+    }
+
+    private static func evaluateSubscript(base: RuntimeValue, arguments: [RuntimeValue]) throws -> RuntimeValue {
+        switch base {
+        case .array(let values):
+            guard arguments.count == 1 else {
+                throw RuntimeError.invalidArgument("Array subscript expects exactly one argument.")
+            }
+            guard let index = arguments.first?.asInt else {
+                throw RuntimeError.invalidArgument("Array subscript requires an integer index.")
+            }
+            guard values.indices.contains(index) else {
+                throw RuntimeError.invalidArgument("Array index \(index) out of range.")
+            }
+            return values[index]
+        default:
+            throw RuntimeError.invalidArgument("Subscript is not supported for \(base.valueType).")
         }
     }
 

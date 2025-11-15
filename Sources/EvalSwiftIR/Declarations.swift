@@ -87,6 +87,7 @@ public indirect enum ExprIR: Hashable {
     case stringInterpolation([StringInterpolationSegmentIR])
     case member(base: ExprIR?, name: String)
     case call(callee: ExprIR, arguments: [FunctionCallArgumentIR])
+    case `subscript`(base: ExprIR, arguments: [FunctionCallArgumentIR])
     case function(FunctionIR)
     case definition(DefinitionIR)
     case binary(op: BinaryOperatorIR, lhs: ExprIR, rhs: ExprIR)
