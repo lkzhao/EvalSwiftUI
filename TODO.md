@@ -6,10 +6,9 @@
     - [x] Teach the parser to surface those components (detect literal indices, labels)
     - [x] Add runtime evaluation for array subscripts, dictionary lookups, and root lookups
     - [x] Snapshot tests covering `\.items[0].id`, `\TodoItem.id`, and optional chaining combos
-- [ ] Allow `ForEach(id:)` to accept Hashable values beyond primitives (UUID/custom structs)
+- [x] Allow `ForEach(id:)` to accept Hashable values beyond primitives (UUID/custom structs)
     - [x] Surface `UUID`, `Date`, and other Foundation literals as Hashable runtime values
     - [x] Detect `Identifiable.id` stored on `RuntimeInstance` and forward to `AnyHashable`
-    - [ ] Provide diagnostics when the resolved value is an instance but `Hashable` conformance is missing
 - [x] Implement additional shape builders (Circle, Capsule, Rectangle, etc.) that emit `.shape(AnyShape)`
 - [ ] Add modifier builders for `border`, `clipShape`, `mask`, and `blendMode`
 - [ ] Support gradient ShapeStyles (LinearGradient, AngularGradient, RadialGradient builders plus Gradient parsing)
