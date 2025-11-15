@@ -1,34 +1,34 @@
 
-public struct ModuleIR {
+public struct ModuleIR: Hashable {
     public let statements: [StatementIR]
 }
 
-public struct DefinitionIR {
+public struct DefinitionIR: Hashable {
     public let name: String
     public let inheritedTypes: [String]
     public let bindings: [BindingIR]
     public let staticBindings: [BindingIR]
 }
 
-public struct BindingIR {
+public struct BindingIR: Hashable {
     public let name: String
     public let type: String?
     public let initializer: ExprIR?
 }
 
-public struct FunctionIR {
+public struct FunctionIR: Hashable {
     public let parameters: [FunctionParameterIR]
     public let returnType: String?
     public let body: [StatementIR]
 }
 
-public struct FunctionParameterIR {
+public struct FunctionParameterIR: Hashable {
     public let label: String?
     public let name: String
     public let type: String?
     public let defaultValue: ExprIR?
 
-    public init(label: String?, name: String, type: String?, defaultValue: ExprIR?) {
+    public init(label: String? = nil, name: String, type: String? = nil, defaultValue: ExprIR? = nil) {
         self.label = label
         self.name = name
         self.type = type
@@ -66,7 +66,7 @@ public enum KeyPathIR: Equatable {
     case `self`
 }
 
-public indirect enum ExprIR {
+public indirect enum ExprIR: Hashable {
     case identifier(String)
     case int(Int)
     case double(Double)
@@ -84,17 +84,17 @@ public indirect enum ExprIR {
     case unknown(String)
 }
 
-public enum StringInterpolationSegmentIR {
+public enum StringInterpolationSegmentIR: Hashable {
     case literal(String)
     case expression(ExprIR)
 }
 
-public struct FunctionCallArgumentIR {
+public struct FunctionCallArgumentIR: Hashable {
     public let label: String?
     public let value: ExprIR
 }
 
-public enum StatementIR {
+public enum StatementIR: Hashable {
     case binding(BindingIR)
     case expression(ExprIR)
     case `return`(ReturnIR)
@@ -102,11 +102,11 @@ public enum StatementIR {
     case unhandled(String)
 }
 
-public struct ReturnIR {
+public struct ReturnIR: Hashable {
     public let value: ExprIR?
 }
 
-public struct AssignmentIR {
+public struct AssignmentIR: Hashable {
     public let target: ExprIR
     public let value: ExprIR
 }

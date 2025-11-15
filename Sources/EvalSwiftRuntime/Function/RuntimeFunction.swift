@@ -2,14 +2,14 @@ import EvalSwiftIR
 import SwiftUI
 
 public final class RuntimeFunction: RuntimeScope {
-    public var storage: [String: RuntimeValue] = [:]
+    public var storage: RuntimeScopeStorage = [:]
     public var parent: RuntimeScope?
 
     public enum Content {
         case definition(FunctionIR)
         case builtIn(RuntimeBuiltInFunction)
 
-        var parameters: [FunctionParameterIR] {
+        var parameters: [RuntimeParameter] {
             switch self {
             case .definition(let ir):
                 return ir.parameters
@@ -31,7 +31,7 @@ public final class RuntimeFunction: RuntimeScope {
         self.parent = parent
     }
 
-    public var parameters: [FunctionParameterIR] {
+    public var parameters: [RuntimeParameter] {
         content.parameters
     }
 

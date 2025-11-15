@@ -3,13 +3,12 @@ import SwiftUI
 public final class RuntimeInstance: RuntimeScope {
     enum Content {
         case view
-        case builder(RuntimeViewBuilder, [RuntimeArgument])
         case modifier(RuntimeModifierBuilder, [RuntimeArgument])
     }
     private var content: Content
 
     public var parent: RuntimeScope?
-    public var storage: [String: RuntimeValue] = [:] {
+    public var storage: RuntimeScopeStorage = [:] {
         didSet {
             mutationHandler?()
         }
@@ -19,11 +18,6 @@ public final class RuntimeInstance: RuntimeScope {
     public init(parent: RuntimeScope? = nil) {
         self.parent = parent
         self.content = .view
-    }
-
-    public init(builder: RuntimeViewBuilder, arguments: [RuntimeArgument], parent: RuntimeScope? = nil) {
-        self.parent = parent
-        self.content = .builder(builder, arguments)
     }
 
     public init(modifierBuilder: RuntimeModifierBuilder, arguments: [RuntimeArgument], parent: RuntimeInstance) {
@@ -36,8 +30,6 @@ extension RuntimeInstance {
     @MainActor
     func makeSwiftUIView() throws -> AnyView {
         switch content {
-        case .builder(let builder, let arguments):
-            return try builder.makeSwiftUIView(arguments: arguments, scope: self)
         case .view:
             let renderer = try RuntimeViewRenderer(instance: self)
             return AnyView(RuntimeViewHost(renderer: renderer))

@@ -80,7 +80,7 @@ final class StatementInterpreter {
                     try type.set(name, value: value)
                 default:
                     throw RuntimeError.unsupportedAssignment(
-                        "Cannot assign to member '\(name)' on \(baseValue.valueTypeDescription)"
+                        "Cannot assign to member '\(name)' on \(baseValue.valueType)"
                     )
                 }
             }

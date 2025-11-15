@@ -1,7 +1,10 @@
 import SwiftUI
 
 public protocol RuntimeModifierBuilder {
-    var modifierName: String { get }
+    var name: String { get }
+
+    var parameters: [RuntimeParameter] { get }
+
     @MainActor
     func applyModifier(
         to view: AnyView,

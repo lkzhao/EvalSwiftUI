@@ -144,38 +144,59 @@ extension RuntimeValue {
         if let color = asColor {
             return AnyView(color)
         }
-
-        switch self {
-        case .instance(let instance):
-            return try? instance.makeSwiftUIView()
-        case .function(let function):
-            guard case .instance(let view) = try? function.invoke(),
-                  let swiftUIView = try? view.makeSwiftUIView() else {
-                return nil
-            }
-            return swiftUIView
-        default:
-            return nil
+        if case .swiftUI(let value) = self, case .view(let view) = value {
+            return AnyView(view)
         }
+        if case .instance(let instance) = self {
+            return try? instance.makeSwiftUIView()
+        }
+        return nil
     }
 }
 
 extension RuntimeValue {
-    enum RuntimeValueType: String {
-        case int = "Int"
-        case double = "Double"
-        case string = "String"
-        case bool = "Bool"
-        case keyPath = "KeyPath"
-        case type = "Type"
-        case instance = "Instance"
-        case array = "Array"
-        case function = "Function"
-        case void = "Void"
-        case swiftUI = "SwiftUI"
+    public enum RuntimeValueType: CustomStringConvertible, Hashable {
+        case int
+        case double
+        case string
+        case bool
+        case keyPath
+        case type
+        case instance
+        case array
+        case function([RuntimeParameter])
+        case void
+        case swiftUI
+
+        public var description: String {
+            switch self {
+            case .int:
+                "Int"
+            case .double:
+                "Double"
+            case .string:
+                "String"
+            case .bool:
+                "Bool"
+            case .keyPath:
+                "KeyPath"
+            case .type:
+                "Type"
+            case .instance:
+                "Instance"
+            case .array:
+                "Array"
+            case .function(let params):
+                "Function(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", ")))"
+            case .void:
+                "Void"
+            case .swiftUI:
+                "SwiftUI"
+            }
+        }
     }
 
-    var valueType: RuntimeValueType {
+    public var valueType: RuntimeValueType {
         switch self {
         case .int:
             return .int
@@ -193,21 +214,18 @@ extension RuntimeValue {
             return .instance
         case .array:
             return .array
-        case .function:
-            return .function
+        case .function(let function):
+            return .function(function.parameters)
         case .void:
             return .void
         case .swiftUI:
             return .swiftUI
         }
     }
-
-    var valueTypeDescription: String {
-        valueType.rawValue
-    }
 }
 
 public enum SwiftUIRuntimeValue {
+    case view(any View)
     case color(Color)
     case font(Font)
     case alignment(Alignment)
@@ -219,6 +237,8 @@ public enum SwiftUIRuntimeValue {
 extension SwiftUIRuntimeValue: CustomStringConvertible {
     public var description: String {
         switch self {
+        case .view:
+            return "<View>"
         case .color:
             return "<Color>"
         case .font:

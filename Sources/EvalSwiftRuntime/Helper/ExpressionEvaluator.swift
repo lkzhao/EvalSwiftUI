@@ -74,21 +74,16 @@ struct ExpressionEvaluator {
                     return try type.get(name)
                 default:
                     throw RuntimeError.unsupportedExpression(
-                        "Cannot access member '\(name)' on \(baseValue.valueTypeDescription)"
+                        "Cannot access member '\(name)' on \(baseValue.valueType)"
                     )
                 }
             } else {
                 return try scope.get(name)
             }
         case .call(let callee, let arguments):
-            // TODO: calculate evaluated arguments based on function parameter
-            let evaluatedArguments = try arguments.map { argument in
-                let value = try evaluate(argument.value, scope: scope) ?? .void
-                return RuntimeArgument(label: argument.label, value: value)
-            }
-
             if case .member(let baseExpr, let name) = callee,
                let modifierBuilder = scope.module?.modifierBuilder(named: name) {
+                let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: modifierBuilder.parameters, arguments: arguments, scope: scope)
                 guard let baseValue = try evaluate(baseExpr, scope: scope),
                       case .instance(let instance) = baseValue else {
                     throw RuntimeError.invalidViewArgument("\(name) modifier requires a SwiftUI view as the receiver.")
@@ -97,15 +92,23 @@ struct ExpressionEvaluator {
                 return .instance(modifiedInstance)
             }
 
-            if case .identifier(let identifier) = callee, let value = try? scope.makeInstance(typeName: identifier, arguments: evaluatedArguments) {
-                return value
+            if case .identifier(let typeName) = callee,
+                let type = try? scope.type(named: typeName) {
+                let definitions = type.definitions
+                for definition in definitions {
+                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(parameters: definition.parameters, arguments: arguments, scope: scope) {
+                        return try definition.build(evaluatedArguments, scope)
+                    }
+                }
             }
 
-            guard let calleeValue = try evaluate(callee, scope: scope),
-                  case .function(let function) = calleeValue else {
+            if let calleeValue = try evaluate(callee, scope: scope),
+                      case .function(let function) = calleeValue {
+                let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: function.parameters, arguments: arguments, scope: scope)
+                return try function.invoke(arguments: evaluatedArguments)
+            } else {
                 throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
-            return try function.invoke(arguments: evaluatedArguments)
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }
@@ -122,7 +125,7 @@ struct ExpressionEvaluator {
                 return operand
             default:
                 guard let numeric = operand.asDouble else {
-                    throw RuntimeError.unsupportedExpression("Unary + is not supported for \(operand.valueTypeDescription)")
+                    throw RuntimeError.unsupportedExpression("Unary + is not supported for \(operand.valueType)")
                 }
                 return .double(numeric)
             }
@@ -134,7 +137,7 @@ struct ExpressionEvaluator {
                 return .double(-number)
             default:
                 guard let numeric = operand.asDouble else {
-                    throw RuntimeError.unsupportedExpression("Unary - is not supported for \(operand.valueTypeDescription)")
+                    throw RuntimeError.unsupportedExpression("Unary - is not supported for \(operand.valueType)")
                 }
                 return .double(-numeric)
             }
@@ -160,7 +163,7 @@ struct ExpressionEvaluator {
             guard let left = lhs.asDouble,
                   let right = rhs.asDouble else {
                 throw RuntimeError.unsupportedExpression(
-                    "Binary operator \(op.rawValue) is not supported between \(lhs.valueTypeDescription) and \(rhs.valueTypeDescription)"
+                    "Binary operator \(op.rawValue) is not supported between \(lhs.valueType) and \(rhs.valueType)"
                 )
             }
             return try evaluateFloatingBinary(op: op, lhs: left, rhs: right)

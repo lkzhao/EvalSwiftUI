@@ -72,25 +72,25 @@ enum RuntimeViewSnapshotRenderer {
 @MainActor
 func assertSnapshotsMatch<V: View>(
     source: String,
-    viewName: String? = nil,
-    viewBuilders: [any RuntimeViewBuilder] = [],
-    modifierBuilders: [any RuntimeModifierBuilder] = [],
+//    viewName: String? = nil,
+//    viewBuilders: [any RuntimeViewBuilder] = [],
+//    modifierBuilders: [any RuntimeModifierBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let parser = SwiftIRParser()
     let moduleIR = parser.parseModule(source: source)
     let module = RuntimeModule(
         ir: moduleIR,
-        viewBuilders: viewBuilders,
-        modifierBuilders: modifierBuilders
+//        viewBuilders: viewBuilders,
+//        modifierBuilders: modifierBuilders
     )
-    if let viewName, case let .instance(instance) = try module.makeInstance(typeName: viewName) {
-        let evaluatedView = try instance.makeSwiftUIView()
-        try assertViewMatch(evaluatedView, expectedView())
-    } else {
+//    if let viewName, case let .instance(instance) = try module.makeInstance(typeName: viewName) {
+//        let evaluatedView = try instance.makeSwiftUIView()
+//        try assertViewMatch(evaluatedView, expectedView())
+//    } else {
         let evaluatedView = try module.makeTopLevelSwiftUIViews()
         try assertViewMatch(evaluatedView, expectedView())
-    }
+//    }
 }
 
 @MainActor

@@ -1,20 +1,17 @@
 import EvalSwiftIR
 
 public final class RuntimeType: RuntimeScope {
-    public var storage: [String: RuntimeValue] = [:]
+    public var storage: RuntimeScopeStorage = [:]
     public var parent: RuntimeScope?
 
     enum Content {
-        case builtInType(RuntimeBuiltInType)
-        case builder(RuntimeViewBuilder)
+        case builder(RuntimeValueBuilder)
         case definition(DefinitionIR)
 
         var name: String {
             switch self {
-            case .builtInType(let type):
-                type.name
             case .builder(let builder):
-                builder.typeName
+                builder.name
             case .definition(let definition):
                 definition.name
             }
@@ -35,30 +32,31 @@ public final class RuntimeType: RuntimeScope {
         }
     }
 
-    public init(builder: RuntimeViewBuilder, parent: RuntimeScope?) {
+    public init(builder: RuntimeValueBuilder, parent: RuntimeScope?) {
         self.content = .builder(builder)
         self.parent = parent
+        builder.populate(type: self)
     }
 
-    public init(builtInType: RuntimeBuiltInType, parent: RuntimeScope?) {
-        self.content = .builtInType(builtInType)
-        self.parent = parent
-        builtInType.populate(type: self)
-    }
-
-    public func makeInstance(arguments: [RuntimeArgument] = []) throws -> RuntimeValue {
+    var definitions: [RuntimeFunctionDefinition] {
         switch content {
-        case .builtInType(let builtInType):
-            return try builtInType.makeValue(arguments: arguments, scope: self)
         case .builder(let builder):
-            return .instance(RuntimeInstance(builder: builder, arguments: arguments, parent: self))
+            return builder.definitions
         case .definition(let definitionIR):
-            let instance = RuntimeInstance(parent: self)
-            for binding in definitionIR.bindings {
-                try instance.define(binding: binding)
+            return definitionIR.bindings.filter { $0.name == "init" }.compactMap { binding in
+                if case .function(let functionDef) = binding.initializer {
+                    return RuntimeFunctionDefinition(parameters: functionDef.parameters) { [weak self] arguments, scope in
+                        guard let self else { return .void }
+                        let instance = RuntimeInstance(parent: self)
+                        for binding in definitionIR.bindings {
+                            try instance.define(binding: binding)
+                        }
+                        _ = try instance.callFunction("init", arguments: arguments)
+                        return .instance(instance)
+                    }
+                }
+                return nil
             }
-            _ = try instance.callFunction("init", arguments: arguments)
-            return .instance(instance)
         }
     }
 }

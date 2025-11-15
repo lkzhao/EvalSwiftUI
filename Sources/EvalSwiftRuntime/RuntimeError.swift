@@ -2,10 +2,11 @@ import Foundation
 
 public enum RuntimeError: Error, CustomStringConvertible {
     case unknownIdentifier(String)
+    case ambiguousIdentifier(String)
     case unknownFunction(String)
     case unknownModifier(String)
     case unknownView(String)
-    case invalidArgumentCount(expected: Int, got: Int, function: String)
+    case invalidArgumentCount(expected: Int, got: Int)
     case unsupportedExpression(String)
     case invalidViewResult(String)
     case invalidViewArgument(String)
@@ -14,6 +15,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
 
     public var description: String {
         switch self {
+        case .ambiguousIdentifier(let name):
+            return "Ambiguous identifier: \(name)"
         case .unknownIdentifier(let name):
             return "Unknown identifier: \(name)"
         case .unknownFunction(let name):
@@ -22,8 +25,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             return "Unknown view modifier: \(name)"
         case .unknownView(let name):
             return "Unknown view: \(name)"
-        case .invalidArgumentCount(let expected, let got, let function):
-            return "Function \(function) expected \(expected) arguments but received \(got)."
+        case .invalidArgumentCount(let expected, let got):
+            return "Function expected \(expected) arguments but received \(got)."
         case .unsupportedExpression(let description):
             return "Unsupported expression: \(description)"
         case .invalidViewResult(let description):

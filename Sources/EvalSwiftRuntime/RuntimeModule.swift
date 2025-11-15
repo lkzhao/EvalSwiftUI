@@ -3,13 +3,13 @@ import SwiftUI
 import EvalSwiftIR
 
 public final class RuntimeModule: RuntimeScope {
-    public var storage: [String: RuntimeValue] = [:]
+    public var storage: RuntimeScopeStorage = [:]
     public var runtimeViews: [RuntimeInstance] = []
     private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
 
     public convenience init(
         source: String,
-        viewBuilders: [RuntimeViewBuilder] = [],
+        viewBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) {
         self.init(
@@ -21,57 +21,48 @@ public final class RuntimeModule: RuntimeScope {
 
     public init(
         ir: ModuleIR,
-        viewBuilders: [RuntimeViewBuilder] = [],
+        viewBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) {
-        let builders: [RuntimeViewBuilder] = [
-            TextRuntimeViewBuilder(),
-            ImageRuntimeViewBuilder(),
-            VStackRuntimeViewBuilder(),
-            HStackRuntimeViewBuilder(),
-            ZStackViewBuilder(),
-            ForEachRuntimeViewBuilder(),
-            ButtonViewBuilder(),
-            CircleViewBuilder(),
-            RectangleViewBuilder(),
-            RoundedRectangleViewBuilder(),
-            ScrollViewViewBuilder(),
-            SpacerViewBuilder(),
-            ToggleViewBuilder(),
-        ] + viewBuilders
-        for builder in builders {
-            define(builder.typeName, value: .type(RuntimeType(builder: builder, parent: self)))
-        }
+//        let builders: [RuntimeViewBuilder] = [
+//            TextRuntimeViewBuilder(),
+//            ImageRuntimeViewBuilder(),
+//            VStackRuntimeViewBuilder(),
+//            HStackRuntimeViewBuilder(),
+//            ZStackViewBuilder(),
+//            ForEachRuntimeViewBuilder(),
+//            ButtonViewBuilder(),
+//            CircleViewBuilder(),
+//            RectangleViewBuilder(),
+//            RoundedRectangleViewBuilder(),
+//            ScrollViewViewBuilder(),
+//            SpacerViewBuilder(),
+//            ToggleViewBuilder(),
+//        ] + viewBuilders
+//        for builder in builders {
+//            define(builder.typeName, value: .type(RuntimeType(builder: builder, parent: self)))
+//        }
+//
+//        let modifiers: [RuntimeModifierBuilder] = [
+//            PaddingModifierBuilder(),
+//            BackgroundModifierBuilder(),
+//            CornerRadiusModifierBuilder(),
+//            FontModifierBuilder(),
+//            ForegroundStyleModifierBuilder(),
+//            FrameModifierBuilder(),
+//            ImageScaleModifierBuilder(),
+//            OpacityModifierBuilder(),
+//            OverlayModifierBuilder(),
+//            ShadowModifierBuilder(),
+//        ] + modifierBuilders
+//        for modifier in modifiers {
+//            self.modifierBuilders[modifier.name] = modifier
+//        }
 
-        let builtInTypes: [RuntimeBuiltInType] = [
-            IntValueType(),
-            FloatValueType(name: "Float"),
-            FloatValueType(name: "Double"),
-            FloatValueType(name: "CGFloat"),
-            ColorValueType(),
-            ImageValueType(),
-        ]
-        for type in builtInTypes {
-            define(type.name, value: .type(RuntimeType(builtInType: type, parent: self)))
-        }
+//        SwiftUIRuntimeConstants.register(in: self)
 
-        let modifiers: [RuntimeModifierBuilder] = [
-            PaddingModifierBuilder(),
-            BackgroundModifierBuilder(),
-            CornerRadiusModifierBuilder(),
-            FontModifierBuilder(),
-            ForegroundStyleModifierBuilder(),
-            FrameModifierBuilder(),
-            ImageScaleModifierBuilder(),
-            OpacityModifierBuilder(),
-            OverlayModifierBuilder(),
-            ShadowModifierBuilder(),
-        ] + modifierBuilders
-        for modifier in modifiers {
-            self.modifierBuilders[modifier.modifierName] = modifier
-        }
-
-        SwiftUIRuntimeConstants.register(in: self)
+        let imageBuilder = ImageRuntimeViewBuilder()
+        define(imageBuilder.name, value: .type(RuntimeType(builder: imageBuilder, parent: self)))
 
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try? statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
