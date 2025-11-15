@@ -83,13 +83,41 @@ struct ExpressionEvaluator {
         case .call(let callee, let arguments):
             if case .member(let baseExpr, let name) = callee,
                let modifierBuilder = scope.module?.modifierBuilder(named: name) {
-                let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: modifierBuilder.parameters, arguments: arguments, scope: scope)
-                guard let baseValue = try evaluate(baseExpr, scope: scope),
-                      case .instance(let instance) = baseValue else {
+                guard let baseValue = try evaluate(baseExpr, scope: scope) else {
                     throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
                 }
-                let modifiedInstance = RuntimeInstance(modifierBuilder: modifierBuilder, arguments: evaluatedArguments, parent: instance)
-                return .instance(modifiedInstance)
+
+                var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
+                for definition in modifierBuilder.definitions {
+                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(
+                        parameters: definition.parameters,
+                        arguments: arguments,
+                        scope: scope
+                    ) {
+                        resolvedDefinition = (definition, evaluatedArguments)
+                        break
+                    }
+                }
+
+                guard let (definition, evaluatedArguments) = resolvedDefinition else {
+                    throw RuntimeError.invalidArgument("No matching signature for modifier '\(name)'.")
+                }
+
+                if case .instance(let instance) = baseValue {
+                    let modifiedInstance = RuntimeInstance(
+                        modifierDefinition: definition,
+                        arguments: evaluatedArguments,
+                        parent: instance
+                    )
+                    return .instance(modifiedInstance)
+                }
+
+                if let baseView = baseValue.asSwiftUIView {
+                    let modifiedView = try definition.apply(baseView, evaluatedArguments, scope)
+                    return .swiftUI(.view(modifiedView))
+                }
+
+                throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
             }
 
             if case .identifier(let typeName) = callee,

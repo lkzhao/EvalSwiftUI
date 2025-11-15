@@ -3,7 +3,7 @@ import SwiftUI
 public final class RuntimeInstance: RuntimeScope {
     enum Content {
         case view
-        case modifier(RuntimeModifierBuilder, [RuntimeArgument])
+        case modifier(RuntimeModifierDefinition, [RuntimeArgument])
     }
     private var content: Content
 
@@ -20,9 +20,13 @@ public final class RuntimeInstance: RuntimeScope {
         self.content = .view
     }
 
-    public init(modifierBuilder: RuntimeModifierBuilder, arguments: [RuntimeArgument], parent: RuntimeInstance) {
+    public init(
+        modifierDefinition: RuntimeModifierDefinition,
+        arguments: [RuntimeArgument],
+        parent: RuntimeInstance
+    ) {
         self.parent = parent
-        self.content = .modifier(modifierBuilder, arguments)
+        self.content = .modifier(modifierDefinition, arguments)
     }
 }
 
@@ -32,16 +36,12 @@ extension RuntimeInstance {
         case .view:
             let renderer = try RuntimeViewRenderer(instance: self)
             return AnyView(RuntimeViewHost(renderer: renderer))
-        case .modifier(let builder, let arguments):
+        case .modifier(let definition, let arguments):
             guard let wrapped = parent as? RuntimeInstance else {
                 throw RuntimeError.invalidArgument("Modifier can only apply to View instance")
             }
             let view = try wrapped.makeSwiftUIView()
-            return try builder.applyModifier(
-                to: view,
-                arguments: arguments,
-                scope: self
-            )
+            return try definition.apply(view, arguments, self)
         }
     }
 }

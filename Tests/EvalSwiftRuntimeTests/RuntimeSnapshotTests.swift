@@ -101,6 +101,13 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesPaddingModifier() throws {
+        #expectSnapshot(
+            Text("Padded")
+                .padding(8)
+        )
+    }
+
 //    @Test func rendersShapesAndSpacerBuilders() throws {
 //        #expectSnapshot(
 //            HStack(spacing: 0) {
@@ -349,21 +356,18 @@ struct RuntimeSnapshotTests {
 }
 
 private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
-    var parameters: [EvalSwiftRuntime.RuntimeParameter] { [] }
-
     let name = "capsuleBackground"
 
-    @MainActor
-    func applyModifier(
-        to view: AnyView,
-        arguments: [RuntimeArgument],
-        scope: RuntimeScope
-    ) throws -> AnyView {
-        AnyView(
-            view
-                .padding(8)
-                .background(Color.blue.opacity(0.2))
-                .clipShape(Capsule())
-        )
+    var definitions: [RuntimeModifierDefinition] {
+        [
+            RuntimeModifierDefinition(parameters: []) { view, _, _ in
+                AnyView(
+                    view
+                        .padding(8)
+                        .background(Color.blue.opacity(0.2))
+                        .clipShape(Capsule())
+                )
+            }
+        ]
     }
 }

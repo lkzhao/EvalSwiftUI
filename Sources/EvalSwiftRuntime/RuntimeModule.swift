@@ -57,6 +57,13 @@ public final class RuntimeModule: RuntimeScope {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
         }
 
+        let modifierBuilderList: [RuntimeModifierBuilder] = [
+            PaddingModifierBuilder(),
+        ] + modifierBuilders
+        for modifier in modifierBuilderList {
+            self.modifierBuilders[modifier.name] = modifier
+        }
+
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try statementInterpreter.executeAndCollectTopLevelValues(statements: ir.statements)
         self.topLevelValues = values
