@@ -315,6 +315,30 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersCircleShape() throws {
+        #expectSnapshot(
+            Circle()
+                .frame(width: 48, height: 48)
+                .foregroundStyle(.blue)
+        )
+    }
+
+    @Test func rendersCapsuleShape() throws {
+        #expectSnapshot(
+            Capsule(style: .continuous)
+                .frame(width: 80, height: 32)
+                .foregroundStyle(Color.pink.opacity(0.8))
+        )
+    }
+
+    @Test func rendersRectangleShape() throws {
+        #expectSnapshot(
+            Rectangle()
+                .frame(width: 70, height: 30)
+                .foregroundStyle(.gray)
+        )
+    }
+
     @Test func appliesImageScaleModifier() throws {
         #expectSnapshot(
             Image(systemName: "globe")
