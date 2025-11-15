@@ -89,6 +89,20 @@ extension RuntimeValue {
         }
     }
 
+    var asArray: [RuntimeValue]? {
+        switch self {
+        case .array(let values):
+            return values
+        default:
+            return nil
+        }
+    }
+
+    var asFunction: RuntimeFunction? {
+        guard case .function(let function) = self else { return nil }
+        return function
+    }
+
     var asBool: Bool? {
         switch self {
         case .bool(let bool):
@@ -139,7 +153,6 @@ extension RuntimeValue {
         return instance
     }
 
-    @MainActor
     var asSwiftUIView: AnyView? {
         if let color = asColor {
             return AnyView(color)
@@ -187,7 +200,7 @@ extension RuntimeValue {
             case .array:
                 "Array"
             case .function(let params):
-                "Function(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", ")))"
+                "(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", "))) -> Unknown"
             case .void:
                 "Void"
             case .swiftUI:

@@ -38,14 +38,17 @@ public final class RuntimeType: RuntimeScope {
         builder.populate(type: self)
     }
 
-    var definitions: [RuntimeFunctionDefinition] {
+    var definitions: [RuntimeBuilderDefinition] {
         switch content {
         case .builder(let builder):
             return builder.definitions
         case .definition(let definitionIR):
             return definitionIR.bindings.filter { $0.name == "init" }.compactMap { binding in
                 if case .function(let functionDef) = binding.initializer {
-                    return RuntimeFunctionDefinition(parameters: functionDef.parameters) { [weak self] arguments, scope in
+                    let parameters = functionDef.parameters.compactMap {
+                        try? RuntimeParameter(ir: $0, scope: self)
+                    }
+                    return RuntimeBuilderDefinition(parameters: parameters) { [weak self] arguments, scope in
                         guard let self else { return .void }
                         let instance = RuntimeInstance(parent: self)
                         for binding in definitionIR.bindings {

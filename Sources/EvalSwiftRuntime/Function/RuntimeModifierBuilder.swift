@@ -5,7 +5,6 @@ public protocol RuntimeModifierBuilder {
 
     var parameters: [RuntimeParameter] { get }
 
-    @MainActor
     func applyModifier(
         to view: AnyView,
         arguments: [RuntimeArgument],

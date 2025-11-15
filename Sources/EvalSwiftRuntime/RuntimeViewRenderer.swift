@@ -3,7 +3,6 @@ import Foundation
 import SwiftUI
 import EvalSwiftIR
 
-@MainActor
 final class RuntimeViewRenderer: ObservableObject {
     @Published private(set) var renderedView: AnyView
 
@@ -31,8 +30,8 @@ final class RuntimeViewRenderer: ObservableObject {
         defer { isRendering = false }
 
         let bodyFunction = try instance.getFunction("body")
-        let views = try bodyFunction.renderRuntimeViews().map {
-            try $0.makeSwiftUIView()
+        let views = try bodyFunction.renderRuntimeViews().compactMap {
+            $0.asSwiftUIView
         }
         renderedView = AnyView(ForEach(Array(views.enumerated()), id: \.0) { _, view in
             view

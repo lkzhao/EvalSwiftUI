@@ -2,60 +2,66 @@ import SwiftUI
 import Testing
 @testable import EvalSwiftRuntime
 
-//@MainActor
-//struct RuntimeSnapshotTests {
-//    @Test func rendersTopLevelVStackExpression() throws {
-//        #expectSnapshot(
-//            VStack {
-//                Text("Hello world!")
-//            }
-//        )
-//    }
-//
-//    @Test func rendersInterpolatedTextLiteral() throws {
-//        let source = """
-//        struct GreetingView: View {
-//            var name: String = "World"
-//
-//            var body: some View {
-//                Text("Hello, \\(name)!")
-//            }
-//        }
-//
-//        GreetingView()
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            Text("Hello, World!")
-//        }
-//    }
-//
-//    @Test func rendersStatefulCountView() throws {
-//        let source = """
-//        struct CountView: View {
-//            @State var count: Int = 0
-//
-//            var body: some View {
-//                VStack(spacing: 4) {
-//                    Text("Count: \\(count)")
-//                    Button("Increase") {
-//                        count = count + 1
-//                    }
-//                }
-//            }
-//        }
-//
-//        CountView()
-//        """
-//
-//        try assertSnapshotsMatch(source: source) {
-//            VStack(spacing: 4) {
-//                Text("Count: 0")
-//                Button("Increase") {}
-//            }
-//        }
-//    }
-//
+@MainActor
+struct RuntimeSnapshotTests {
+    @Test func rendersTopLevelTextExpression() throws {
+        #expectSnapshot(
+            Text("Hello world!")
+        )
+    }
+    @Test func rendersTopLevelVStackExpression() throws {
+        #expectSnapshot(
+            VStack {
+                Text("Hello")
+                Text("World!")
+            }
+        )
+    }
+
+    @Test func rendersInterpolatedTextLiteral() throws {
+        let source = """
+        struct GreetingView: View {
+            var name: String = "World"
+
+            var body: some View {
+                Text("Hello, \\(name)!")
+            }
+        }
+
+        GreetingView()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Hello, World!")
+        }
+    }
+
+    @Test func rendersStatefulCountView() throws {
+        let source = """
+        struct CountView: View {
+            @State var count: Int = 0
+
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text("Count: \\(count)")
+                    Button("Increase") {
+                        count = count + 1
+                    }
+                }
+            }
+        }
+
+        CountView()
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("Count: 0")
+                Button("Increase") {}
+            }
+        }
+    }
+
 //    @Test func wrapsMultipleTopLevelViewsInVStack() throws {
 //        let source = """
 //        Text("First")
@@ -447,22 +453,24 @@ import Testing
 //                .foregroundStyle(.mint)
 //        )
 //    }
-//}
-//
-//private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
-//    let name = "capsuleBackground"
-//
-//    @MainActor
-//    func applyModifier(
-//        to view: AnyView,
-//        arguments: [RuntimeArgument],
-//        scope: RuntimeScope
-//    ) throws -> AnyView {
-//        AnyView(
-//            view
-//                .padding(8)
-//                .background(Color.blue.opacity(0.2))
-//                .clipShape(Capsule())
-//        )
-//    }
-//}
+}
+
+private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
+    var parameters: [EvalSwiftRuntime.RuntimeParameter] { [] }
+
+    let name = "capsuleBackground"
+
+    @MainActor
+    func applyModifier(
+        to view: AnyView,
+        arguments: [RuntimeArgument],
+        scope: RuntimeScope
+    ) throws -> AnyView {
+        AnyView(
+            view
+                .padding(8)
+                .background(Color.blue.opacity(0.2))
+                .clipShape(Capsule())
+        )
+    }
+}

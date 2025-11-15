@@ -1,65 +1,43 @@
 import EvalSwiftIR
 import SwiftUI
 
-public final class RuntimeFunction: RuntimeScope {
+public class RuntimeFunctionScope: RuntimeScope {
     public var storage: RuntimeScopeStorage = [:]
     public var parent: RuntimeScope?
 
-    public enum Content {
-        case definition(FunctionIR)
-        case builtIn(RuntimeBuiltInFunction)
+    init(parent: RuntimeScope) {
+        self.parent = parent
+    }
+}
 
-        var parameters: [RuntimeParameter] {
-            switch self {
-            case .definition(let ir):
-                return ir.parameters
-            case .builtIn(let builtIn):
-                return builtIn.parameters
-            }
+public final class RuntimeFunction {
+    var parameters: [RuntimeParameter]
+    var statements: [StatementIR]
+    var parent: RuntimeScope
+
+    public init(ir: FunctionIR, parent: RuntimeScope) throws {
+        self.parameters = try ir.parameters.map {
+            try RuntimeParameter(ir: $0, scope: parent)
         }
-    }
-
-    public var content: Content
-
-    public init(ir: FunctionIR, parent: RuntimeScope?) {
-        self.content = .definition(ir)
         self.parent = parent
-    }
-
-    public init(builtInFunction: RuntimeBuiltInFunction, parent: RuntimeScope?) {
-        self.content = .builtIn(builtInFunction)
-        self.parent = parent
-    }
-
-    public var parameters: [RuntimeParameter] {
-        content.parameters
+        self.statements = ir.body
     }
 
     public func invoke(arguments: [RuntimeArgument] = []) throws -> RuntimeValue? {
-        storage.removeAll()
-        switch content {
-        case .definition(let ir):
-            for argument in arguments {
-                define(argument.name, value: argument.value)
-            }
-            let interpreter = StatementInterpreter(scope: self)
-            return try interpreter.execute(statements: ir.body)
-        case .builtIn(let function):
-            return try function.call(arguments: arguments, scope: self)
+        let scope = RuntimeFunctionScope(parent: parent)
+        for argument in arguments {
+            scope.define(argument.name, value: argument.value)
         }
+        let interpreter = StatementInterpreter(scope: scope)
+        return try interpreter.execute(statements: statements)
     }
 
-    public func renderRuntimeViews(arguments: [RuntimeArgument] = []) throws -> [RuntimeInstance] {
-        storage.removeAll()
-        switch content {
-        case .definition(let ir):
-            for argument in arguments {
-                define(argument.name, value: argument.value)
-            }
-            let interpreter = StatementInterpreter(scope: self)
-            return try interpreter.executeAndCollectRuntimeViews(statements: ir.body)
-        case .builtIn:
-            throw RuntimeError.unknownFunction("Rendering views is not supported for built-in functions.")
+    public func renderRuntimeViews(arguments: [RuntimeArgument] = []) throws -> [RuntimeValue] {
+        let scope = RuntimeFunctionScope(parent: parent)
+        for argument in arguments {
+            scope.define(argument.name, value: argument.value)
         }
+        let interpreter = StatementInterpreter(scope: scope)
+        return try interpreter.executeAndCollectTopLevelValues(statements: statements)
     }
 }

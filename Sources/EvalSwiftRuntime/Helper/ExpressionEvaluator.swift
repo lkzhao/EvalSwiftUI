@@ -39,7 +39,7 @@ struct ExpressionEvaluator {
         case .definition(let definition):
             return .type(try RuntimeType(ir: definition, parent: scope))
         case .function(let function):
-            return .function(RuntimeFunction(ir: function, parent: scope))
+            return .function(try RuntimeFunction(ir: function, parent: scope))
         case .unary(let op, let operandExpr):
             guard let operand = try evaluate(operandExpr, scope: scope) else {
                 throw RuntimeError.unsupportedExpression("Unary operator \(op.rawValue) requires a value")
@@ -96,8 +96,8 @@ struct ExpressionEvaluator {
                 let type = try? scope.type(named: typeName) {
                 let definitions = type.definitions
                 for definition in definitions {
-                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(parameters: definition.parameters, arguments: arguments, scope: scope) {
-                        return try definition.build(evaluatedArguments, scope)
+                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(parameters: definition.parameters, arguments: arguments, scope: scope), let result = try? definition.build(evaluatedArguments, scope) {
+                        return result
                     }
                 }
             }
@@ -106,9 +106,9 @@ struct ExpressionEvaluator {
                       case .function(let function) = calleeValue {
                 let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: function.parameters, arguments: arguments, scope: scope)
                 return try function.invoke(arguments: evaluatedArguments)
-            } else {
-                throw RuntimeError.unsupportedExpression("Call target is not a function")
             }
+
+            throw RuntimeError.unsupportedExpression("No matching call for \(callee) arguments: \(arguments)")
         case .unknown(let raw):
             throw RuntimeError.unsupportedExpression(raw)
         }

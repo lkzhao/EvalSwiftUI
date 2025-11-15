@@ -27,7 +27,6 @@ public final class RuntimeInstance: RuntimeScope {
 }
 
 extension RuntimeInstance {
-    @MainActor
     func makeSwiftUIView() throws -> AnyView {
         switch content {
         case .view:

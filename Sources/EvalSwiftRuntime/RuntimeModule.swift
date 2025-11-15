@@ -4,7 +4,7 @@ import EvalSwiftIR
 
 public final class RuntimeModule: RuntimeScope {
     public var storage: RuntimeScopeStorage = [:]
-    public var runtimeViews: [RuntimeInstance] = []
+    public var topLevelValues: [RuntimeValue] = []
     private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
 
     public convenience init(
@@ -66,7 +66,9 @@ public final class RuntimeModule: RuntimeScope {
             FloatValueBuilder(name: "Float"),
             FloatValueBuilder(name: "Double"),
             FloatValueBuilder(name: "CGFloat"),
-            ImageRuntimeValueBuilder()
+            ImageValueBuilder(),
+            TextValueBuilder(),
+            VStackValueBuilder(),
 //            ColorValueType(),
 //            ImageValueType(),
         ]
@@ -75,8 +77,8 @@ public final class RuntimeModule: RuntimeScope {
         }
 
         let statementInterpreter = StatementInterpreter(scope: self)
-        let values = try statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)
-        self.runtimeViews = values
+        let values = try statementInterpreter.executeAndCollectTopLevelValues(statements: ir.statements)
+        self.topLevelValues = values
     }
 
     func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {
@@ -85,12 +87,12 @@ public final class RuntimeModule: RuntimeScope {
 
     @MainActor
     public func makeTopLevelSwiftUIViews() throws -> AnyView {
-        guard !runtimeViews.isEmpty else {
+        guard !topLevelValues.isEmpty else {
             throw RuntimeError.invalidViewResult("Top-level statements did not produce any SwiftUI views")
         }
 
-        let swiftUIViews = try runtimeViews.map {
-            try $0.makeSwiftUIView()
+        let swiftUIViews = topLevelValues.compactMap {
+            $0.asSwiftUIView
         }
 
         return AnyView(ForEach(Array(swiftUIViews.enumerated()), id: \.0) { _, view in

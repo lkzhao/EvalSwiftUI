@@ -36,19 +36,10 @@ final class StatementInterpreter {
         return collectedValues.last
     }
 
-    func executeAndCollectResultBuilderValues(statements: [StatementIR]) throws -> [RuntimeValue] {
+    func executeAndCollectTopLevelValues(statements: [StatementIR]) throws -> [RuntimeValue] {
         collectedValues = []
         _ = try execute(statements: statements)
         return collectedValues
-    }
-
-    func executeAndCollectRuntimeViews(statements: [StatementIR]) throws -> [RuntimeInstance] {
-        try executeAndCollectResultBuilderValues(statements: statements).compactMap {
-            if case .instance(let instance) = $0 {
-                return instance
-            }
-            return nil
-        }
     }
 
     private func assign(value: RuntimeValue, to target: ExprIR) throws {

@@ -4,9 +4,3 @@ public protocol RuntimeBuiltInFunction {
     var parameters: [RuntimeParameter] { get }
     func call(arguments: [RuntimeArgument], scope: RuntimeScope) throws -> RuntimeValue?
 }
-
-extension RuntimeBuiltInFunction {
-    public var parameters: [RuntimeParameter] {
-        []
-    }
-}

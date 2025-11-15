@@ -1,13 +1,13 @@
 
 
-public struct RuntimeFunctionDefinition {
+public struct RuntimeBuilderDefinition {
     var parameters: [RuntimeParameter]
     var build: ([RuntimeArgument], RuntimeScope) throws -> RuntimeValue
 }
 
 public protocol RuntimeValueBuilder {
     var name: String { get }
-    var definitions: [RuntimeFunctionDefinition] { get }
+    var definitions: [RuntimeBuilderDefinition] { get }
     func populate(type: RuntimeType)
 }
 

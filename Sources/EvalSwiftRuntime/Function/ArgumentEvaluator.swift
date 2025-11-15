@@ -27,9 +27,8 @@ struct ArgumentEvaluator {
             let argumentIR = arguments[argumentIndex]
             switch match(argumentIR, to: parameter) {
             case .consume:
-                evaluatedArguments.append(
-                    try evaluate(argument: argumentIR, for: parameter, scope: scope)
-                )
+                let arg = try evaluate(argument: argumentIR, for: parameter, scope: scope)
+                evaluatedArguments.append(arg)
                 argumentIndex += 1
             case .skip:
                 evaluatedArguments.append(
@@ -59,7 +58,7 @@ struct ArgumentEvaluator {
         if let type = parameter.type, let typeScope = try? scope.type(named: type) {
             argumentScope = TypeHintScope(parent: scope, type: typeScope)
         }
-        guard let argumentValue = try ExpressionEvaluator.evaluate(argument?.value ?? parameter.defaultValue, scope: argumentScope) else {
+        guard let argumentValue = try ExpressionEvaluator.evaluate(argument?.value, scope: argumentScope) ?? parameter.defaultValue else {
             throw RuntimeError.unsupportedExpression("Unable to evaluate argument for parameter '\(parameter.name)'")
         }
         return RuntimeArgument(name: parameter.name, value: argumentValue)
