@@ -6,7 +6,7 @@ struct ExpressionEvaluator {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
-            if name.hasPrefix("$") {
+            if Self.isBindingIdentifier(name) {
                 let identifier = String(name.dropFirst())
                 return try Self.makeBinding(named: identifier, scope: scope)
             }
@@ -155,6 +155,14 @@ struct ExpressionEvaluator {
             }
         )
         return .binding(binding)
+    }
+
+    private static func isBindingIdentifier(_ name: String) -> Bool {
+        guard name.hasPrefix("$"), name.count > 1 else {
+            return false
+        }
+        let nextCharacter = name[name.index(after: name.startIndex)]
+        return nextCharacter.isLetter || nextCharacter == "_"
     }
 
     private static func evaluateUnary(

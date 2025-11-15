@@ -11,6 +11,21 @@ final class StatementInterpreter {
     }
 
     func execute(statements: [StatementIR]) throws -> RuntimeValue? {
+        collectedValues = []
+        let result = try executeBlock(statements)
+        if result.returned {
+            return result.value
+        }
+        return collectedValues.last
+    }
+
+    func executeAndCollectTopLevelValues(statements: [StatementIR]) throws -> [RuntimeValue] {
+        collectedValues = []
+        _ = try executeBlock(statements)
+        return collectedValues
+    }
+
+    private func executeBlock(_ statements: [StatementIR]) throws -> (returned: Bool, value: RuntimeValue?) {
         for statement in statements {
             switch statement {
             case .binding(let binding):
@@ -25,21 +40,29 @@ final class StatementInterpreter {
                 if let value {
                     collectedValues.append(value)
                 }
-                return value
+                return (true, value)
             case .assignment(let assignment):
                 let value = try ExpressionEvaluator.evaluate(assignment.value, scope: scope) ?? .void
                 try assign(value: value, to: assignment.target)
+            case .if(let ifStmt):
+                let conditionValue = try ExpressionEvaluator.evaluate(ifStmt.condition, scope: scope)
+                let conditionResult = conditionValue?.asBool ?? false
+                if conditionResult {
+                    let result = try executeBlock(ifStmt.body)
+                    if result.returned {
+                        return result
+                    }
+                } else if let elseBody = ifStmt.elseBody {
+                    let result = try executeBlock(elseBody)
+                    if result.returned {
+                        return result
+                    }
+                }
             case .unhandled(let raw):
                 throw RuntimeError.unsupportedExpression(raw)
             }
         }
-        return collectedValues.last
-    }
-
-    func executeAndCollectTopLevelValues(statements: [StatementIR]) throws -> [RuntimeValue] {
-        collectedValues = []
-        _ = try execute(statements: statements)
-        return collectedValues
+        return (false, nil)
     }
 
     private func assign(value: RuntimeValue, to target: ExprIR) throws {

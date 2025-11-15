@@ -213,6 +213,29 @@ struct ExpressionEvaluatorTests {
         #expect(inclusiveInts == [1, 2, 3])
     }
 
+    @Test func supportsIfStatementsInsideFunctions() throws {
+        let source = """
+        var isOn = false
+
+        func toggle() {
+            if isOn {
+                isOn = false
+            } else {
+                isOn = true
+            }
+        }
+
+        toggle()
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .bool(let value) = try module.get("isOn") else {
+            throw TestFailure.expected("Expected isOn to be stored as Bool")
+        }
+
+        #expect(value == true)
+    }
+
     @Test func supportsDefaultedFunctionArguments() throws {
         let source = """
         func greet(greeting: String = "Hello", name: String) -> String {

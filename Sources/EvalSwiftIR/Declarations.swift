@@ -99,6 +99,7 @@ public enum StatementIR: Hashable {
     case expression(ExprIR)
     case `return`(ReturnIR)
     case assignment(AssignmentIR)
+    case `if`(IfStatementIR)
     case unhandled(String)
 }
 
@@ -109,4 +110,10 @@ public struct ReturnIR: Hashable {
 public struct AssignmentIR: Hashable {
     public let target: ExprIR
     public let value: ExprIR
+}
+
+public struct IfStatementIR: Hashable {
+    public let condition: ExprIR
+    public let body: [StatementIR]
+    public let elseBody: [StatementIR]?
 }

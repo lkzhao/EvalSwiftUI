@@ -184,20 +184,57 @@ public struct SwiftIRParser {
                 return .binding(binding)
             }
 
+            if let ifStmt = statement.item.as(IfExprSyntax.self),
+               let ifIR = makeIfStatement(from: ifStmt) {
+                return .if(ifIR)
+            }
+
             if let assignment = makeAssignment(from: statement) {
                 return .assignment(assignment)
             }
 
             if let exprStmt = statement.item.as(ExpressionStmtSyntax.self) {
+                if let ifExpr = exprStmt.expression.as(IfExprSyntax.self),
+                   let ifIR = makeIfStatement(from: ifExpr) {
+                    return .if(ifIR)
+                }
                 return .expression(makeExpr(exprStmt.expression))
             }
 
             if let expr = statement.item.as(ExprSyntax.self) {
+                if let ifExpr = expr.as(IfExprSyntax.self),
+                   let ifIR = makeIfStatement(from: ifExpr) {
+                    return .if(ifIR)
+                }
                 return .expression(makeExpr(expr))
             }
 
             return .unhandled(statement.item.trimmedDescription)
         }
+    }
+
+    private func makeIfStatement(from node: IfExprSyntax) -> IfStatementIR? {
+        guard node.conditions.count == 1,
+              let conditionElement = node.conditions.first,
+              case .expression(let expr) = conditionElement.condition else {
+            return nil
+        }
+
+        let condition = makeExpr(expr)
+        let bodyStatements = makeStatements(from: node.body.statements)
+        var elseStatements: [StatementIR]? = nil
+        if let elseBody = node.elseBody {
+            if let nestedIf = elseBody.as(IfExprSyntax.self),
+               let nestedIR = makeIfStatement(from: nestedIf) {
+                elseStatements = [.if(nestedIR)]
+            } else if let elseBlock = elseBody.as(CodeBlockSyntax.self) {
+                elseStatements = makeStatements(from: elseBlock.statements)
+            } else {
+                elseStatements = [.unhandled(elseBody.trimmedDescription)]
+            }
+        }
+
+        return IfStatementIR(condition: condition, body: bodyStatements, elseBody: elseStatements)
     }
 
     private func makeBinding(from node: VariableDeclSyntax) -> BindingIR? {
