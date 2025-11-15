@@ -31,4 +31,11 @@ public struct ImageValueBuilder: RuntimeValueBuilder {
             )
         ]
     }
+
+    public func populate(type: RuntimeType) {
+        if let parent = type.parent,
+           let scaleType = try? parent.type(named: "Image.Scale") {
+            type.define("Scale", value: .type(scaleType))
+        }
+    }
 }

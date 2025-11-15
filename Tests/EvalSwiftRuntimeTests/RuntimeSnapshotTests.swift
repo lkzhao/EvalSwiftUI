@@ -155,6 +155,17 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesImageScaleModifier() throws {
+        #expectSnapshot(
+            Image(systemName: "globe")
+                .imageScale(.large)
+        )
+        #expectSnapshot(
+            Image(systemName: "globe")
+                .imageScale(Image.Scale.small)
+        )
+    }
+
     @Test func appliesFrameModifier() throws {
         #expectSnapshot(
             Text("Boxed")

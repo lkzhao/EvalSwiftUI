@@ -47,6 +47,7 @@ public final class RuntimeModule: RuntimeScope {
             FloatValueBuilder(name: "Float"),
             FloatValueBuilder(name: "Double"),
             FloatValueBuilder(name: "CGFloat"),
+            ImageScaleValueBuilder(),
             ImageValueBuilder(),
             TextValueBuilder(),
             ButtonValueBuilder(),
@@ -66,6 +67,7 @@ public final class RuntimeModule: RuntimeScope {
             FontModifierBuilder(),
             ForegroundStyleModifierBuilder(),
             FrameModifierBuilder(),
+            ImageScaleModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
