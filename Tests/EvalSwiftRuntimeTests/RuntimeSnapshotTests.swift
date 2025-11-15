@@ -141,6 +141,13 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesFontModifier() throws {
+        #expectSnapshot(
+            Text("Styled")
+                .font(.title2)
+        )
+    }
+
 //    @Test func rendersShapesAndSpacerBuilders() throws {
 //        #expectSnapshot(
 //            HStack(spacing: 0) {

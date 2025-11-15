@@ -53,6 +53,7 @@ public final class RuntimeModule: RuntimeScope {
             VStackValueBuilder(),
             ForEachValueBuilder(),
             ColorValueBuilder(),
+            FontValueBuilder(),
         ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
@@ -61,6 +62,7 @@ public final class RuntimeModule: RuntimeScope {
         let modifierBuilderList: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
+            FontModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
