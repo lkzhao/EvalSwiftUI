@@ -24,24 +24,6 @@ public final class RuntimeModule: RuntimeScope {
         valueBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) throws {
-//        let modifiers: [RuntimeModifierBuilder] = [
-//            PaddingModifierBuilder(),
-//            BackgroundModifierBuilder(),
-//            CornerRadiusModifierBuilder(),
-//            FontModifierBuilder(),
-//            ForegroundStyleModifierBuilder(),
-//            FrameModifierBuilder(),
-//            ImageScaleModifierBuilder(),
-//            OpacityModifierBuilder(),
-//            OverlayModifierBuilder(),
-//            ShadowModifierBuilder(),
-//        ] + modifierBuilders
-//        for modifier in modifiers {
-//            self.modifierBuilders[modifier.name] = modifier
-//        }
-
-//        SwiftUIRuntimeConstants.register(in: self)
-
         let builders: [RuntimeValueBuilder] = [
             IntValueBuilder(),
             FloatValueBuilder(name: "Float"),
