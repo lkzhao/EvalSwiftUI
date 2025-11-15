@@ -18,9 +18,10 @@ public struct VStackValueBuilder: RuntimeValueBuilder {
                 RuntimeParameter(name: "content", type: "() -> Content", defaultValue: nil)
             ],
             build: { arguments, _ in
-                let alignment = arguments.first(where: { $0.name == "alignment" })?.value.asAlignment ?? .center
-                let spacing = arguments.first(where: { $0.name == "spacing" })?.value.asDouble.map { CGFloat($0) } ?? nil
-                let contentViews = try arguments.first(where: { $0.name == "content" })?.value.asFunction?.renderRuntimeViews().compactMap { $0.asSwiftUIView } ?? []
+                let alignment = arguments.value(named: "alignment")?.asAlignment ?? .center
+                let spacing = arguments.value(named: "spacing")?.asDouble.map { CGFloat($0) } ?? nil
+                let contentFunction = arguments.value(named: "content")?.asFunction
+                let contentViews = try contentFunction?.renderRuntimeViews().compactMap { $0.asSwiftUIView } ?? []
 
                 let vStack = VStack(alignment: alignment.horizontal, spacing: spacing) {
                     ForEach(0..<contentViews.count, id: \.self) { index in

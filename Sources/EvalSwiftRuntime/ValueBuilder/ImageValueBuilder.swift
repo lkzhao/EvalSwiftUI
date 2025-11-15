@@ -12,7 +12,7 @@ public struct ImageValueBuilder: RuntimeValueBuilder {
                     RuntimeParameter(label: "_", name: "name", type: "String")
                 ],
                 build: { arguments, _ in
-                    guard let name = arguments.first?.value.asString, !name.isEmpty else {
+                    guard let name = arguments.value(named: "name")?.asString, !name.isEmpty else {
                         throw RuntimeError.invalidArgument("Image expects a non-empty name.")
                     }
                     return .swiftUI(.view(Image(name)))
@@ -23,7 +23,7 @@ public struct ImageValueBuilder: RuntimeValueBuilder {
                     RuntimeParameter(name: "systemName", type: "String")
                 ],
                 build: { arguments, _ in
-                    guard let systemName = arguments.first?.value.asString, !systemName.isEmpty else {
+                    guard let systemName = arguments.value(named: "systemName")?.asString, !systemName.isEmpty else {
                         throw RuntimeError.invalidArgument("Image(systemName:) expects a non-empty symbol name.")
                     }
                     return .swiftUI(.view(Image(systemName: systemName)))

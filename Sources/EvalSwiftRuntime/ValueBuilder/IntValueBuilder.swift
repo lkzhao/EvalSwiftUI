@@ -16,7 +16,7 @@ public struct IntValueBuilder: RuntimeValueBuilder {
                 RuntimeParameter(label: "_", name: "value", type: "String")
             ],
             build: { arguments, _ in
-                guard let stringValue = arguments.first?.value.asString,
+                guard let stringValue = arguments.value(named: "value")?.asString,
                       let intValue = Int(stringValue) else {
                     throw RuntimeError.invalidArgument("Int expects a valid integer string.")
                 }
@@ -28,7 +28,7 @@ public struct IntValueBuilder: RuntimeValueBuilder {
                 RuntimeParameter(label: "_", name: "value", type: "Double")
             ],
             build: { arguments, _ in
-                guard let doubleValue = arguments.first?.value.asDouble else {
+                guard let doubleValue = arguments.value(named: "value")?.asDouble else {
                     throw RuntimeError.invalidArgument("Int expects a valid double value.")
                 }
                 return .int(Int(doubleValue))
@@ -39,7 +39,7 @@ public struct IntValueBuilder: RuntimeValueBuilder {
                 RuntimeParameter(label: "_", name: "value", type: "Float")
             ],
             build: { arguments, _ in
-                guard let doubleValue = arguments.first?.value.asDouble else {
+                guard let doubleValue = arguments.value(named: "value")?.asDouble else {
                     throw RuntimeError.invalidArgument("Int expects a valid double value.")
                 }
                 return .int(Int(doubleValue))
@@ -50,7 +50,7 @@ public struct IntValueBuilder: RuntimeValueBuilder {
                 RuntimeParameter(label: "_", name: "value", type: "CGFloat")
             ],
             build: { arguments, _ in
-                guard let doubleValue = arguments.first?.value.asDouble else {
+                guard let doubleValue = arguments.value(named: "value")?.asDouble else {
                     throw RuntimeError.invalidArgument("Int expects a valid double value.")
                 }
                 return .int(Int(doubleValue))

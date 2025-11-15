@@ -19,7 +19,7 @@ public struct TextValueBuilder: RuntimeValueBuilder {
                     RuntimeParameter(label: "_", name: "content", type: "String")
                 ],
                 build: { arguments, _ in
-                    guard let content = arguments.first?.value.asString else {
+                    guard let content = arguments.value(named: "content")?.asString else {
                         throw RuntimeError.invalidArgument("Text expects a string content.")
                     }
                     return .swiftUI(.view(Text(content)))
