@@ -49,6 +49,8 @@ public final class RuntimeModule: RuntimeScope {
             CircleValueBuilder(),
             RectangleValueBuilder(),
             CapsuleValueBuilder(),
+            UUIDValueBuilder(),
+            DateValueBuilder(),
         ] + valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))

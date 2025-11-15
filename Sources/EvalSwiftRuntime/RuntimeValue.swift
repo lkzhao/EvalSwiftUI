@@ -13,6 +13,8 @@ public enum RuntimeValue {
     case instance(RuntimeInstance)
     case array([RuntimeValue])
     case dictionary([AnyHashable: RuntimeValue])
+    case uuid(UUID)
+    case date(Date)
     case binding(RuntimeBinding)
     case void
     case swiftUI(SwiftUIRuntimeValue)
@@ -39,6 +41,10 @@ extension RuntimeValue: CustomStringConvertible {
             return values.map { "\($0)" }.joined(separator: ",")
         case .dictionary:
             return "<Dictionary>"
+        case .uuid(let uuid):
+            return uuid.uuidString
+        case .date(let date):
+            return date.description
         case .function:
             return "<Function>"
         case .binding:
@@ -62,6 +68,8 @@ extension RuntimeValue {
             return String(number)
         case .bool(let bool):
             return String(bool)
+        case .uuid(let uuid):
+            return uuid.uuidString
         default:
             return nil
         }
@@ -123,6 +131,20 @@ extension RuntimeValue {
         default:
             return nil
         }
+    }
+
+    var asUUID: UUID? {
+        if case .uuid(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    var asDate: Date? {
+        if case .date(let value) = self {
+            return value
+        }
+        return nil
     }
 
     var asFunction: RuntimeFunction? {
@@ -250,6 +272,8 @@ extension RuntimeValue {
         case instance
         case array
         case dictionary
+        case uuid
+        case date
         case function([RuntimeParameter])
         case binding
         case void
@@ -275,6 +299,10 @@ extension RuntimeValue {
                 "Array"
             case .dictionary:
                 "Dictionary"
+            case .uuid:
+                "UUID"
+            case .date:
+                "Date"
             case .function(let params):
                 "(\(params.map { "\($0.label ?? "_"): \($0.type ?? "Any")" }.joined(separator: ", "))) -> Unknown"
             case .binding:
@@ -307,6 +335,10 @@ extension RuntimeValue {
             return .array
         case .dictionary:
             return .dictionary
+        case .uuid:
+            return .uuid
+        case .date:
+            return .date
         case .function(let function):
             return .function(function.parameters)
         case .binding:
@@ -330,6 +362,10 @@ extension RuntimeValue {
             return AnyHashable(string)
         case .bool(let bool):
             return AnyHashable(bool)
+        case .uuid(let uuid):
+            return AnyHashable(uuid)
+        case .date(let date):
+            return AnyHashable(date)
         default:
             return nil
         }

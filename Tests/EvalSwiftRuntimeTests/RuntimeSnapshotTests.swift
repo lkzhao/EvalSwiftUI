@@ -553,6 +553,29 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersForEachWithUUIDIdentifiers() throws {
+        let source = """
+        let ids = [
+            UUID(),
+            UUID()
+        ]
+
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(ids, id: \\.self) { _ in
+                Text("UUID item")
+            }
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach([UUID(), UUID()], id: \.self) { _ in
+                    Text("UUID item")
+                }
+            }
+        }
+    }
+
     @Test func rendersForEachUsingShorthandParameters() throws {
         #expectSnapshot(
             VStack {
