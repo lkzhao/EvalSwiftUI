@@ -35,7 +35,7 @@ extension RuntimeInstance {
             return AnyView(RuntimeViewHost(renderer: renderer))
         case .modifier(let builder, let arguments):
             guard let wrapped = parent as? RuntimeInstance else {
-                throw RuntimeError.invalidViewArgument("Modifier can only apply to View instance")
+                throw RuntimeError.invalidArgument("Modifier can only apply to View instance")
             }
             let view = try wrapped.makeSwiftUIView()
             return try builder.applyModifier(

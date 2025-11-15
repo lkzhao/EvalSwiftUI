@@ -36,13 +36,13 @@ struct ArgumentEvaluator {
                     try evaluate(argument: nil, for: parameter, scope: scope)
                 )
             case .mismatch(let message):
-                throw RuntimeError.invalidViewArgument(message)
+                throw RuntimeError.invalidArgument(message)
             }
         }
 
         if argumentIndex != arguments.count {
             if argumentIndex < arguments.count, let extraLabel = arguments[argumentIndex].label {
-                throw RuntimeError.invalidViewArgument("Unexpected argument label '\(extraLabel)'.")
+                throw RuntimeError.invalidArgument("Unexpected argument label '\(extraLabel)'.")
             }
             throw RuntimeError.invalidArgumentCount(expected: parameters.count, got: arguments.count)
         }

@@ -9,7 +9,7 @@ public enum RuntimeError: Error, CustomStringConvertible {
     case invalidArgumentCount(expected: Int, got: Int)
     case unsupportedExpression(String)
     case invalidViewResult(String)
-    case invalidViewArgument(String)
+    case invalidArgument(String)
     case returnOutsideFunction
     case unsupportedAssignment(String)
 
@@ -31,8 +31,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             return "Unsupported expression: \(description)"
         case .invalidViewResult(let description):
             return "Invalid view result: \(description)"
-        case .invalidViewArgument(let description):
-            return "Invalid view argument: \(description)"
+        case .invalidArgument(let description):
+            return "Invalid argument: \(description)"
         case .returnOutsideFunction:
             return "Return statement encountered outside of a function context."
         case .unsupportedAssignment(let description):

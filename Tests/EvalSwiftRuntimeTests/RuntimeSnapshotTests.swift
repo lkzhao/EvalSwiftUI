@@ -396,7 +396,7 @@ import Testing
 //        let module = try RuntimeModule(source: source)
 //        let type = try module.type(named: "CounterView")
 //        guard let instance = try type.makeInstance().asInstance else {
-//            throw RuntimeError.invalidViewArgument("Expected CounterView instance.")
+//            throw RuntimeError.invalidArgument("Expected CounterView instance.")
 //        }
 //        let renderer = try RuntimeViewRenderer(instance: instance)
 //

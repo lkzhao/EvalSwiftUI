@@ -61,8 +61,18 @@ public final class RuntimeModule: RuntimeScope {
 
 //        SwiftUIRuntimeConstants.register(in: self)
 
-        let imageBuilder = ImageRuntimeViewBuilder()
-        define(imageBuilder.name, value: .type(RuntimeType(builder: imageBuilder, parent: self)))
+        let builders: [RuntimeValueBuilder] = [
+            IntValueBuilder(),
+            FloatValueBuilder(name: "Float"),
+            FloatValueBuilder(name: "Double"),
+            FloatValueBuilder(name: "CGFloat"),
+            ImageRuntimeValueBuilder()
+//            ColorValueType(),
+//            ImageValueType(),
+        ]
+        for builder in builders {
+            define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
+        }
 
         let statementInterpreter = StatementInterpreter(scope: self)
         let values = try statementInterpreter.executeAndCollectRuntimeViews(statements: ir.statements)

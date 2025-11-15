@@ -86,7 +86,7 @@ struct ExpressionEvaluator {
                 let evaluatedArguments = try ArgumentEvaluator.evaluate(parameters: modifierBuilder.parameters, arguments: arguments, scope: scope)
                 guard let baseValue = try evaluate(baseExpr, scope: scope),
                       case .instance(let instance) = baseValue else {
-                    throw RuntimeError.invalidViewArgument("\(name) modifier requires a SwiftUI view as the receiver.")
+                    throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
                 }
                 let modifiedInstance = RuntimeInstance(modifierBuilder: modifierBuilder, arguments: evaluatedArguments, parent: instance)
                 return .instance(modifiedInstance)
