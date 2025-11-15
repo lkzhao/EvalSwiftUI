@@ -269,6 +269,21 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesShadowModifier() throws {
+        #expectSnapshot(
+            Text("Shadow")
+                .padding(6)
+                .background(Color.white)
+                .shadow(radius: 4)
+        )
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 12)
+                .frame(width: 60, height: 36)
+                .foregroundStyle(.mint)
+                .shadow(color: .black.opacity(0.3), radius: 6, x: 2, y: 2)
+        )
+    }
+
     @Test func appliesFrameModifier() throws {
         #expectSnapshot(
             Text("Boxed")
