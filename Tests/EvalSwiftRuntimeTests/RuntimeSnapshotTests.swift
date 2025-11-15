@@ -238,6 +238,14 @@ struct RuntimeSnapshotTests {
                 .frame(width: 60, height: 60)
                 .clipShape(Circle())
         )
+        #expectSnapshot(
+            Rectangle()
+                .frame(width: 72, height: 48)
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 12),
+                    style: FillStyle(eoFill: true, antialiased: false)
+                )
+        )
     }
 
     @Test func appliesMaskModifier() throws {

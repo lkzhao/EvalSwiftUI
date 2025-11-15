@@ -40,6 +40,7 @@ public final class RuntimeModule: RuntimeScope {
             ForEachValueBuilder(),
             ColorValueBuilder(),
             ShapeStyleValueBuilder(),
+            FillStyleValueBuilder(),
             FontValueBuilder(),
             AlignmentValueBuilder(),
             HorizontalAlignmentValueBuilder(),
