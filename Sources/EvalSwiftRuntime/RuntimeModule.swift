@@ -38,6 +38,7 @@ public final class RuntimeModule: RuntimeScope {
             ZStackValueBuilder(),
             ForEachValueBuilder(),
             ColorValueBuilder(),
+            ShapeStyleValueBuilder(),
             FontValueBuilder(),
             AlignmentValueBuilder(),
             HorizontalAlignmentValueBuilder(),

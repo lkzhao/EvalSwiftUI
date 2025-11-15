@@ -178,6 +178,11 @@ struct RuntimeSnapshotTests {
                         .background(Color.black.opacity(0.2))
                 }
         )
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 20)
+                .frame(width: 80, height: 48)
+                .overlay(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        )
     }
 
     @Test func rendersColorConstant() throws {
@@ -211,6 +216,11 @@ struct RuntimeSnapshotTests {
         #expectSnapshot(
             Text("Tinted")
                 .foregroundStyle(.pink)
+        )
+        #expectSnapshot(
+            Text("Material")
+                .padding(6)
+                .foregroundStyle(.thinMaterial)
         )
     }
 

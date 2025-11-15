@@ -8,13 +8,13 @@ public struct ForegroundStyleModifierBuilder: RuntimeModifierBuilder {
         definitions = [
             RuntimeViewModifierDefinition(
                 parameters: [
-                    RuntimeParameter(label: "_", name: "style", type: "Color")
+                    RuntimeParameter(label: "_", name: "style", type: "ShapeStyle")
                 ],
                 apply: { view, arguments, _ in
-                    guard let color = arguments.value(named: "style")?.asColor else {
-                        throw RuntimeError.invalidArgument("foregroundStyle expects a Color value.")
+                    guard let style = arguments.value(named: "style")?.asShapeStyle else {
+                        throw RuntimeError.invalidArgument("foregroundStyle expects a ShapeStyle value.")
                     }
-                    return AnyView(view.foregroundStyle(color))
+                    return AnyView(view.foregroundStyle(style))
                 }
             )
         ]

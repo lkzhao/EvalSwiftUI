@@ -22,8 +22,8 @@ public struct RoundedRectangleValueBuilder: RuntimeValueBuilder {
                         )
                     }
                     let style = arguments.value(named: "style")?.asRoundedCornerStyle ?? .continuous
-                    let view = RoundedRectangle(cornerRadius: cornerRadius, style: style)
-                    return .swiftUI(.view(AnyView(view)))
+                    let shape = RoundedRectangle(cornerRadius: cornerRadius, style: style)
+                    return .swiftUI(.shape(AnyShape(shape)))
                 }
             )
         ]

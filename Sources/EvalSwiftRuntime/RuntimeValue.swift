@@ -174,6 +174,29 @@ extension RuntimeValue {
         return style
     }
 
+    var asShapeStyle: AnyShapeStyle? {
+        switch self {
+        case .swiftUI(let value):
+            switch value {
+            case .shapeStyle(let style):
+                return style
+            case .color(let color):
+                return AnyShapeStyle(color)
+            default:
+                return nil
+            }
+        default:
+            return nil
+        }
+    }
+
+    var asShape: AnyShape? {
+        guard case .swiftUI(let value) = self, case .shape(let shape) = value else {
+            return nil
+        }
+        return shape
+    }
+
     var asInstance: RuntimeInstance? {
         guard case .instance(let instance) = self else { return nil }
         return instance
@@ -185,6 +208,9 @@ extension RuntimeValue {
         }
         if case .swiftUI(let value) = self, case .view(let view) = value {
             return AnyView(view)
+        }
+        if case .swiftUI(let value) = self, case .shape(let shape) = value {
+            return AnyView(shape)
         }
         if case .instance(let instance) = self {
             return try? instance.makeSwiftUIView()
@@ -273,6 +299,8 @@ public enum SwiftUIRuntimeValue {
     case imageScale(Image.Scale)
     case axisSet(Axis.Set)
     case roundedCornerStyle(RoundedCornerStyle)
+    case shapeStyle(AnyShapeStyle)
+    case shape(AnyShape)
 }
 
 extension SwiftUIRuntimeValue: CustomStringConvertible {
@@ -296,6 +324,10 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Axis.Set>"
         case .roundedCornerStyle:
             return "<RoundedCornerStyle>"
+        case .shapeStyle:
+            return "<ShapeStyle>"
+        case .shape:
+            return "<Shape>"
         }
     }
 }

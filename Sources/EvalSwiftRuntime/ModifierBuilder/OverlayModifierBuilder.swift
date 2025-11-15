@@ -48,6 +48,38 @@ public struct OverlayModifierBuilder: RuntimeModifierBuilder {
                         overlayView
                     })
                 }
+            ),
+            RuntimeViewModifierDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "content", type: "Color"),
+                    RuntimeParameter(
+                        name: "alignment",
+                        type: "Alignment",
+                        defaultValue: .swiftUI(.alignment(.center))
+                    )
+                ],
+                apply: { view, arguments, _ in
+                    let alignment = arguments.value(named: "alignment")?.asAlignment ?? .center
+                    guard let color = arguments.value(named: "content")?.asColor else {
+                        throw RuntimeError.invalidArgument("overlay expects a Color value.")
+                    }
+                    return AnyView(view.overlay(color, alignment: alignment))
+                }
+            ),
+            RuntimeViewModifierDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "style", type: "ShapeStyle"),
+                    RuntimeParameter(label: "in", name: "shape", type: "Shape")
+                ],
+                apply: { view, arguments, _ in
+                    guard let style = arguments.value(named: "style")?.asShapeStyle else {
+                        throw RuntimeError.invalidArgument("overlay expects a ShapeStyle value.")
+                    }
+                    guard let shape = arguments.value(named: "shape")?.asShape else {
+                        throw RuntimeError.invalidArgument("overlay expects a Shape value for the 'in' parameter.")
+                    }
+                    return AnyView(view.overlay(style, in: shape))
+                }
             )
         ]
     }
