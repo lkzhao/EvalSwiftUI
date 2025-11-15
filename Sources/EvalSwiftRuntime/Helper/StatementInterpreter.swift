@@ -3,29 +3,34 @@ import EvalSwiftIR
 import SwiftUI
 
 final class StatementInterpreter {
-    private let scope: RuntimeScope
+    private let rootScope: RuntimeScope
     private var collectedValues: [RuntimeValue] = []
 
     init(scope: RuntimeScope) {
-        self.scope = scope
+        self.rootScope = scope
     }
 
     func execute(statements: [StatementIR]) throws -> RuntimeValue? {
         collectedValues = []
-        let result = try executeBlock(statements)
-        if result.returned {
-            return result.value
+        let result = try executeBlock(statements, scope: rootScope)
+        if case .return(let value) = result {
+            return value
         }
         return collectedValues.last
     }
 
     func executeAndCollectTopLevelValues(statements: [StatementIR]) throws -> [RuntimeValue] {
         collectedValues = []
-        _ = try executeBlock(statements)
+        _ = try executeBlock(statements, scope: rootScope)
         return collectedValues
     }
 
-    private func executeBlock(_ statements: [StatementIR]) throws -> (returned: Bool, value: RuntimeValue?) {
+    private enum ExecutionResult {
+        case `continue`
+        case `return`(RuntimeValue?)
+    }
+
+    private func executeBlock(_ statements: [StatementIR], scope: RuntimeScope) throws -> ExecutionResult {
         for statement in statements {
             switch statement {
             case .binding(let binding):
@@ -40,21 +45,21 @@ final class StatementInterpreter {
                 if let value {
                     collectedValues.append(value)
                 }
-                return (true, value)
+                return .return(value)
             case .assignment(let assignment):
                 let value = try ExpressionEvaluator.evaluate(assignment.value, scope: scope) ?? .void
-                try assign(value: value, to: assignment.target)
+                try assign(value: value, to: assignment.target, scope: scope)
             case .if(let ifStmt):
-                let conditionValue = try ExpressionEvaluator.evaluate(ifStmt.condition, scope: scope)
-                let conditionResult = conditionValue?.asBool ?? false
-                if conditionResult {
-                    let result = try executeBlock(ifStmt.body)
-                    if result.returned {
+                let evaluation = try evaluate(condition: ifStmt.condition, scope: scope)
+                if evaluation.passed {
+                    let branchScope = evaluation.scope ?? scope
+                    let result = try executeBlock(ifStmt.body, scope: branchScope)
+                    if case .return = result {
                         return result
                     }
                 } else if let elseBody = ifStmt.elseBody {
-                    let result = try executeBlock(elseBody)
-                    if result.returned {
+                    let result = try executeBlock(elseBody, scope: scope)
+                    if case .return = result {
                         return result
                     }
                 }
@@ -62,10 +67,28 @@ final class StatementInterpreter {
                 throw RuntimeError.unsupportedExpression(raw)
             }
         }
-        return (false, nil)
+        return .continue
     }
 
-    private func assign(value: RuntimeValue, to target: ExprIR) throws {
+    private func evaluate(condition: IfConditionIR, scope: RuntimeScope) throws -> (passed: Bool, scope: RuntimeScope?) {
+        switch condition {
+        case .expression(let expr):
+            let value = try ExpressionEvaluator.evaluate(expr, scope: scope)
+            return (value?.asBool ?? false, nil)
+        case .optionalBinding(let name, _, let expr):
+            guard let evaluated = try ExpressionEvaluator.evaluate(expr, scope: scope) else {
+                return (false, nil)
+            }
+            if case .void = evaluated {
+                return (false, nil)
+            }
+            let bindingScope = RuntimeFunctionScope(parent: scope)
+            bindingScope.define(name, value: evaluated)
+            return (true, bindingScope)
+        }
+    }
+
+    private func assign(value: RuntimeValue, to target: ExprIR, scope: RuntimeScope) throws {
         switch target {
         case .identifier(let name):
             try scope.set(name, value: value)

@@ -215,25 +215,25 @@ struct ExpressionEvaluatorTests {
 
     @Test func supportsIfStatementsInsideFunctions() throws {
         let source = """
-        var isOn = false
+        var value: Int? = 1
 
-        func toggle() {
-            if isOn {
-                isOn = false
+        func update() {
+            if let unwrapped = value {
+                value = unwrapped + 1
             } else {
-                isOn = true
+                value = 0
             }
         }
 
-        toggle()
+        update()
         """
 
         let module = try RuntimeModule(source: source)
-        guard case .bool(let value) = try module.get("isOn") else {
-            throw TestFailure.expected("Expected isOn to be stored as Bool")
+        guard case .int(let result) = try module.get("value") else {
+            throw TestFailure.expected("Expected value to be Int")
         }
 
-        #expect(value == true)
+        #expect(result == 2)
     }
 
     @Test func supportsDefaultedFunctionArguments() throws {

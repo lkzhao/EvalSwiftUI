@@ -34,7 +34,10 @@ public struct SwiftIRParser {
             }
 
             if let expressionStmt = node.as(ExpressionStmtSyntax.self) {
-                if let assignment = makeAssignment(from: expressionStmt.expression) {
+                if let ifExpr = expressionStmt.expression.as(IfExprSyntax.self),
+                   let ifIR = makeIfStatement(from: ifExpr) {
+                    statements.append(.if(ifIR))
+                } else if let assignment = makeAssignment(from: expressionStmt.expression) {
                     statements.append(.assignment(assignment))
                 } else {
                     statements.append(.expression(makeExpr(expressionStmt.expression)))
@@ -43,7 +46,10 @@ public struct SwiftIRParser {
             }
 
             if let expression = node.as(ExprSyntax.self) {
-                if let assignment = makeAssignment(from: expression) {
+                if let ifExpr = expression.as(IfExprSyntax.self),
+                   let ifIR = makeIfStatement(from: ifExpr) {
+                    statements.append(.if(ifIR))
+                } else if let assignment = makeAssignment(from: expression) {
                     statements.append(.assignment(assignment))
                 } else {
                     statements.append(.expression(makeExpr(expression)))
@@ -215,12 +221,30 @@ public struct SwiftIRParser {
 
     private func makeIfStatement(from node: IfExprSyntax) -> IfStatementIR? {
         guard node.conditions.count == 1,
-              let conditionElement = node.conditions.first,
-              case .expression(let expr) = conditionElement.condition else {
+              let conditionElement = node.conditions.first else {
             return nil
         }
 
-        let condition = makeExpr(expr)
+        let condition: IfConditionIR
+        switch conditionElement.condition {
+        case .expression(let expr):
+            condition = .expression(makeExpr(expr))
+        case .optionalBinding(let binding):
+            guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
+                  let initializer = binding.initializer else {
+                return nil
+            }
+            condition = .optionalBinding(
+                name: pattern.identifier.text,
+                type: binding.typeAnnotation?.type.trimmedDescription,
+                value: makeExpr(initializer.value)
+            )
+        case .availability, .matchingPattern:
+            return nil
+        @unknown default:
+            return nil
+        }
+
         let bodyStatements = makeStatements(from: node.body.statements)
         var elseStatements: [StatementIR]? = nil
         if let elseBody = node.elseBody {
@@ -296,6 +320,10 @@ public struct SwiftIRParser {
 
         if let literal = expr.as(BooleanLiteralExprSyntax.self) {
             return .bool(literal.literal.text == "true")
+        }
+
+        if expr.is(NilLiteralExprSyntax.self) {
+            return .nilLiteral
         }
 
         if let array = expr.as(ArrayExprSyntax.self) {

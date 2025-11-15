@@ -72,6 +72,7 @@ public indirect enum ExprIR: Hashable {
     case double(Double)
     case bool(Bool)
     case string(String)
+    case nilLiteral
     case array([ExprIR])
     case keyPath(KeyPathIR)
     case stringInterpolation([StringInterpolationSegmentIR])
@@ -113,7 +114,12 @@ public struct AssignmentIR: Hashable {
 }
 
 public struct IfStatementIR: Hashable {
-    public let condition: ExprIR
+    public let condition: IfConditionIR
     public let body: [StatementIR]
     public let elseBody: [StatementIR]?
+}
+
+public enum IfConditionIR: Hashable {
+    case expression(ExprIR)
+    case optionalBinding(name: String, type: String?, value: ExprIR)
 }

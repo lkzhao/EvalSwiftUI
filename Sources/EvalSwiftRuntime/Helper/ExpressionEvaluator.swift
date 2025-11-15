@@ -19,6 +19,8 @@ struct ExpressionEvaluator {
             return .bool(value)
         case .string(let string):
             return .string(string)
+        case .nilLiteral:
+            return .void
         case .array(let expressions):
             let values = try expressions.map { expr -> RuntimeValue in
                 guard let value = try evaluate(expr, scope: scope) else { return .void }

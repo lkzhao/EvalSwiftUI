@@ -258,6 +258,36 @@ struct RuntimeSnapshotTests {
         }
     }
 
+    @Test func rendersIfLetBinding() throws {
+        let source = """
+        @State var subtitle: String? = "Hello"
+
+        if let message = subtitle {
+            Text(message)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Hello")
+        }
+    }
+
+    @Test func rendersIfLetElseBranch() throws {
+        let source = """
+        @State var subtitle: String? = nil
+
+        if let message = subtitle {
+            Text(message)
+        } else {
+            Text("Fallback")
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Fallback")
+        }
+    }
+
     @Test func appliesColorOpacityModifier() throws {
         #expectSnapshot(
             Color.red.opacity(0.4)
