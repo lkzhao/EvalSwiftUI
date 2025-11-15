@@ -52,6 +52,7 @@ public final class RuntimeModule: RuntimeScope {
         let modifierBuilderList: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
+            OverlayModifierBuilder(),
             FontModifierBuilder(),
             ForegroundStyleModifierBuilder(),
             FrameModifierBuilder(),

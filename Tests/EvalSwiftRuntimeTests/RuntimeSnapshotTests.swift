@@ -158,6 +158,28 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func appliesOverlayModifier() throws {
+        #expectSnapshot(
+            Color.blue
+                .frame(width: 72, height: 40)
+                .overlay(
+                    Text("Hi")
+                        .foregroundStyle(.white)
+                )
+        )
+        #expectSnapshot(
+            RoundedRectangle(cornerRadius: 16)
+                .frame(width: 80, height: 48)
+                .foregroundStyle(.mint)
+                .overlay(alignment: .topTrailing) {
+                    Text("NEW")
+                        .font(.caption)
+                        .padding(4)
+                        .background(Color.black.opacity(0.2))
+                }
+        )
+    }
+
     @Test func rendersColorConstant() throws {
         #expectSnapshot(
             Color.blue
