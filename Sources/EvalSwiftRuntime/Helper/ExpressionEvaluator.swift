@@ -87,65 +87,58 @@ struct ExpressionEvaluator {
                 return try scope.get(name)
             }
         case .call(let callee, let arguments):
-            if case .member(let baseExpr, let name) = callee,
-               let modifierBuilder = scope.module?.modifierBuilder(named: name) {
+            var lastError: Error?
+            if case .member(let baseExpr, let name) = callee {
                 guard let baseValue = try evaluate(baseExpr, scope: scope) else {
                     throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
                 }
-
-                var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
-                for definition in modifierBuilder.definitions {
-                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(
-                        parameters: definition.parameters,
-                        arguments: arguments,
-                        scope: scope
-                    ) {
-                        resolvedDefinition = (definition, evaluatedArguments)
-                        break
+                if case .type(let type) = baseValue, case .type(let subType) = try type.get(name) {
+                    return try makeValue(type: subType, arguments: arguments, scope: scope)
+                }
+                if let modifierBuilder = scope.module?.modifierBuilder(named: name) {
+                    guard let baseValue = try evaluate(baseExpr, scope: scope) else {
+                        throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
                     }
-                }
 
-                guard let (definition, evaluatedArguments) = resolvedDefinition else {
-                    throw RuntimeError.invalidArgument("No matching signature for modifier '\(name)'.")
-                }
-
-                if case .instance(let instance) = baseValue {
-                    let modifiedInstance = RuntimeInstance(
-                        modifierDefinition: definition,
-                        arguments: evaluatedArguments,
-                        parent: instance
-                    )
-                    return .instance(modifiedInstance)
-                }
-
-                return try definition.apply(
-                    to: baseValue,
-                    arguments: evaluatedArguments,
-                    scope: scope
-                )
-            }
-
-            if case .identifier(let typeName) = callee,
-                let type = try? scope.type(named: typeName) {
-                let definitions = type.definitions
-                var lastError: Error?
-                for definition in definitions {
-                    if let evaluatedArguments = try? ArgumentEvaluator.evaluate(
-                        parameters: definition.parameters,
-                        arguments: arguments,
-                        scope: scope
-                    ) {
+                    var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
+                    for definition in modifierBuilder.definitions {
                         do {
-                            let result = try definition.build(evaluatedArguments, scope)
-                            return result
+                            let evaluatedArguments = try ArgumentEvaluator.evaluate(
+                                parameters: definition.parameters,
+                                arguments: arguments,
+                                scope: scope
+                            )
+                            resolvedDefinition = (definition, evaluatedArguments)
+                            break
                         } catch {
                             lastError = error
                         }
                     }
+
+                    guard let (definition, evaluatedArguments) = resolvedDefinition else {
+                        throw lastError ?? RuntimeError.invalidArgument("No matching signature for modifier '\(name)'.")
+                    }
+
+                    if case .instance(let instance) = baseValue {
+                        let modifiedInstance = RuntimeInstance(
+                            modifierDefinition: definition,
+                            arguments: evaluatedArguments,
+                            parent: instance
+                        )
+                        return .instance(modifiedInstance)
+                    }
+
+                    return try definition.apply(
+                        to: baseValue,
+                        arguments: evaluatedArguments,
+                        scope: scope
+                    )
                 }
-                if let lastError {
-                    throw lastError
-                }
+            }
+
+            if case .identifier(let typeName) = callee,
+                let type = try? scope.type(named: typeName) {
+                return try makeValue(type: type, arguments: arguments, scope: scope)
             }
 
             if let calleeValue = try evaluate(callee, scope: scope),
@@ -169,6 +162,25 @@ struct ExpressionEvaluator {
             }
             return try evaluateSubscript(base: baseValue, arguments: resolvedArguments)
         }
+    }
+
+    private static func makeValue(type: RuntimeType, arguments: [FunctionCallArgumentIR], scope: RuntimeScope) throws -> RuntimeValue? {
+        let definitions = type.definitions
+        var lastError: Error?
+        for definition in definitions {
+            do {
+                let evaluatedArguments = try ArgumentEvaluator.evaluate(
+                    parameters: definition.parameters,
+                    arguments: arguments,
+                    scope: scope
+                )
+                let result = try definition.build(evaluatedArguments, scope)
+                return result
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError ?? RuntimeError.invalidArgument("No matching initializer for type '\(type.name)'.")
     }
 
     private static func makeBinding(named name: String, scope: RuntimeScope) throws -> RuntimeValue {
