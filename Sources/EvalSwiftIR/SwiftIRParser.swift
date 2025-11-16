@@ -163,6 +163,35 @@ public struct SwiftIRParser {
         return definition
     }
 
+    private func makeGuardStatement(from node: GuardStmtSyntax) -> GuardStatementIR? {
+        var conditions: [IfConditionIR] = []
+        for element in node.conditions {
+            switch element.condition {
+            case .expression(let expr):
+                conditions.append(.expression(makeExpr(expr)))
+            case .optionalBinding(let binding):
+                guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
+                      let initializer = binding.initializer else {
+                    return nil
+                }
+                conditions.append(
+                    .optionalBinding(
+                        name: pattern.identifier.text,
+                        type: binding.typeAnnotation?.type.trimmedDescription,
+                        value: makeExpr(initializer.value)
+                    )
+                )
+            case .availability, .matchingPattern:
+                return nil
+            @unknown default:
+                return nil
+            }
+        }
+
+        let elseStatements = makeStatements(from: node.body.statements)
+        return GuardStatementIR(conditions: conditions, elseBody: elseStatements)
+    }
+
     private func makeEnumDefinition(from node: EnumDeclSyntax) -> DefinitionIR? {
         var staticBindings: [BindingIR] = []
         var enumCases: [EnumCaseIR] = []
@@ -280,6 +309,11 @@ public struct SwiftIRParser {
             if let varDecl = statement.item.as(VariableDeclSyntax.self),
                let binding = makeBinding(from: varDecl) {
                 return .binding(binding)
+            }
+
+            if let guardStmt = statement.item.as(GuardStmtSyntax.self),
+               let guardIR = makeGuardStatement(from: guardStmt) {
+                return .guard(guardIR)
             }
 
             if let ifStmt = statement.item.as(IfExprSyntax.self),
@@ -428,6 +462,19 @@ public struct SwiftIRParser {
                 return .unknown(keyPathExpr.trimmedDescription)
             }
             return .keyPath(keyPath)
+        }
+
+        if let ternary = expr.as(TernaryExprSyntax.self) {
+            return .ternary(
+                condition: makeExpr(ternary.condition),
+                trueValue: makeExpr(ternary.thenExpression),
+                falseValue: makeExpr(ternary.elseExpression)
+            )
+        }
+
+        if let sequence = expr.as(SequenceExprSyntax.self),
+           let ternary = makeTernaryExpr(from: sequence) {
+            return ternary
         }
 
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),
@@ -699,6 +746,36 @@ public struct SwiftIRParser {
             return makeExpr(first)
         }
         return makeBinaryExpr(from: list) ?? .unknown(list.map { $0.trimmedDescription }.joined(separator: " "))
+    }
+
+    private func makeTernaryExpr(from sequence: SequenceExprSyntax) -> ExprIR? {
+        let elements = Array(sequence.elements)
+        guard elements.count >= 3 else {
+            return nil
+        }
+        for index in 0..<(elements.count - 2) {
+            if let ternaryNode = elements[index + 1].as(TernaryExprSyntax.self) {
+                let condition = makeExpr(elements[index])
+                let trueValue = makeExpr(ternaryNode.thenExpression)
+                let falseValue = makeExpr(elements[index + 2])
+                return .ternary(
+                    condition: condition,
+                    trueValue: trueValue,
+                    falseValue: falseValue
+                )
+            }
+            if let unresolved = elements[index + 1].as(UnresolvedTernaryExprSyntax.self) {
+                let condition = makeExpr(elements[index])
+                let trueValue = makeExpr(unresolved.thenExpression)
+                let falseValue = makeExpr(elements[index + 2])
+                return .ternary(
+                    condition: condition,
+                    trueValue: trueValue,
+                    falseValue: falseValue
+                )
+            }
+        }
+        return nil
     }
 
     private func makeBinaryExpr(from elements: [ExprSyntax]) -> ExprIR? {

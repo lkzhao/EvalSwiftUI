@@ -55,6 +55,14 @@ public enum BinaryOperatorIR: String {
     case remainder = "%"
     case rangeExclusive = "..<"
     case rangeInclusive = "..."
+    case equal = "=="
+    case notEqual = "!="
+    case lessThan = "<"
+    case lessThanOrEqual = "<="
+    case greaterThan = ">"
+    case greaterThanOrEqual = ">="
+    case logicalAnd = "&&"
+    case logicalOr = "||"
 
     var precedence: Int {
         switch self {
@@ -64,6 +72,10 @@ public enum BinaryOperatorIR: String {
             return 2
         case .addition, .subtraction:
             return 1
+        case .equal, .notEqual, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual:
+            return 0
+        case .logicalAnd, .logicalOr:
+            return -1
         }
     }
 }
@@ -71,6 +83,7 @@ public enum BinaryOperatorIR: String {
 public enum UnaryOperatorIR: String {
     case plus = "+"
     case minus = "-"
+    case not = "!"
 }
 
 public enum KeyPathIR: Hashable {
@@ -104,6 +117,7 @@ public indirect enum ExprIR: Hashable {
     case definition(DefinitionIR)
     case binary(op: BinaryOperatorIR, lhs: ExprIR, rhs: ExprIR)
     case unary(op: UnaryOperatorIR, operand: ExprIR)
+    case ternary(condition: ExprIR, trueValue: ExprIR, falseValue: ExprIR)
     case unknown(String)
 }
 
@@ -123,6 +137,7 @@ public enum StatementIR: Hashable {
     case `return`(ReturnIR)
     case assignment(AssignmentIR)
     case `if`(IfStatementIR)
+    case `guard`(GuardStatementIR)
     case unhandled(String)
 }
 
@@ -139,6 +154,11 @@ public struct IfStatementIR: Hashable {
     public let condition: IfConditionIR
     public let body: [StatementIR]
     public let elseBody: [StatementIR]?
+}
+
+public struct GuardStatementIR: Hashable {
+    public let conditions: [IfConditionIR]
+    public let elseBody: [StatementIR]
 }
 
 public enum IfConditionIR: Hashable {

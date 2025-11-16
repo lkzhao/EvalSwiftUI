@@ -90,3 +90,48 @@ public final class RuntimeType: RuntimeScope {
         }
     }
 }
+
+extension RuntimeType {
+    func lookupImplicitMember(
+        named name: String,
+        expectedType: String?,
+        visited: inout Set<ObjectIdentifier>
+    ) -> RuntimeValue? {
+        let identifier = ObjectIdentifier(self)
+        guard visited.insert(identifier).inserted else { return nil }
+        var bestValue: RuntimeValue?
+        var bestPriority = Int.min
+        if let holder = storage[name] {
+            let candidates = holder.values.filter { $0.matches(expectedType: expectedType) }
+            if let value = candidates.max(by: { $0.implicitPriority < $1.implicitPriority }) {
+                bestValue = value
+                bestPriority = value.implicitPriority
+            }
+        }
+        for entry in storage.values {
+            for stored in entry.values {
+                if case .type(let nestedType) = stored,
+                   let nestedValue = nestedType.lookupImplicitMember(
+                       named: name,
+                       expectedType: expectedType,
+                       visited: &visited
+                   ),
+                   nestedValue.implicitPriority > bestPriority {
+                    bestValue = nestedValue
+                    bestPriority = nestedValue.implicitPriority
+                }
+            }
+        }
+        if let parentType = parent as? RuntimeType,
+           let parentValue = parentType.lookupImplicitMember(
+               named: name,
+               expectedType: expectedType,
+               visited: &visited
+           ),
+           parentValue.implicitPriority > bestPriority {
+            bestValue = parentValue
+            bestPriority = parentValue.implicitPriority
+        }
+        return bestValue
+    }
+}

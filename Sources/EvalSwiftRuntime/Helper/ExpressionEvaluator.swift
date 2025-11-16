@@ -2,7 +2,11 @@ import Foundation
 import EvalSwiftIR
 
 struct ExpressionEvaluator {
-    static func evaluate(_ expression: ExprIR?, scope: RuntimeScope) throws -> RuntimeValue? {
+    static func evaluate(
+        _ expression: ExprIR?,
+        scope: RuntimeScope,
+        expectedType: String? = nil
+    ) throws -> RuntimeValue? {
         guard let expression else { return nil }
         switch expression {
         case .identifier(let name):
@@ -52,11 +56,23 @@ struct ExpressionEvaluator {
             }
             return try evaluateUnary(op: op, operand: operand)
         case .binary(let op, let lhsExpr, let rhsExpr):
-            guard let lhs = try evaluate(lhsExpr, scope: scope),
-                  let rhs = try evaluate(rhsExpr, scope: scope) else {
+            guard let lhs = try evaluate(lhsExpr, scope: scope) else {
+                throw RuntimeError.unsupportedExpression("Binary operator \(op.rawValue) requires valid operands")
+            }
+            if op.isLogical {
+                return try evaluateLogicalBinary(op: op, lhs: lhs, rhsExpr: rhsExpr, scope: scope)
+            }
+            guard let rhs = try evaluate(rhsExpr, scope: scope) else {
                 throw RuntimeError.unsupportedExpression("Binary operator \(op.rawValue) requires valid operands")
             }
             return try evaluateBinary(op: op, lhs: lhs, rhs: rhs)
+        case .ternary(let condition, let trueValue, let falseValue):
+            let predicate = try evaluate(condition, scope: scope)?.asBool ?? false
+            if predicate {
+                return try evaluate(trueValue, scope: scope, expectedType: expectedType)
+            } else {
+                return try evaluate(falseValue, scope: scope, expectedType: expectedType)
+            }
         case .member(let base, let name):
             if case .identifier("self") = base {
                 if let instance = scope.instance {
@@ -78,20 +94,57 @@ struct ExpressionEvaluator {
                     return try instance.get(name)
                 case .type(let type):
                     return try type.get(name)
+                case .array(let values):
+                    switch name {
+                    case "count":
+                        return .int(values.count)
+                    case "isEmpty":
+                        return .bool(values.isEmpty)
+                    default:
+                        throw RuntimeError.unsupportedExpression(
+                            "Cannot access member '\(name)' on \(baseValue.valueType)"
+                        )
+                    }
+                case .string(let string):
+                    switch name {
+                    case "count":
+                        return .int(string.count)
+                    case "isEmpty":
+                        return .bool(string.isEmpty)
+                    default:
+                        throw RuntimeError.unsupportedExpression(
+                            "Cannot access member '\(name)' on \(baseValue.valueType)"
+                        )
+                    }
                 default:
                     throw RuntimeError.unsupportedExpression(
                         "Cannot access member '\(name)' on \(baseValue.valueType)"
                     )
                 }
             } else {
+                if let implicit = try? scope.getImplicitMember(name, expectedType: expectedType) {
+                    return implicit
+                }
                 return try scope.get(name)
             }
         case .call(let callee, let arguments):
             // TODO: Make this part integrated with the next `if let calleeValue = try evaluate(callee, scope: scope) {` part
             if case .member(let baseExpr, let name) = callee {
+                if name == "toggle",
+                   arguments.isEmpty,
+                   let identifier = identifierName(from: baseExpr) {
+                    let currentValue = try scope.get(identifier)
+                    guard let boolValue = currentValue.asBool else {
+                        throw RuntimeError.invalidArgument("toggle() is only supported on Bool values.")
+                    }
+                    try scope.set(identifier, value: .bool(!boolValue))
+                    return .void
+                }
+
                 if let modifierBuilder = scope.module?.modifierBuilder(named: name) {
-                    guard let baseValue = try evaluate(baseExpr, scope: scope) else {
-                        throw RuntimeError.invalidArgument("\(name) modifier requires a SwiftUI view as the receiver.")
+                    guard let baseExpr,
+                          let baseValue = try evaluate(baseExpr, scope: scope) else {
+                        throw RuntimeError.invalidArgument("\(name) modifier requires a receiver.")
                     }
 
                     var lastError: Error?
@@ -129,6 +182,7 @@ struct ExpressionEvaluator {
                         scope: scope
                     )
                 }
+
             }
 
             if let calleeValue = try evaluate(callee, scope: scope) {
@@ -223,7 +277,20 @@ struct ExpressionEvaluator {
                 }
                 return .double(-numeric)
             }
+        case .not:
+            guard let boolValue = operand.asBool else {
+                throw RuntimeError.unsupportedExpression("Unary ! is not supported for \(operand.valueType)")
+            }
+            return .bool(!boolValue)
         }
+    }
+
+    private static func identifierName(from expression: ExprIR?) -> String? {
+        guard let expression else { return nil }
+        if case .identifier(let name) = expression {
+            return name
+        }
+        return nil
     }
 
     private static func evaluateSubscript(base: RuntimeValue, arguments: [RuntimeValue]) throws -> RuntimeValue {
@@ -257,6 +324,11 @@ struct ExpressionEvaluator {
         lhs: RuntimeValue,
         rhs: RuntimeValue
     ) throws -> RuntimeValue {
+
+        if op.isComparison {
+            return try evaluateComparison(op: op, lhs: lhs, rhs: rhs)
+        }
+
         if op == .rangeExclusive || op == .rangeInclusive {
             guard let left = lhs.asInt, let right = rhs.asInt else {
                 throw RuntimeError.unsupportedExpression("Range operators require Int operands")
@@ -308,6 +380,8 @@ struct ExpressionEvaluator {
             if rhs < lhs { return .array([]) }
             let values = Array(lhs...rhs).map { RuntimeValue.int($0) }
             return .array(values)
+        default:
+            throw RuntimeError.unsupportedExpression("Operator \(op.rawValue) is not supported for integers.")
         }
     }
 
@@ -336,7 +410,104 @@ struct ExpressionEvaluator {
             result = lhs.truncatingRemainder(dividingBy: rhs)
         case .rangeExclusive, .rangeInclusive:
             throw RuntimeError.unsupportedExpression("Range operators require integer operands")
+        default:
+            throw RuntimeError.unsupportedExpression("Operator \(op.rawValue) is not supported for floating point values.")
         }
         return .double(result)
+    }
+
+    private static func evaluateComparison(
+        op: BinaryOperatorIR,
+        lhs: RuntimeValue,
+        rhs: RuntimeValue
+    ) throws -> RuntimeValue {
+        if let leftNumber = lhs.asDouble, let rightNumber = rhs.asDouble {
+            let result: Bool
+            switch op {
+            case .equal:
+                result = leftNumber == rightNumber
+            case .notEqual:
+                result = leftNumber != rightNumber
+            case .lessThan:
+                result = leftNumber < rightNumber
+            case .lessThanOrEqual:
+                result = leftNumber <= rightNumber
+            case .greaterThan:
+                result = leftNumber > rightNumber
+            case .greaterThanOrEqual:
+                result = leftNumber >= rightNumber
+            default:
+                result = false
+            }
+            return .bool(result)
+        }
+
+        if case .bool(let leftBool) = lhs,
+           case .bool(let rightBool) = rhs,
+           op == .equal || op == .notEqual {
+            let result = op == .equal ? (leftBool == rightBool) : (leftBool != rightBool)
+            return .bool(result)
+        }
+
+        if case .string(let leftString) = lhs,
+           case .string(let rightString) = rhs,
+           op == .equal || op == .notEqual {
+            let result = op == .equal ? (leftString == rightString) : (leftString != rightString)
+            return .bool(result)
+        }
+
+        if case .enumCase(let leftCase) = lhs,
+           case .enumCase(let rightCase) = rhs,
+           op == .equal || op == .notEqual {
+            let result = op == .equal ? (leftCase == rightCase) : (leftCase != rightCase)
+            return .bool(result)
+        }
+
+        throw RuntimeError.unsupportedExpression("Comparison operator \(op.rawValue) is not supported between \(lhs.valueType) and \(rhs.valueType)")
+    }
+
+    private static func evaluateLogicalBinary(
+        op: BinaryOperatorIR,
+        lhs: RuntimeValue,
+        rhsExpr: ExprIR,
+        scope: RuntimeScope
+    ) throws -> RuntimeValue {
+        let left = lhs.asBool ?? false
+        switch op {
+        case .logicalAnd:
+            if !left {
+                return .bool(false)
+            }
+            let right = try ExpressionEvaluator.evaluate(rhsExpr, scope: scope)?.asBool ?? false
+            return .bool(right)
+        case .logicalOr:
+            if left {
+                return .bool(true)
+            }
+            let right = try ExpressionEvaluator.evaluate(rhsExpr, scope: scope)?.asBool ?? false
+            return .bool(right)
+        default:
+            throw RuntimeError.unsupportedExpression("Logical operator \(op.rawValue) is not supported.")
+        }
+    }
+}
+
+private extension BinaryOperatorIR {
+    var isComparison: Bool {
+        switch self {
+        case .equal, .notEqual, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isLogical: Bool {
+        switch self {
+        case .logicalAnd, .logicalOr:
+            return true
+        default:
+            return false
+        }
     }
 }

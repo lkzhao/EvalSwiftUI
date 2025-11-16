@@ -63,6 +63,7 @@ public final class RuntimeModule: RuntimeScope {
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
         }
+        define("infinity", value: .double(Double.infinity))
 
         let modifierBuilderList: [RuntimeModifierBuilder] = [
             PaddingModifierBuilder(),
@@ -78,6 +79,10 @@ public final class RuntimeModule: RuntimeScope {
             BlendModeModifierBuilder(),
             OpacityModifierBuilder(),
             ShadowModifierBuilder(),
+            StringFunctionModifierBuilder.contains(),
+            StringFunctionModifierBuilder.hasPrefix(),
+            StringFunctionModifierBuilder.hasSuffix(),
+            StringFunctionModifierBuilder.split(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier
@@ -90,6 +95,39 @@ public final class RuntimeModule: RuntimeScope {
 
     func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {
         modifierBuilders[name]
+    }
+
+    func lookupImplicitMember(
+        named name: String,
+        expectedType: String?,
+        visited: inout Set<ObjectIdentifier>
+    ) -> RuntimeValue? {
+        let identifier = ObjectIdentifier(self)
+        guard visited.insert(identifier).inserted else { return nil }
+        var bestValue: RuntimeValue?
+        var bestPriority = Int.min
+        if let holder = storage[name] {
+            let candidates = holder.values.filter { $0.matches(expectedType: expectedType) }
+            if let value = candidates.max(by: { $0.implicitPriority < $1.implicitPriority }) {
+                bestValue = value
+                bestPriority = value.implicitPriority
+            }
+        }
+        for entry in storage.values {
+            for stored in entry.values {
+                if case .type(let type) = stored,
+                   let nestedValue = type.lookupImplicitMember(
+                       named: name,
+                       expectedType: expectedType,
+                       visited: &visited
+                   ),
+                   nestedValue.implicitPriority > bestPriority {
+                    bestValue = nestedValue
+                    bestPriority = nestedValue.implicitPriority
+                }
+            }
+        }
+        return bestValue
     }
 
     @MainActor

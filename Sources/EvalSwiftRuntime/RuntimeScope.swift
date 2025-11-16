@@ -94,6 +94,19 @@ extension RuntimeScope {
         throw RuntimeError.unknownIdentifier(name)
     }
 
+    public func getImplicitMember(_ name: String, expectedType: String?) throws -> RuntimeValue {
+        var visited: Set<ObjectIdentifier> = []
+        if let type = type,
+           let value = type.lookupImplicitMember(named: name, expectedType: expectedType, visited: &visited) {
+            return value
+        }
+        if let module = module,
+           let value = module.lookupImplicitMember(named: name, expectedType: expectedType, visited: &visited) {
+            return value
+        }
+        throw RuntimeError.unknownIdentifier(name)
+    }
+
     public func type(named name: String) throws -> RuntimeType {
         let value = try get(name)
         guard case .type(let definition) = value else {
@@ -120,4 +133,10 @@ extension RuntimeScope {
             define(parameter.name, value: .void)
         }
     }
+}
+
+func selectImplicitValue(from holder: RuntimeScope.RuntimeScopeStorage.Value) -> RuntimeValue? {
+    holder.values.max(by: {
+        $0.implicitPriority < $1.implicitPriority
+    })
 }

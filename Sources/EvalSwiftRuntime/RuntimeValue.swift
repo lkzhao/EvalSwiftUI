@@ -306,6 +306,86 @@ extension RuntimeValue {
         }
         return nil
     }
+
+    var isNil: Bool {
+        if case .void = self {
+            return true
+        }
+        return false
+    }
+
+    var implicitPriority: Int {
+        switch self {
+        case .enumCase:
+            return 3
+        case .swiftUI(let runtimeValue):
+            switch runtimeValue {
+            case .color:
+                return 3
+            case .shapeStyle:
+                return 1
+            case .unitPoint:
+                return 3
+            case .alignment, .horizontalAlignment, .verticalAlignment:
+                return 2
+            default:
+                return 0
+            }
+        default:
+            return 0
+        }
+    }
+
+    func matches(expectedType: String?) -> Bool {
+        guard var expectedType else { return true }
+        expectedType = expectedType.trimmingCharacters(in: .whitespacesAndNewlines)
+        if expectedType.hasSuffix("?") {
+            expectedType = String(expectedType.dropLast())
+        }
+
+        switch expectedType {
+        case "Color":
+            if case .swiftUI(let value) = self, case .color = value {
+                return true
+            }
+            return false
+        case "ShapeStyle":
+            if case .swiftUI(let value) = self, case .shapeStyle = value {
+                return true
+            }
+            return false
+        case "UnitPoint":
+            if case .swiftUI(let value) = self, case .unitPoint = value {
+                return true
+            }
+            return false
+        case "Alignment":
+            if case .swiftUI(let value) = self, case .alignment = value {
+                return true
+            }
+            return false
+        case "HorizontalAlignment":
+            if case .swiftUI(let value) = self, case .horizontalAlignment = value {
+                return true
+            }
+            return false
+        case "VerticalAlignment":
+            if case .swiftUI(let value) = self, case .verticalAlignment = value {
+                return true
+            }
+            return false
+        case "Font":
+            if case .swiftUI(let value) = self, case .font = value {
+                return true
+            }
+            return false
+        default:
+            if case .enumCase(let enumCase) = self {
+                return enumCase.typeName.hasSuffix(expectedType)
+            }
+            return true
+        }
+    }
 }
 
 extension RuntimeValue {
@@ -423,6 +503,15 @@ extension RuntimeValue {
         default:
             return nil
         }
+    }
+}
+
+extension RuntimeValue.RuntimeValueType {
+    var isEnumCase: Bool {
+        if case .enumCase = self {
+            return true
+        }
+        return false
     }
 }
 
