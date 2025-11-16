@@ -379,6 +379,13 @@ extension RuntimeValue {
                 return true
             }
             return false
+        case "UIKeyboardType", "UITextContentType", "TextInputAutocapitalization", "SubmitLabel":
+            if case .string = self {
+                return true
+            }
+            return false
+        case _ where expectedType.hasPrefix("Binding"):
+            return asBinding != nil
         default:
             if case .enumCase(let enumCase) = self {
                 return enumCase.typeName.hasSuffix(expectedType)

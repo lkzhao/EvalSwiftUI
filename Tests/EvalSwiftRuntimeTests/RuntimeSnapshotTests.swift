@@ -80,6 +80,51 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersTextFieldsWithModifiers() throws {
+        let source = """
+        enum Field {
+            case email
+            case password
+        }
+
+        @State var email: String = "user@example.com"
+        @State var password: String = "secret"
+        @State var showPassword: Bool = false
+        @FocusState var focusedField: Field?
+
+        VStack(spacing: 8) {
+            TextField("Email", text: $email)
+                .keyboardType(.emailAddress)
+                .textContentType(.username)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.next)
+                .focused($focusedField, equals: .email)
+                .onSubmit { focusedField = .password }
+            Group {
+                if showPassword {
+                    TextField("Password", text: $password)
+                } else {
+                    SecureField("Password", text: $password)
+                }
+            }
+            SecureField("Confirm password", text: $password)
+                .textContentType(.password)
+                .focused($focusedField, equals: .password)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                TextField("Email", text: .constant("user@example.com"))
+                Group {
+                    SecureField("Password", text: .constant("secret"))
+                }
+                SecureField("Confirm password", text: .constant("secret"))
+            }
+        }
+    }
+
     @Test func rendersVStackSpacingArgument() throws {
         #expectSnapshot(
             VStack(spacing: 16) {
@@ -487,6 +532,40 @@ struct RuntimeSnapshotTests {
                 .frame(width: 70, height: 30)
                 .foregroundStyle(.gray)
         )
+    }
+
+    @Test func rendersSpacerAndGroup() throws {
+        let source = """
+        VStack(spacing: 0) {
+            Text("Top")
+                .padding(4)
+                .background(Color.blue.opacity(0.2))
+            Spacer(minLength: 8)
+            Group {
+                Text("First")
+                Text("Second")
+            }
+            Text("Bottom")
+                .padding(4)
+                .background(Color.green.opacity(0.2))
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Top")
+                    .padding(4)
+                    .background(Color.blue.opacity(0.2))
+                Spacer(minLength: 8)
+                Group {
+                    Text("First")
+                    Text("Second")
+                }
+                Text("Bottom")
+                    .padding(4)
+                    .background(Color.green.opacity(0.2))
+            }
+        }
     }
 
     @Test func appliesImageScaleModifier() throws {
