@@ -239,6 +239,7 @@ struct ExpressionEvaluator {
     private static func makeValue(type: RuntimeType, arguments: [FunctionCallArgumentIR], scope: RuntimeScope) throws -> RuntimeValue? {
         let definitions = type.definitions
         var lastError: Error?
+        let isDebugLoggingEnabled = ProcessInfo.processInfo.environment["RUNTIME_DEBUG"] != nil
         for definition in definitions {
             do {
                 let evaluatedArguments = try ArgumentEvaluator.evaluate(
@@ -249,6 +250,9 @@ struct ExpressionEvaluator {
                 let result = try definition.build(evaluatedArguments, scope)
                 return result
             } catch {
+                if isDebugLoggingEnabled {
+                    print("Failed to match initializer on type \(type.name) with arguments count \(arguments.count): \(error)")
+                }
                 lastError = error
             }
         }

@@ -275,9 +275,11 @@ public struct SwiftIRParser {
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
+        let wrapperNames = attributeNames(from: node)
+        let defaultInitializer = defaultInitializerExpression(for: wrapperNames)
         return node.bindings.compactMap { binding in
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else { return nil }
-            let initializerExpr = binding.initializer.map { makeExpr($0.value) }
+            let initializerExpr = binding.initializer.map { makeExpr($0.value) } ?? defaultInitializer
             let typeAnnotation = binding.typeAnnotation?.type.trimmedDescription
             return BindingIR(
                 name: identifierPattern.identifier.text,
@@ -285,6 +287,24 @@ public struct SwiftIRParser {
                 initializer: initializerExpr
             )
         }
+    }
+
+    private func attributeNames(from node: VariableDeclSyntax) -> [String] {
+        let attributes = node.attributes
+        guard !attributes.isEmpty else { return [] }
+        return attributes.compactMap { attribute in
+            if let attribute = attribute.as(AttributeSyntax.self) {
+                return attribute.attributeName.trimmedDescription
+            }
+            return nil
+        }
+    }
+
+    private func defaultInitializerExpression(for attributes: [String]) -> ExprIR? {
+        if attributes.contains("FocusState") {
+            return .nilLiteral
+        }
+        return nil
     }
 
     private func makeFunctionBinding(from node: FunctionDeclSyntax) -> BindingIR {
@@ -655,7 +675,8 @@ public struct SwiftIRParser {
         return BindingIR(
             name: pattern.identifier.text,
             type: binding.typeAnnotation?.type.trimmedDescription,
-            initializer: .function(functionIR)
+            initializer: .function(functionIR),
+            isComputed: true
         )
     }
 

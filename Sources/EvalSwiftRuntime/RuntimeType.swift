@@ -77,7 +77,8 @@ public final class RuntimeType: RuntimeScope {
                     }
                     return RuntimeBuilderDefinition(parameters: parameters) { [weak self] arguments, scope in
                         guard let self else { return .void }
-                        let instance = RuntimeInstance(parent: self)
+                        let computedNames = Set(definitionIR.bindings.filter { $0.isComputed }.map { $0.name })
+                        let instance = RuntimeInstance(parent: self, computedBindings: computedNames)
                         for binding in definitionIR.bindings {
                             try instance.define(binding: binding)
                         }

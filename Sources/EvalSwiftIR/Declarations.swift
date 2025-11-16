@@ -21,6 +21,14 @@ public struct BindingIR: Hashable {
     public let name: String
     public let type: String?
     public let initializer: ExprIR?
+    public let isComputed: Bool
+
+    public init(name: String, type: String?, initializer: ExprIR?, isComputed: Bool = false) {
+        self.name = name
+        self.type = type
+        self.initializer = initializer
+        self.isComputed = isComputed
+    }
 }
 
 public struct EnumCaseIR: Hashable {

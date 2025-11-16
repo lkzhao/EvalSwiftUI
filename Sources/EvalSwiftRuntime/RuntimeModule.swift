@@ -24,7 +24,7 @@ public final class RuntimeModule: RuntimeScope {
         valueBuilders: [RuntimeValueBuilder] = [],
         modifierBuilders: [RuntimeModifierBuilder] = []
     ) throws {
-        let builders: [RuntimeValueBuilder] = [
+        var builders: [RuntimeValueBuilder] = [
             IntValueBuilder(),
             FloatValueBuilder(name: "Float"),
             FloatValueBuilder(name: "Double"),
@@ -51,6 +51,7 @@ public final class RuntimeModule: RuntimeScope {
             FontWeightValueBuilder(),
             TextAlignmentValueBuilder(),
             AnimationValueBuilder(),
+            AnyTransitionValueBuilder(),
             ButtonStyleConfigurationValueBuilder(),
             UnitPointValueBuilder(),
             AngleValueBuilder(),
@@ -72,7 +73,15 @@ public final class RuntimeModule: RuntimeScope {
             CapsuleValueBuilder(),
             UUIDValueBuilder(),
             DateValueBuilder(),
-        ] + valueBuilders
+        ]
+
+#if canImport(UIKit)
+        builders.append(UIColorValueBuilder())
+#elseif canImport(AppKit)
+        builders.append(NSColorValueBuilder())
+#endif
+
+        builders += valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
         }
@@ -113,6 +122,7 @@ public final class RuntimeModule: RuntimeScope {
             AccessibilityLabelModifierBuilder(),
             AccessibilityHiddenModifierBuilder(),
             AnimationModifierBuilder(),
+            TransitionModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier

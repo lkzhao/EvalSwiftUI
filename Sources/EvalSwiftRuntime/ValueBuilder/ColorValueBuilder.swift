@@ -21,12 +21,11 @@ public struct ColorValueBuilder: RuntimeValueBuilder {
         ("white", .white),
         ("yellow", .yellow),
         ("brown", .brown),
-        ("secondary", .secondary),
-        ("systemGroupedBackground", Color(.sRGB, red: 0.95, green: 0.95, blue: 0.97, opacity: 1.0))
+        ("secondary", .secondary)
     ]
 
     public init() {
-        definitions = [
+        var builderDefinitions: [RuntimeBuilderDefinition] = [
             RuntimeBuilderDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "name", type: "String")
@@ -58,6 +57,38 @@ public struct ColorValueBuilder: RuntimeValueBuilder {
                 }
             )
         ]
+
+#if canImport(UIKit)
+        builderDefinitions.append(
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "platformColor", type: "UIColor")
+                ],
+                build: { arguments, _ in
+                    guard let platformColor = arguments.value(named: "platformColor")?.asPlatformColor else {
+                        throw RuntimeError.invalidArgument("Color initializer expects a UIColor value.")
+                    }
+                    return .swiftUI(.color(platformColor.makeSwiftUIColor()))
+                }
+            )
+        )
+#elseif canImport(AppKit)
+        builderDefinitions.append(
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "platformColor", type: "NSColor")
+                ],
+                build: { arguments, _ in
+                    guard let platformColor = arguments.value(named: "platformColor")?.asPlatformColor else {
+                        throw RuntimeError.invalidArgument("Color initializer expects an NSColor value.")
+                    }
+                    return .swiftUI(.color(platformColor.makeSwiftUIColor()))
+                }
+            )
+        )
+#endif
+
+        definitions = builderDefinitions
     }
 
     private static func applyNamedColor(arguments: [RuntimeArgument]) throws -> RuntimeValue {

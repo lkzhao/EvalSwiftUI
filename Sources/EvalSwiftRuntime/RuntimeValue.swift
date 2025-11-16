@@ -339,6 +339,13 @@ extension RuntimeValue {
         return animation
     }
 
+    var asPlatformColor: RuntimePlatformColor? {
+        guard case .swiftUI(let value) = self, case .platformColor(let platformColor) = value else {
+            return nil
+        }
+        return platformColor
+    }
+
     var asInstance: RuntimeInstance? {
         guard case .instance(let instance) = self else { return nil }
         return instance
@@ -656,6 +663,7 @@ public enum SwiftUIRuntimeValue {
     case fontWeight(Font.Weight)
     case animation(Animation)
     case textAlignment(TextAlignment)
+    case platformColor(RuntimePlatformColor)
 }
 
 extension SwiftUIRuntimeValue: CustomStringConvertible {
@@ -703,6 +711,8 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Animation>"
         case .textAlignment:
             return "<TextAlignment>"
+        case .platformColor:
+            return "<PlatformColor>"
         }
     }
 }

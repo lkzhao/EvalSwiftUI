@@ -145,13 +145,24 @@ struct AnimationModifierBuilder: RuntimeModifierBuilder {
                 RuntimeParameter(label: "value", name: "value", type: nil, defaultValue: .void)
             ]
         ) { view, arguments, _ in
-            guard let animation = arguments.value(named: "animation")?.asAnimation else {
-                return AnyView(view)
-            }
-            if let hashable = arguments.value(named: "value")?.asAnyHashable {
-                return AnyView(view.animation(animation, value: hashable))
-            }
+            // Evaluate arguments for validation but intentionally ignore their effect.
+            _ = arguments.value(named: "animation")?.asAnimation
+            _ = arguments.value(named: "value")?.asAnyHashable
             return AnyView(view)
+        }
+    ]
+}
+
+struct TransitionModifierBuilder: RuntimeModifierBuilder {
+    let name = "transition"
+    let definitions: [RuntimeModifierDefinition] = [
+        RuntimeViewModifierDefinition(
+            parameters: [
+                RuntimeParameter(label: "_", name: "transition", type: "AnyTransition")
+            ]
+        ) { view, _, _ in
+            // Accept transitions but render without applying them.
+            AnyView(view)
         }
     ]
 }
