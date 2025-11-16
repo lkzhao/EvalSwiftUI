@@ -155,7 +155,9 @@ private struct RuntimeFocusedModifier: ViewModifier {
         do {
             try binding.set(RuntimeValue.from(anyHashable: newValue))
         } catch {
-            assertionFailure("Failed to update focus binding: \(error)")
+#if DEBUG
+            print("FocusState binding update ignored: \(error)")
+#endif
         }
     }
 

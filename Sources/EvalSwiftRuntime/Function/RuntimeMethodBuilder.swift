@@ -72,9 +72,4 @@ public struct RuntimeValueMethodDefinition: RuntimeMethodDefinition {
 public protocol RuntimeMethodBuilder {
     var name: String { get }
     var definitions: [RuntimeMethodDefinition] { get }
-    var supportsMemberAccess: Bool { get }
-}
-
-public extension RuntimeMethodBuilder {
-    var supportsMemberAccess: Bool { false }
 }

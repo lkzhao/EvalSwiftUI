@@ -121,7 +121,3 @@ extension RuntimeScope {
         }
     }
 }
-
-func selectImplicitValue(from holder: RuntimeScope.RuntimeScopeStorage.Value) -> RuntimeValue? {
-    holder
-}

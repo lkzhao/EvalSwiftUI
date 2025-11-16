@@ -2,7 +2,6 @@ import Foundation
 
 struct CountMethodBuilder: RuntimeMethodBuilder {
     let name = "count"
-    let supportsMemberAccess = true
     let definitions: [RuntimeMethodDefinition] = [
         RuntimeValueMethodDefinition(parameters: []) { base, _, _ in
             guard let count = base.countValue else {
@@ -15,7 +14,6 @@ struct CountMethodBuilder: RuntimeMethodBuilder {
 
 struct IsEmptyMethodBuilder: RuntimeMethodBuilder {
     let name = "isEmpty"
-    let supportsMemberAccess = true
     let definitions: [RuntimeMethodDefinition] = [
         RuntimeValueMethodDefinition(parameters: []) { base, _, _ in
             guard let isEmpty = base.isEmptyValue else {

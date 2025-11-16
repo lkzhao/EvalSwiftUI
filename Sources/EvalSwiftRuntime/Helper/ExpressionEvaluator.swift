@@ -109,7 +109,7 @@ struct ExpressionEvaluator {
                     }
                 }
 
-                if let builder = scope.module?.methodBuilder(named: name), builder.supportsMemberAccess {
+                if let builder = scope.module?.methodBuilder(named: name) {
                     return try applyMethodBuilder(
                         builder: builder,
                         baseValue: baseValue,
