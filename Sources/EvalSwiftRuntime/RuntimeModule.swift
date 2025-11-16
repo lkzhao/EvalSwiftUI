@@ -123,6 +123,7 @@ public final class RuntimeModule: RuntimeScope {
             AccessibilityHiddenModifierBuilder(),
             AnimationModifierBuilder(),
             TransitionModifierBuilder(),
+            OnTapGestureModifierBuilder(),
         ] + modifierBuilders
         for modifier in modifierBuilderList {
             self.modifierBuilders[modifier.name] = modifier

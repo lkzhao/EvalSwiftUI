@@ -166,3 +166,27 @@ struct TransitionModifierBuilder: RuntimeModifierBuilder {
         }
     ]
 }
+
+struct OnTapGestureModifierBuilder: RuntimeModifierBuilder {
+    let name = "onTapGesture"
+    let definitions: [RuntimeModifierDefinition] = [
+        RuntimeViewModifierDefinition(
+            parameters: [
+                RuntimeParameter(label: "count", name: "count", type: "Int", defaultValue: .int(1)),
+                RuntimeParameter(label: "_", name: "perform", type: "() -> Void")
+            ]
+        ) { view, arguments, _ in
+            let count = arguments.value(named: "count")?.asInt ?? 1
+            guard let function = arguments.value(named: "perform")?.asFunction else {
+                throw RuntimeError.invalidArgument("onTapGesture requires an action closure.")
+            }
+            return AnyView(view.onTapGesture(count: count) {
+                do {
+                    _ = try function.invoke()
+                } catch {
+                    assertionFailure("onTapGesture action failed: \(error)")
+                }
+            })
+        }
+    ]
+}
