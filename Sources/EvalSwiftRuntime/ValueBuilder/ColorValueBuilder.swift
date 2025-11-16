@@ -1,0 +1,81 @@
+import SwiftUI
+
+public struct ColorValueBuilder: RuntimeValueBuilder {
+    public let name = "Color"
+    public let definitions: [RuntimeBuilderDefinition]
+
+    private static let namedColors: [(String, Color)] = [
+        ("clear", .clear),
+        ("black", .black),
+        ("blue", .blue),
+        ("cyan", .cyan),
+        ("gray", .gray),
+        ("green", .green),
+        ("indigo", .indigo),
+        ("mint", .mint),
+        ("orange", .orange),
+        ("pink", .pink),
+        ("purple", .purple),
+        ("red", .red),
+        ("teal", .teal),
+        ("white", .white),
+        ("yellow", .yellow),
+        ("brown", .brown)
+    ]
+
+    public init() {
+        definitions = [
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "name", type: "String")
+                ],
+                build: { arguments, _ in
+                    try Self.applyNamedColor(arguments: arguments)
+                }
+            ),
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(name: "red", type: "Double"),
+                    RuntimeParameter(name: "green", type: "Double"),
+                    RuntimeParameter(name: "blue", type: "Double"),
+                    RuntimeParameter(name: "opacity", type: "Double", defaultValue: .double(1.0))
+                ],
+                build: { arguments, _ in
+                    try Self.applyRGBColor(arguments: arguments)
+                }
+            )
+        ]
+    }
+
+    private static func applyNamedColor(arguments: [RuntimeArgument]) throws -> RuntimeValue {
+        guard let name = arguments.value(named: "name")?.asString?.lowercased(),
+              let color = namedColors.first(where: { $0.0 == name })?.1 else {
+            throw RuntimeError.invalidArgument("Unknown color '\(arguments.value(named: "name")?.asString ?? "")'.")
+        }
+        return .swiftUI(.color(color))
+    }
+
+    private static func applyRGBColor(arguments: [RuntimeArgument]) throws -> RuntimeValue {
+        guard
+            let red = arguments.value(named: "red")?.asDouble,
+            let green = arguments.value(named: "green")?.asDouble,
+            let blue = arguments.value(named: "blue")?.asDouble
+        else {
+            throw RuntimeError.invalidArgument("Color(red:green:blue:) expects numeric components.")
+        }
+        let opacity = arguments.value(named: "opacity")?.asDouble ?? 1.0
+        let color = Color(
+            red: red,
+            green: green,
+            blue: blue,
+            opacity: opacity
+        )
+        return .swiftUI(.color(color))
+    }
+
+    public func populate(type: RuntimeType) {
+        for (name, color) in Self.namedColors {
+            type.define(name, value: .swiftUI(.color(color)))
+        }
+    }
+}

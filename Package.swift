@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -19,6 +19,14 @@ let package = Package(
             name: "EvalSwiftUI",
             targets: ["EvalSwiftUI"]
         ),
+        .library(
+            name: "EvalSwiftIR",
+            targets: ["EvalSwiftIR"]
+        ),
+        .library(
+            name: "EvalSwiftRuntime",
+            targets: ["EvalSwiftRuntime"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0-latest"),
@@ -27,25 +35,39 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "EvalSwiftUI",
+            name: "EvalSwiftIR",
             dependencies: [
+                .product(name: "SwiftParser", package: "swift-syntax"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                "Macros"
             ]
         ),
         .macro(
-            name: "EvalSwiftUIMacros",
+            name: "Macros",
             dependencies: [
+                .product(name: "SwiftParser", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
             ]
         ),
-        .testTarget(
-            name: "EvalSwiftUITests",
+        .target(
+            name: "EvalSwiftRuntime",
             dependencies: [
-                "EvalSwiftUI",
-                "EvalSwiftUIMacros"
+                "EvalSwiftIR"
+            ]
+        ),
+        .target(
+            name: "EvalSwiftUI",
+            dependencies: [
+                "EvalSwiftRuntime"
+            ]
+        ),
+        .testTarget(
+            name: "EvalSwiftRuntimeTests",
+            dependencies: [
+                "EvalSwiftRuntime",
+                "EvalSwiftIR"
             ]
         ),
     ]

@@ -1,22 +1,26 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+//
+//  File.swift
+//  EvalSwiftUI
+//
+//  Created by Luke Zhao on 11/10/25.
+//
 
+import Foundation
 import SwiftUI
+import EvalSwiftRuntime
+import EvalSwiftIR
 
 @MainActor
 public func evalSwiftUI(
-    _ source: String,
-    context: (any SwiftUIEvaluatorContext)? = nil
+    _ source: String
 ) throws -> AnyView {
-    let evaluator = SwiftUIEvaluator(context: context)
-    let view = try evaluator.evaluate(source: source)
-    return AnyView(view)
+    let module = try RuntimeModule(source: source)
+    return try module.makeTopLevelSwiftUIViews()
 }
 
 @MainActor
 public func evalSwiftUI(
-    _ source: () -> String,
-    context: (any SwiftUIEvaluatorContext)? = nil
+    _ source: () -> String
 ) throws -> AnyView {
-    try evalSwiftUI(source(), context: context)
+    try evalSwiftUI(source())
 }
