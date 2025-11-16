@@ -150,25 +150,20 @@ public final class RuntimeModule: RuntimeScope {
         guard visited.insert(identifier).inserted else { return nil }
         var bestValue: RuntimeValue?
         var bestPriority = Int.min
-        if let holder = storage[name] {
-            let candidates = holder.values.filter { $0.matches(expectedType: expectedType) }
-            if let value = candidates.max(by: { $0.implicitPriority < $1.implicitPriority }) {
-                bestValue = value
-                bestPriority = value.implicitPriority
-            }
+        if let holder = storage[name], holder.matches(expectedType: expectedType) {
+            bestValue = holder
+            bestPriority = holder.implicitPriority
         }
-        for entry in storage.values {
-            for stored in entry.values {
-                if case .type(let type) = stored,
-                   let nestedValue = type.lookupImplicitMember(
-                       named: name,
-                       expectedType: expectedType,
-                       visited: &visited
-                   ),
-                   nestedValue.implicitPriority > bestPriority {
-                    bestValue = nestedValue
-                    bestPriority = nestedValue.implicitPriority
-                }
+        for stored in storage.values {
+            if case .type(let type) = stored,
+               let nestedValue = type.lookupImplicitMember(
+                   named: name,
+                   expectedType: expectedType,
+                   visited: &visited
+               ),
+               nestedValue.implicitPriority > bestPriority {
+                bestValue = nestedValue
+                bestPriority = nestedValue.implicitPriority
             }
         }
         return bestValue

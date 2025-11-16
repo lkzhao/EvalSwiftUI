@@ -2,7 +2,7 @@ import SwiftUI
 import EvalSwiftIR
 
 public protocol RuntimeScope: AnyObject, CustomStringConvertible {
-    typealias RuntimeScopeStorage = [String: [RuntimeValue.RuntimeValueType: RuntimeValue]]
+    typealias RuntimeScopeStorage = [String: RuntimeValue]
     var storage: RuntimeScopeStorage { get set }
     var parent: RuntimeScope? { get }
     func define(_ name: String, value: RuntimeValue)
@@ -58,12 +58,12 @@ extension RuntimeScope {
     }
 
     public func define(_ name: String, value: RuntimeValue) {
-        storage[name, default: [:]][value.valueType] = value
+        storage[name] = value
     }
 
     public func set(_ name: String, value: RuntimeValue) throws {
-        if let _ = storage[name, default: [:]][value.valueType] {
-            storage[name, default: [:]][value.valueType] = value
+        if storage[name] != nil {
+            storage[name] = value
         } else if let parent {
             try parent.set(name, value: value)
         } else {
@@ -72,24 +72,11 @@ extension RuntimeScope {
     }
 
     public func get(_ name: String) throws -> RuntimeValue {
-        if let valueHolder = storage[name], valueHolder.count == 1, let value = valueHolder.values.first {
+        if let value = storage[name] {
             return value
-        }
-        if let valueHolder = storage[name], valueHolder.count > 1 {
-            throw RuntimeError.ambiguousIdentifier(name)
         }
         if let parent {
             return try parent.get(name)
-        }
-        throw RuntimeError.unknownIdentifier(name)
-    }
-
-    public func get(_ name: String, type: RuntimeValue.RuntimeValueType) throws -> RuntimeValue {
-        if let valueHolder = storage[name], let value = valueHolder[type] {
-            return value
-        }
-        if let parent {
-            return try parent.get(name, type: type)
         }
         throw RuntimeError.unknownIdentifier(name)
     }
@@ -136,7 +123,5 @@ extension RuntimeScope {
 }
 
 func selectImplicitValue(from holder: RuntimeScope.RuntimeScopeStorage.Value) -> RuntimeValue? {
-    holder.values.max(by: {
-        $0.implicitPriority < $1.implicitPriority
-    })
+    holder
 }

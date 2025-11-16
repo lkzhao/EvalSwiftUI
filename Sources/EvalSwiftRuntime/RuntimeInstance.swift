@@ -35,11 +35,8 @@ public final class RuntimeInstance: RuntimeScope {
 
 extension RuntimeInstance {
     private func rawGet(_ name: String) throws -> RuntimeValue {
-        if let valueHolder = storage[name], valueHolder.count == 1, let value = valueHolder.values.first {
+        if let value = storage[name] {
             return value
-        }
-        if let valueHolder = storage[name], valueHolder.count > 1 {
-            throw RuntimeError.ambiguousIdentifier(name)
         }
         if let parent {
             return try parent.get(name)

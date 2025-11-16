@@ -4,8 +4,7 @@ public protocol RuntimeMethodDefinition {
     var parameters: [RuntimeParameter] { get }
     func apply(
         to base: RuntimeValue,
-        setter: ((RuntimeValue) throws -> Void)?
-        ,
+        setter: ((RuntimeValue) throws -> Void)?,
         arguments: [RuntimeArgument],
         scope: RuntimeScope
     ) throws -> RuntimeValue
