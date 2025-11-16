@@ -2,6 +2,24 @@ import Foundation
 import SwiftUI
 import EvalSwiftIR
 
+public struct RuntimeInsettableShape: InsettableShape {
+    private let pathClosure: @Sendable (CGRect) -> Path
+    private let insetClosure: @Sendable (CGFloat) -> RuntimeInsettableShape
+
+    init<S: InsettableShape>(_ shape: S) {
+        pathClosure = { rect in shape.path(in: rect) }
+        insetClosure = { amount in RuntimeInsettableShape(shape.inset(by: amount)) }
+    }
+
+    public func path(in rect: CGRect) -> Path {
+        pathClosure(rect)
+    }
+
+    public func inset(by amount: CGFloat) -> RuntimeInsettableShape {
+        insetClosure(amount)
+    }
+}
+
 public struct RuntimeEnumCase: Hashable, CustomStringConvertible {
     public let typeName: String
     public let caseName: String
@@ -213,6 +231,13 @@ extension RuntimeValue {
         return alignment
     }
 
+    var asTextAlignment: TextAlignment? {
+        guard case .swiftUI(let value) = self, case .textAlignment(let alignment) = value else {
+            return nil
+        }
+        return alignment
+    }
+
     var asImageScale: Image.Scale? {
         guard case .swiftUI(let value) = self, case .imageScale(let scale) = value else { return nil }
         return scale
@@ -275,10 +300,43 @@ extension RuntimeValue {
     }
 
     var asShape: AnyShape? {
-        guard case .swiftUI(let value) = self, case .shape(let shape) = value else {
+        guard case .swiftUI(let value) = self else { return nil }
+        switch value {
+        case .shape(let shape):
+            return shape
+        case .insettableShape(let insettable):
+            return AnyShape(insettable)
+        default:
             return nil
         }
-        return shape
+    }
+
+    var asInsettableShape: RuntimeInsettableShape? {
+        guard case .swiftUI(let value) = self, case .insettableShape(let insettable) = value else {
+            return nil
+        }
+        return insettable
+    }
+
+    var asEdgeSet: Edge.Set? {
+        guard case .swiftUI(let value) = self, case .edgeSet(let set) = value else {
+            return nil
+        }
+        return set
+    }
+
+    var asFontWeight: Font.Weight? {
+        guard case .swiftUI(let value) = self, case .fontWeight(let weight) = value else {
+            return nil
+        }
+        return weight
+    }
+
+    var asAnimation: Animation? {
+        guard case .swiftUI(let value) = self, case .animation(let animation) = value else {
+            return nil
+        }
+        return animation
     }
 
     var asInstance: RuntimeInstance? {
@@ -300,6 +358,9 @@ extension RuntimeValue {
         }
         if case .swiftUI(let value) = self, case .shape(let shape) = value {
             return AnyView(shape)
+        }
+        if case .swiftUI(let value) = self, case .insettableShape(let insettable) = value {
+            return AnyView(insettable)
         }
         if case .instance(let instance) = self {
             return try? instance.makeSwiftUIView()
@@ -376,6 +437,31 @@ extension RuntimeValue {
             return false
         case "Font":
             if case .swiftUI(let value) = self, case .font = value {
+                return true
+            }
+            return false
+        case "TextAlignment":
+            if case .swiftUI(let value) = self, case .textAlignment = value {
+                return true
+            }
+            return false
+        case "Edge.Set":
+            if case .swiftUI(let value) = self, case .edgeSet = value {
+                return true
+            }
+            return false
+        case "Animation":
+            if case .swiftUI(let value) = self, case .animation = value {
+                return true
+            }
+            return false
+        case "Font.Weight":
+            if case .swiftUI(let value) = self, case .fontWeight = value {
+                return true
+            }
+            return false
+        case "ButtonStyleConfiguration":
+            if case .string = self {
                 return true
             }
             return false
@@ -540,6 +626,11 @@ public enum SwiftUIRuntimeValue {
     case gradientStop(Gradient.Stop)
     case shapeStyle(AnyShapeStyle)
     case shape(AnyShape)
+    case insettableShape(RuntimeInsettableShape)
+    case edgeSet(Edge.Set)
+    case fontWeight(Font.Weight)
+    case animation(Animation)
+    case textAlignment(TextAlignment)
 }
 
 extension SwiftUIRuntimeValue: CustomStringConvertible {
@@ -577,8 +668,16 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Gradient.Stop>"
         case .shapeStyle:
             return "<ShapeStyle>"
-        case .shape:
+        case .shape, .insettableShape:
             return "<Shape>"
+        case .edgeSet:
+            return "<Edge.Set>"
+        case .fontWeight:
+            return "<Font.Weight>"
+        case .animation:
+            return "<Animation>"
+        case .textAlignment:
+            return "<TextAlignment>"
         }
     }
 }

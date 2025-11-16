@@ -85,8 +85,17 @@ struct OnSubmitModifierBuilder: RuntimeModifierBuilder {
     let definitions: [RuntimeModifierDefinition] = [
         RuntimeViewModifierDefinition(
             parameters: [RuntimeParameter(label: "_", name: "action", type: "() -> Void")]
-        ) { view, _, _ in
-            AnyView(view)
+        ) { view, arguments, _ in
+            guard let function = arguments.value(named: "action")?.asFunction else {
+                throw RuntimeError.invalidArgument("onSubmit requires an action closure.")
+            }
+            return AnyView(view.onSubmit {
+                do {
+                    _ = try function.invoke()
+                } catch {
+                    assertionFailure("onSubmit action failed: \(error)")
+                }
+            })
         }
     ]
 }

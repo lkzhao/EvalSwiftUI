@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import EvalSwiftIR
 
 struct ExpressionEvaluator {
@@ -128,6 +129,14 @@ struct ExpressionEvaluator {
                 return try scope.get(name)
             }
         case .call(let callee, let arguments):
+            if let staticResult = try evaluateStaticCallIfNeeded(
+                callee: callee,
+                arguments: arguments,
+                scope: scope,
+                expectedType: expectedType
+            ) {
+                return staticResult
+            }
             // TODO: Make this part integrated with the next `if let calleeValue = try evaluate(callee, scope: scope) {` part
             if case .member(let baseExpr, let name) = callee {
                 if name == "toggle",
@@ -141,11 +150,13 @@ struct ExpressionEvaluator {
                     return .void
                 }
 
+                var evaluatedBase: RuntimeValue? = nil
                 if let modifierBuilder = scope.module?.modifierBuilder(named: name) {
                     guard let baseExpr,
                           let baseValue = try evaluate(baseExpr, scope: scope) else {
                         throw RuntimeError.invalidArgument("\(name) modifier requires a receiver.")
                     }
+                    evaluatedBase = baseValue
 
                     var lastError: Error?
                     var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
@@ -181,6 +192,20 @@ struct ExpressionEvaluator {
                         arguments: evaluatedArguments,
                         scope: scope
                     )
+                }
+
+                if evaluatedBase == nil, let baseExpr {
+                    evaluatedBase = try evaluate(baseExpr, scope: scope)
+                }
+
+                if let baseValue = evaluatedBase,
+                   let shapeResult = try evaluateShapeFunction(
+                       name: name,
+                       baseValue: baseValue,
+                       arguments: arguments,
+                       scope: scope
+                   ) {
+                    return shapeResult
                 }
 
             }
@@ -489,6 +514,108 @@ struct ExpressionEvaluator {
         default:
             throw RuntimeError.unsupportedExpression("Logical operator \(op.rawValue) is not supported.")
         }
+    }
+
+    private static func evaluateStaticCallIfNeeded(
+        callee: ExprIR,
+        arguments: [FunctionCallArgumentIR],
+        scope: RuntimeScope,
+        expectedType: String?
+    ) throws -> RuntimeValue? {
+        guard case .member(let baseExpr, let memberName) = callee else {
+            return nil
+        }
+
+        let resolvedTypeName: String?
+        if let baseExpr,
+           case .identifier(let explicitType) = baseExpr {
+            resolvedTypeName = explicitType
+        } else {
+            resolvedTypeName = expectedType
+        }
+
+        guard let typeName = resolvedTypeName else {
+            return nil
+        }
+
+        switch (typeName, memberName) {
+        case ("Font", "system"):
+            guard let sizeValue = try value(labeled: "size", in: arguments, scope: scope)?.asDouble else {
+                throw RuntimeError.invalidArgument("Font.system(size:weight:) requires a size argument.")
+            }
+            let weight = try value(labeled: "weight", in: arguments, scope: scope)?.asFontWeight ?? .regular
+            let font = Font.system(size: CGFloat(sizeValue), weight: weight)
+            return .swiftUI(.font(font))
+        default:
+            return nil
+        }
+    }
+
+    private static func evaluateShapeFunction(
+        name: String,
+        baseValue: RuntimeValue,
+        arguments: [FunctionCallArgumentIR],
+        scope: RuntimeScope
+    ) throws -> RuntimeValue? {
+        guard let shape = baseValue.asShape else { return nil }
+        switch name {
+        case "fill":
+            guard let firstArgument = arguments.first,
+                  let styleValue = try evaluate(firstArgument.value, scope: scope),
+                  let style = styleValue.asShapeStyle else {
+                throw RuntimeError.invalidArgument("fill(_:) expects a ShapeStyle argument.")
+            }
+            return .swiftUI(.view(AnyView(shape.fill(style))))
+        case "stroke":
+            guard let styleArgument = arguments.first,
+                  let styleValue = try evaluate(styleArgument.value, scope: scope),
+                  let style = styleValue.asShapeStyle else {
+                throw RuntimeError.invalidArgument("stroke(_:) expects a ShapeStyle argument.")
+            }
+            let width = try resolveLineWidth(arguments: arguments, scope: scope)
+            return .swiftUI(.view(AnyView(shape.stroke(style, lineWidth: width))))
+        case "strokeBorder":
+            guard let insettable = baseValue.asInsettableShape else {
+                throw RuntimeError.invalidArgument("strokeBorder(_:) requires an InsettableShape receiver.")
+            }
+            guard let styleArgument = arguments.first,
+                  let styleValue = try evaluate(styleArgument.value, scope: scope),
+                  let style = styleValue.asShapeStyle else {
+                throw RuntimeError.invalidArgument("strokeBorder(_:) expects a ShapeStyle argument.")
+            }
+            let width = try resolveLineWidth(arguments: arguments, scope: scope)
+            let stroked = insettable.strokeBorder(style, lineWidth: width)
+            return .swiftUI(.view(AnyView(stroked)))
+        default:
+            return nil
+        }
+    }
+
+    private static func resolveLineWidth(
+        arguments: [FunctionCallArgumentIR],
+        scope: RuntimeScope,
+        defaultWidth: CGFloat = 1
+    ) throws -> CGFloat {
+        if let labeled = arguments.first(where: { $0.label == "lineWidth" }),
+           let value = try evaluate(labeled.value, scope: scope)?.asCGFloat {
+            return value
+        }
+        if arguments.count > 1,
+           let value = try evaluate(arguments[1].value, scope: scope)?.asCGFloat {
+            return value
+        }
+        return defaultWidth
+    }
+
+    private static func value(
+        labeled label: String,
+        in arguments: [FunctionCallArgumentIR],
+        scope: RuntimeScope
+    ) throws -> RuntimeValue? {
+        guard let argument = arguments.first(where: { $0.label == label }) else {
+            return nil
+        }
+        return try evaluate(argument.value, scope: scope)
     }
 }
 

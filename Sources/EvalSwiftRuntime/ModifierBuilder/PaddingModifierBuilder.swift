@@ -22,6 +22,22 @@ public struct PaddingModifierBuilder: RuntimeModifierBuilder {
                     }
                     return AnyView(view.padding(CGFloat(amount)))
                 }
+            ),
+            RuntimeViewModifierDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "edges", type: "Edge.Set"),
+                    RuntimeParameter(label: "_", name: "length", type: "Double", defaultValue: .void)
+                ],
+                apply: { view, arguments, _ in
+                    guard let edges = arguments.value(named: "edges")?.asEdgeSet else {
+                        throw RuntimeError.invalidArgument("padding(_:_: ) expects an Edge.Set for the first argument.")
+                    }
+                    let length = arguments.value(named: "length")?.asCGFloat
+                    if let length {
+                        return AnyView(view.padding(edges, length))
+                    }
+                    return AnyView(view.padding(edges))
+                }
             )
         ]
     }

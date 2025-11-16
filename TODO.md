@@ -11,17 +11,17 @@
     - [x] Detect `Identifiable.id` stored on `RuntimeInstance` and forward to `AnyHashable`
 - [x] Implement additional shape builders (Circle, Capsule, Rectangle, etc.) that emit `.shape(AnyShape)`
 - [x] Add modifier builders for `border`, `clipShape`, `mask`, and `blendMode`
-- [ ] Support gradient ShapeStyles (LinearGradient, AngularGradient, RadialGradient builders plus Gradient parsing)
+- [x] Support gradient ShapeStyles (LinearGradient, AngularGradient, RadialGradient builders plus Gradient parsing)
 - [ ] Extend literal parsing for assets/hex so `Color(uiColor:)`-style expressions work inside evaluated snippets
 - [ ] Introduce stateful modifiers like `animation`, `transition`, and `onTapGesture`
-- [ ] Parse and evaluate simple `enum` declarations so `Field`-style focus enums compile inside evaluated views.
-- [ ] Add builders for `Spacer`, `Group`, `TextField`, and `SecureField`, including `Spacer(minLength:)` and binding-backed text inputs.
+- [x] Parse and evaluate simple `enum` declarations so `Field`-style focus enums compile inside evaluated views.
+- [x] Add builders for `Spacer`, `Group`, `TextField`, and `SecureField`, including `Spacer(minLength:)` and binding-backed text inputs.
 - [ ] Implement text-input modifiers (`keyboardType`, `textContentType`, `textInputAutocapitalization`, `autocorrectionDisabled`, `submitLabel`, `.focused(_:equals:)`, `.onSubmit`) with a `FocusState`-aware runtime binding.
-- [ ] Allow `Circle`, `RoundedRectangle`, etc. to respond to `.fill`, `.stroke`, `.strokeBorder`, and `.contentShape`, plus support the `LinearGradient(colors:startPoint:endPoint:)` initializer.
-- [ ] Provide view modifiers for `.buttonStyle`, `.tint`, `.disabled`, `.animation(_:value:)`, `.accessibilityLabel`, `.accessibilityHidden`, and propagate `contentShape` to hit-testing.
-- [ ] Expand Font/Color helpers with `Font.system(size:weight:)`, `Font.Weight` cases, `.bold()`, `Color(.systemGroupedBackground)`, semantic colors (`.secondary`, `.quaternary`, etc.), and honor `.frame(maxWidth: .infinity)`.
-- [ ] Teach the `padding` modifier to accept `Edge.Set` + length, and add an `Edge.Set` value builder for cases like `.padding(.top, 8)`.
-- [ ] Enhance the expression interpreter to understand ternary `?:`, unary `!`, `Bool.toggle()`, and basic `String`/`Substring` helpers (`split`, `count`, `contains`, `hasPrefix`, `hasSuffix`) used by the form validation logic.
+- [x] Allow `Circle`, `RoundedRectangle`, etc. to respond to `.fill`, `.stroke`, `.strokeBorder`, and `.contentShape`, plus support the `LinearGradient(colors:startPoint:endPoint:)` initializer.
+- [x] Provide view modifiers for `.buttonStyle`, `.tint`, `.disabled`, `.animation(_:value:)`, `.accessibilityLabel`, `.accessibilityHidden`, and propagate `contentShape` to hit-testing.
+- [x] Expand Font/Color helpers with `Font.system(size:weight:)`, `Font.Weight` cases, `.bold()`, `Color(.systemGroupedBackground)`, semantic colors (`.secondary`, `.quaternary`, etc.), and honor `.frame(maxWidth: .infinity)`.
+- [x] Teach the `padding` modifier to accept `Edge.Set` + length, and add an `Edge.Set` value builder for cases like `.padding(.top, 8)`.
+- [x] Enhance the expression interpreter to understand ternary `?:`, unary `!`, `Bool.toggle()`, and basic `String`/`Substring` helpers (`split`, `count`, `contains`, `hasPrefix`, `hasSuffix`) used by the form validation logic.
 - [ ] End-to-end goal: `LoginPrototypeView` compiles and renders identically in EvalSwiftUI, covering focus state, text-field behaviors, button styles, semantic colors, gradients, and validation logic:
 
 ```

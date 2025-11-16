@@ -534,6 +534,127 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersLinearGradientWithColorArray() throws {
+        let source = """
+        RoundedRectangle(cornerRadius: 12)
+            .fill(
+                LinearGradient(
+                    colors: [.indigo, .purple],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: 80, height: 48)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [.indigo, .purple],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 80, height: 48)
+        }
+    }
+
+    @Test func rendersShapeFillAndStrokeModifiers() throws {
+        let source = """
+        VStack(spacing: 8) {
+            Circle()
+                .fill(.thinMaterial)
+                .frame(width: 40, height: 40)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(.secondary, lineWidth: 4)
+                .frame(width: 60, height: 30)
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(.quaternary, lineWidth: 2)
+                .frame(width: 60, height: 28)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                Circle()
+                    .fill(.thinMaterial)
+                    .frame(width: 40, height: 40)
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(.secondary, lineWidth: 4)
+                    .frame(width: 60, height: 30)
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(.quaternary, lineWidth: 2)
+                    .frame(width: 60, height: 28)
+            }
+        }
+    }
+
+    @Test func appliesButtonStyleTintAndDisabled() throws {
+        let source = """
+        VStack(spacing: 8) {
+            Button("Primary") {}
+                .buttonStyle(.borderedProminent)
+                .tint(.indigo)
+            Button("Secondary") {}
+                .buttonStyle(.bordered)
+                .disabled(true)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                Button("Primary") {}
+                    .buttonStyle(.borderedProminent)
+                    .tint(.indigo)
+                Button("Secondary") {}
+                    .buttonStyle(.bordered)
+                    .disabled(true)
+            }
+        }
+    }
+
+    @Test func appliesFontSystemWeightAndMultiline() throws {
+        let source = """
+        VStack(spacing: 4) {
+            Text("System Weight")
+                .font(.system(size: 22, weight: .semibold))
+            Text("Bold Centered Text")
+                .bold()
+                .fontWeight(.medium)
+                .multilineTextAlignment(.center)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("System Weight")
+                    .font(.system(size: 22, weight: .semibold))
+                Text("Bold Centered Text")
+                    .bold()
+                    .fontWeight(.medium)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    @Test func appliesAccessibilityAndPaddingEdges() throws {
+        let source = """
+        Text("Context")
+            .padding(.top, 8)
+            .background(Color(.systemGroupedBackground))
+            .accessibilityLabel("Context Label")
+            .accessibilityHidden(false)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Context")
+                .padding(.top, 8)
+                .background(Color(red: 0.95, green: 0.95, blue: 0.97))
+                .accessibilityLabel(Text("Context Label"))
+                .accessibilityHidden(false)
+        }
+    }
     @Test func rendersSpacerAndGroup() throws {
         let source = """
         VStack(spacing: 0) {

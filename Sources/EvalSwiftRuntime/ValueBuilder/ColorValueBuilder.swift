@@ -20,7 +20,9 @@ public struct ColorValueBuilder: RuntimeValueBuilder {
         ("teal", .teal),
         ("white", .white),
         ("yellow", .yellow),
-        ("brown", .brown)
+        ("brown", .brown),
+        ("secondary", .secondary),
+        ("systemGroupedBackground", Color(.sRGB, red: 0.95, green: 0.95, blue: 0.97, opacity: 1.0))
     ]
 
     public init() {
@@ -43,13 +45,24 @@ public struct ColorValueBuilder: RuntimeValueBuilder {
                 build: { arguments, _ in
                     try Self.applyRGBColor(arguments: arguments)
                 }
+            ),
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(label: "_", name: "color", type: "Color")
+                ],
+                build: { arguments, _ in
+                    guard let color = arguments.value(named: "color")?.asColor else {
+                        throw RuntimeError.invalidArgument("Color initializer expects a Color value.")
+                    }
+                    return .swiftUI(.color(color))
+                }
             )
         ]
     }
 
     private static func applyNamedColor(arguments: [RuntimeArgument]) throws -> RuntimeValue {
         guard let name = arguments.value(named: "name")?.asString?.lowercased(),
-              let color = namedColors.first(where: { $0.0 == name })?.1 else {
+              let color = namedColors.first(where: { $0.0.lowercased() == name })?.1 else {
             throw RuntimeError.invalidArgument("Unknown color '\(arguments.value(named: "name")?.asString ?? "")'.")
         }
         return .swiftUI(.color(color))
