@@ -5,26 +5,26 @@ import EvalSwiftIR
 public final class RuntimeModule: RuntimeScope {
     public var storage: RuntimeScopeStorage = [:]
     public var topLevelValues: [RuntimeValue] = []
-    private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
+    private var methodBuilders: [String: RuntimeMethodBuilder] = [:]
 
     public convenience init(
         source: String,
         valueBuilders: [RuntimeValueBuilder] = [],
-        modifierBuilders: [RuntimeModifierBuilder] = []
+        methodBuilders: [RuntimeMethodBuilder] = []
     ) throws {
         try self.init(
             ir: SwiftIRParser().parseModule(source: source),
             valueBuilders: valueBuilders,
-            modifierBuilders: modifierBuilders
+            methodBuilders: methodBuilders
         )
     }
 
     public init(
         ir: ModuleIR,
         valueBuilders: [RuntimeValueBuilder] = [],
-        modifierBuilders: [RuntimeModifierBuilder] = []
+        methodBuilders: [RuntimeMethodBuilder] = []
     ) throws {
-        let builders: [RuntimeValueBuilder] = [
+        var builders: [RuntimeValueBuilder] = [
             IntValueBuilder(),
             FloatValueBuilder(name: "Float"),
             FloatValueBuilder(name: "Double"),
@@ -34,11 +34,25 @@ public final class RuntimeModule: RuntimeScope {
             TextValueBuilder(),
             ButtonValueBuilder(),
             ToggleValueBuilder(),
+            SpacerValueBuilder(),
+            GroupValueBuilder(),
+            TextFieldValueBuilder(),
+            SecureFieldValueBuilder(),
             VStackValueBuilder(),
             HStackValueBuilder(),
             ZStackValueBuilder(),
             ForEachValueBuilder(),
             ColorValueBuilder(),
+            EdgeSetValueBuilder(),
+            KeyboardTypeValueBuilder(),
+            TextContentTypeValueBuilder(),
+            TextInputAutocapitalizationValueBuilder(),
+            SubmitLabelValueBuilder(),
+            FontWeightValueBuilder(),
+            TextAlignmentValueBuilder(),
+            AnimationValueBuilder(),
+            AnyTransitionValueBuilder(),
+            ButtonStyleConfigurationValueBuilder(),
             UnitPointValueBuilder(),
             AngleValueBuilder(),
             GradientValueBuilder(),
@@ -59,12 +73,21 @@ public final class RuntimeModule: RuntimeScope {
             CapsuleValueBuilder(),
             UUIDValueBuilder(),
             DateValueBuilder(),
-        ] + valueBuilders
+        ]
+
+#if canImport(UIKit)
+        builders.append(UIColorValueBuilder())
+#elseif canImport(AppKit)
+        builders.append(NSColorValueBuilder())
+#endif
+
+        builders += valueBuilders
         for builder in builders {
             define(builder.name, value: .type(RuntimeType(builder: builder, parent: self)))
         }
+        define("infinity", value: .double(Double.infinity))
 
-        let modifierBuilderList: [RuntimeModifierBuilder] = [
+        let methodBuilderList: [RuntimeMethodBuilder] = [
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
             BorderModifierBuilder(),
@@ -78,9 +101,35 @@ public final class RuntimeModule: RuntimeScope {
             BlendModeModifierBuilder(),
             OpacityModifierBuilder(),
             ShadowModifierBuilder(),
-        ] + modifierBuilders
-        for modifier in modifierBuilderList {
-            self.modifierBuilders[modifier.name] = modifier
+            StringFunctionModifierBuilder.contains(),
+            StringFunctionModifierBuilder.hasPrefix(),
+            StringFunctionModifierBuilder.hasSuffix(),
+            StringFunctionModifierBuilder.split(),
+            CountMethodBuilder(),
+            IsEmptyMethodBuilder(),
+            ToggleMethodBuilder(),
+            KeyboardTypeModifierBuilder(),
+            TextContentTypeModifierBuilder(),
+            TextInputAutocapitalizationModifierBuilder(),
+            AutocorrectionDisabledModifierBuilder(),
+            SubmitLabelModifierBuilder(),
+            FocusedModifierBuilder(),
+            OnSubmitModifierBuilder(),
+            TintModifierBuilder(),
+            DisabledModifierBuilder(),
+            BoldModifierBuilder(),
+            FontWeightModifierBuilder(),
+            MultilineTextAlignmentModifierBuilder(),
+            ButtonStyleModifierBuilder(),
+            ContentShapeModifierBuilder(),
+            AccessibilityLabelModifierBuilder(),
+            AccessibilityHiddenModifierBuilder(),
+            AnimationModifierBuilder(),
+            TransitionModifierBuilder(),
+            OnTapGestureModifierBuilder(),
+        ] + methodBuilders
+        for method in methodBuilderList {
+            self.methodBuilders[method.name] = method
         }
 
         let statementInterpreter = StatementInterpreter(scope: self)
@@ -88,8 +137,36 @@ public final class RuntimeModule: RuntimeScope {
         self.topLevelValues = values
     }
 
-    func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {
-        modifierBuilders[name]
+    func methodBuilder(named name: String) -> RuntimeMethodBuilder? {
+        methodBuilders[name]
+    }
+
+    func lookupImplicitMember(
+        named name: String,
+        expectedType: String?,
+        visited: inout Set<ObjectIdentifier>
+    ) -> RuntimeValue? {
+        let identifier = ObjectIdentifier(self)
+        guard visited.insert(identifier).inserted else { return nil }
+        var bestValue: RuntimeValue?
+        var bestPriority = Int.min
+        if let holder = storage[name], holder.matches(expectedType: expectedType) {
+            bestValue = holder
+            bestPriority = holder.implicitPriority
+        }
+        for stored in storage.values {
+            if case .type(let type) = stored,
+               let nestedValue = type.lookupImplicitMember(
+                   named: name,
+                   expectedType: expectedType,
+                   visited: &visited
+               ),
+               nestedValue.implicitPriority > bestPriority {
+                bestValue = nestedValue
+                bestPriority = nestedValue.implicitPriority
+            }
+        }
+        return bestValue
     }
 
     @MainActor

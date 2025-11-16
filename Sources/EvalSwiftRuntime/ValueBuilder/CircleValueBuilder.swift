@@ -7,7 +7,7 @@ public struct CircleValueBuilder: RuntimeValueBuilder {
     public init() {
         definitions = [
             RuntimeBuilderDefinition(parameters: []) { _, _ in
-                .swiftUI(.shape(AnyShape(Circle())))
+                .swiftUI(.insettableShape(RuntimeInsettableShape(Circle())))
             }
         ]
     }

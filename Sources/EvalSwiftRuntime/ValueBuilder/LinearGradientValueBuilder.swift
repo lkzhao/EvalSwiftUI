@@ -22,6 +22,22 @@ public struct LinearGradientValueBuilder: RuntimeValueBuilder {
                     )
                     return .swiftUI(.shapeStyle(style))
                 }
+            ),
+            RuntimeBuilderDefinition(
+                parameters: [
+                    RuntimeParameter(label: "colors", name: "colors", type: "[Color]"),
+                    RuntimeParameter(name: "startPoint", type: "UnitPoint"),
+                    RuntimeParameter(name: "endPoint", type: "UnitPoint")
+                ],
+                build: { arguments, _ in
+                    let gradient = try Self.makeGradient(from: arguments.value(named: "colors"))
+                    let startPoint = try Self.requireUnitPoint(arguments.value(named: "startPoint"), label: "startPoint")
+                    let endPoint = try Self.requireUnitPoint(arguments.value(named: "endPoint"), label: "endPoint")
+                    let style = AnyShapeStyle(
+                        LinearGradient(gradient: gradient, startPoint: startPoint, endPoint: endPoint)
+                    )
+                    return .swiftUI(.shapeStyle(style))
+                }
             )
         ]
     }
@@ -38,5 +54,18 @@ public struct LinearGradientValueBuilder: RuntimeValueBuilder {
             throw RuntimeError.invalidArgument("LinearGradient requires a UnitPoint for '\(label)'.")
         }
         return point
+    }
+
+    private static func makeGradient(from value: RuntimeValue?) throws -> Gradient {
+        guard let array = value?.asArray else {
+            throw RuntimeError.invalidArgument("LinearGradient(colors:) expects an array of Color values.")
+        }
+        let colors: [Color] = try array.map { element in
+            guard let color = element.asColor else {
+                throw RuntimeError.invalidArgument("LinearGradient(colors:) expects Color values.")
+            }
+            return color
+        }
+        return Gradient(colors: colors)
     }
 }

@@ -2,6 +2,33 @@ import Foundation
 import SwiftUI
 import EvalSwiftIR
 
+public struct RuntimeInsettableShape: InsettableShape {
+    private let pathClosure: @Sendable (CGRect) -> Path
+    private let insetClosure: @Sendable (CGFloat) -> RuntimeInsettableShape
+
+    init<S: InsettableShape>(_ shape: S) {
+        pathClosure = { rect in shape.path(in: rect) }
+        insetClosure = { amount in RuntimeInsettableShape(shape.inset(by: amount)) }
+    }
+
+    public func path(in rect: CGRect) -> Path {
+        pathClosure(rect)
+    }
+
+    public func inset(by amount: CGFloat) -> RuntimeInsettableShape {
+        insetClosure(amount)
+    }
+}
+
+public struct RuntimeEnumCase: Hashable, CustomStringConvertible {
+    public let typeName: String
+    public let caseName: String
+
+    public var description: String {
+        "\(typeName).\(caseName)"
+    }
+}
+
 public enum RuntimeValue {
     case int(Int)
     case double(Double)
@@ -9,6 +36,7 @@ public enum RuntimeValue {
     case bool(Bool)
     case keyPath(RuntimeKeyPath)
     case type(RuntimeType)
+    case enumCase(RuntimeEnumCase)
     case function(RuntimeFunction)
     case instance(RuntimeInstance)
     case array([RuntimeValue])
@@ -35,6 +63,8 @@ extension RuntimeValue: CustomStringConvertible {
             return "<KeyPath>"
         case .type(let type):
             return "<Type \(type.name)>"
+        case .enumCase(let value):
+            return value.description
         case .instance(let instance):
             return String(describing: instance)
         case .array(let values):
@@ -78,6 +108,11 @@ extension RuntimeValue {
     var asKeyPath: RuntimeKeyPath? {
         guard case .keyPath(let keyPath) = self else { return nil }
         return keyPath
+    }
+
+    var asEnumCase: RuntimeEnumCase? {
+        guard case .enumCase(let value) = self else { return nil }
+        return value
     }
 
     var asDouble: Double? {
@@ -196,6 +231,13 @@ extension RuntimeValue {
         return alignment
     }
 
+    var asTextAlignment: TextAlignment? {
+        guard case .swiftUI(let value) = self, case .textAlignment(let alignment) = value else {
+            return nil
+        }
+        return alignment
+    }
+
     var asImageScale: Image.Scale? {
         guard case .swiftUI(let value) = self, case .imageScale(let scale) = value else { return nil }
         return scale
@@ -258,10 +300,50 @@ extension RuntimeValue {
     }
 
     var asShape: AnyShape? {
-        guard case .swiftUI(let value) = self, case .shape(let shape) = value else {
+        guard case .swiftUI(let value) = self else { return nil }
+        switch value {
+        case .shape(let shape):
+            return shape
+        case .insettableShape(let insettable):
+            return AnyShape(insettable)
+        default:
             return nil
         }
-        return shape
+    }
+
+    var asInsettableShape: RuntimeInsettableShape? {
+        guard case .swiftUI(let value) = self, case .insettableShape(let insettable) = value else {
+            return nil
+        }
+        return insettable
+    }
+
+    var asEdgeSet: Edge.Set? {
+        guard case .swiftUI(let value) = self, case .edgeSet(let set) = value else {
+            return nil
+        }
+        return set
+    }
+
+    var asFontWeight: Font.Weight? {
+        guard case .swiftUI(let value) = self, case .fontWeight(let weight) = value else {
+            return nil
+        }
+        return weight
+    }
+
+    var asAnimation: Animation? {
+        guard case .swiftUI(let value) = self, case .animation(let animation) = value else {
+            return nil
+        }
+        return animation
+    }
+
+    var asPlatformColor: RuntimePlatformColor? {
+        guard case .swiftUI(let value) = self, case .platformColor(let platformColor) = value else {
+            return nil
+        }
+        return platformColor
     }
 
     var asInstance: RuntimeInstance? {
@@ -284,10 +366,125 @@ extension RuntimeValue {
         if case .swiftUI(let value) = self, case .shape(let shape) = value {
             return AnyView(shape)
         }
+        if case .swiftUI(let value) = self, case .insettableShape(let insettable) = value {
+            return AnyView(insettable)
+        }
         if case .instance(let instance) = self {
             return try? instance.makeSwiftUIView()
         }
         return nil
+    }
+
+    var isNil: Bool {
+        if case .void = self {
+            return true
+        }
+        return false
+    }
+
+    var implicitPriority: Int {
+        switch self {
+        case .enumCase:
+            return 3
+        case .swiftUI(let runtimeValue):
+            switch runtimeValue {
+            case .color:
+                return 3
+            case .shapeStyle:
+                return 1
+            case .unitPoint:
+                return 3
+            case .alignment, .horizontalAlignment, .verticalAlignment:
+                return 2
+            default:
+                return 0
+            }
+        default:
+            return 0
+        }
+    }
+
+    func matches(expectedType: String?) -> Bool {
+        guard var expectedType else { return true }
+        expectedType = expectedType.trimmingCharacters(in: .whitespacesAndNewlines)
+        if expectedType.hasSuffix("?") {
+            expectedType = String(expectedType.dropLast())
+        }
+
+        switch expectedType {
+        case "Color":
+            if case .swiftUI(let value) = self, case .color = value {
+                return true
+            }
+            return false
+        case "ShapeStyle":
+            if case .swiftUI(let value) = self, case .shapeStyle = value {
+                return true
+            }
+            return false
+        case "UnitPoint":
+            if case .swiftUI(let value) = self, case .unitPoint = value {
+                return true
+            }
+            return false
+        case "Alignment":
+            if case .swiftUI(let value) = self, case .alignment = value {
+                return true
+            }
+            return false
+        case "HorizontalAlignment":
+            if case .swiftUI(let value) = self, case .horizontalAlignment = value {
+                return true
+            }
+            return false
+        case "VerticalAlignment":
+            if case .swiftUI(let value) = self, case .verticalAlignment = value {
+                return true
+            }
+            return false
+        case "Font":
+            if case .swiftUI(let value) = self, case .font = value {
+                return true
+            }
+            return false
+        case "TextAlignment":
+            if case .swiftUI(let value) = self, case .textAlignment = value {
+                return true
+            }
+            return false
+        case "Edge.Set":
+            if case .swiftUI(let value) = self, case .edgeSet = value {
+                return true
+            }
+            return false
+        case "Animation":
+            if case .swiftUI(let value) = self, case .animation = value {
+                return true
+            }
+            return false
+        case "Font.Weight":
+            if case .swiftUI(let value) = self, case .fontWeight = value {
+                return true
+            }
+            return false
+        case "ButtonStyleConfiguration":
+            if case .string = self {
+                return true
+            }
+            return false
+        case "UIKeyboardType", "UITextContentType", "TextInputAutocapitalization", "SubmitLabel":
+            if case .string = self {
+                return true
+            }
+            return false
+        case _ where expectedType.hasPrefix("Binding"):
+            return asBinding != nil
+        default:
+            if case .enumCase(let enumCase) = self {
+                return enumCase.typeName.hasSuffix(expectedType)
+            }
+            return true
+        }
     }
 }
 
@@ -299,6 +496,7 @@ extension RuntimeValue {
         case bool
         case keyPath
         case type
+        case enumCase(String)
         case instance
         case array
         case dictionary
@@ -323,6 +521,8 @@ extension RuntimeValue {
                 "KeyPath"
             case .type:
                 "Type"
+            case .enumCase(let name):
+                "EnumCase<\(name)>"
             case .instance:
                 "Instance"
             case .array:
@@ -359,6 +559,8 @@ extension RuntimeValue {
             return .keyPath
         case .type:
             return .type
+        case .enumCase(let enumCase):
+            return .enumCase(enumCase.typeName)
         case .instance:
             return .instance
         case .array:
@@ -396,9 +598,79 @@ extension RuntimeValue {
             return AnyHashable(uuid)
         case .date(let date):
             return AnyHashable(date)
+        case .enumCase(let value):
+            return AnyHashable(value)
         default:
             return nil
         }
+    }
+
+    var countValue: Int? {
+        switch self {
+        case .array(let values):
+            return values.count
+        case .dictionary(let dictionary):
+            return dictionary.count
+        case .string(let string):
+            return string.count
+        default:
+            return nil
+        }
+    }
+
+    var isEmptyValue: Bool? {
+        switch self {
+        case .array(let values):
+            return values.isEmpty
+        case .dictionary(let dictionary):
+            return dictionary.isEmpty
+        case .string(let string):
+            return string.isEmpty
+        default:
+            return nil
+        }
+    }
+
+    var toggledValue: RuntimeValue? {
+        switch self {
+        case .bool(let bool):
+            return .bool(!bool)
+        default:
+            return nil
+        }
+    }
+    static func from(anyHashable: AnyHashable?) -> RuntimeValue {
+        guard let anyHashable else {
+            return .void
+        }
+
+        switch anyHashable.base {
+        case let enumCase as RuntimeEnumCase:
+            return .enumCase(enumCase)
+        case let intValue as Int:
+            return .int(intValue)
+        case let doubleValue as Double:
+            return .double(doubleValue)
+        case let stringValue as String:
+            return .string(stringValue)
+        case let boolValue as Bool:
+            return .bool(boolValue)
+        case let uuidValue as UUID:
+            return .uuid(uuidValue)
+        case let dateValue as Date:
+            return .date(dateValue)
+        default:
+            return .void
+        }
+    }
+}
+
+extension RuntimeValue.RuntimeValueType {
+    var isEnumCase: Bool {
+        if case .enumCase = self {
+            return true
+        }
+        return false
     }
 }
 
@@ -420,6 +692,12 @@ public enum SwiftUIRuntimeValue {
     case gradientStop(Gradient.Stop)
     case shapeStyle(AnyShapeStyle)
     case shape(AnyShape)
+    case insettableShape(RuntimeInsettableShape)
+    case edgeSet(Edge.Set)
+    case fontWeight(Font.Weight)
+    case animation(Animation)
+    case textAlignment(TextAlignment)
+    case platformColor(RuntimePlatformColor)
 }
 
 extension SwiftUIRuntimeValue: CustomStringConvertible {
@@ -457,8 +735,18 @@ extension SwiftUIRuntimeValue: CustomStringConvertible {
             return "<Gradient.Stop>"
         case .shapeStyle:
             return "<ShapeStyle>"
-        case .shape:
+        case .shape, .insettableShape:
             return "<Shape>"
+        case .edgeSet:
+            return "<Edge.Set>"
+        case .fontWeight:
+            return "<Font.Weight>"
+        case .animation:
+            return "<Animation>"
+        case .textAlignment:
+            return "<TextAlignment>"
+        case .platformColor:
+            return "<PlatformColor>"
         }
     }
 }

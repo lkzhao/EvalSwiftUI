@@ -7,7 +7,7 @@ public struct RectangleValueBuilder: RuntimeValueBuilder {
     public init() {
         definitions = [
             RuntimeBuilderDefinition(parameters: []) { _, _ in
-                .swiftUI(.shape(AnyShape(Rectangle())))
+                .swiftUI(.insettableShape(RuntimeInsettableShape(Rectangle())))
             }
         ]
     }

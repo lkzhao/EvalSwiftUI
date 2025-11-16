@@ -51,7 +51,11 @@ struct ArgumentEvaluator {
         if let type = parameter.type, let typeScope = try? scope.type(named: type) {
             argumentScope = TypeHintScope(parent: scope, type: typeScope)
         }
-        guard let argumentValue = try ExpressionEvaluator.evaluate(argument?.value, scope: argumentScope) ?? parameter.defaultValue else {
+        guard let argumentValue = try ExpressionEvaluator.evaluate(
+            argument?.value,
+            scope: argumentScope,
+            expectedType: parameter.type
+        ) ?? parameter.defaultValue else {
             throw RuntimeError.unsupportedExpression("Unable to evaluate argument for parameter '\(parameter.name)'")
         }
         return RuntimeArgument(name: parameter.name, value: argumentValue)

@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct MaskModifierBuilder: RuntimeModifierBuilder {
+public struct MaskModifierBuilder: RuntimeMethodBuilder {
     public let name = "mask"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "content", type: "Any")
                 ],
@@ -21,7 +21,7 @@ public struct MaskModifierBuilder: RuntimeModifierBuilder {
                     return AnyView(view.mask(maskView))
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(
                         name: "alignment",

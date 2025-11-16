@@ -17,6 +17,20 @@ public struct SwiftIRParser {
                 continue
             }
 
+            if let enumDecl = node.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: enumDecl) {
+                statements.append(
+                    .binding(
+                        BindingIR(
+                            name: enumDecl.name.text,
+                            type: nil,
+                            initializer: .definition(definition)
+                        )
+                    )
+                )
+                continue
+            }
+
             if let functionDecl = node.as(FunctionDeclSyntax.self) {
                 let functionIR = makeFunctionIR(from: functionDecl)
                 let binding = BindingIR(
@@ -82,6 +96,18 @@ public struct SwiftIRParser {
                 continue
             }
 
+            if let enumDecl = member.decl.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: enumDecl) {
+                staticBindings.append(
+                    BindingIR(
+                        name: enumDecl.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
             if let variable = member.decl.as(VariableDeclSyntax.self) {
                 let isStatic = hasStaticModifier(variable.modifiers)
                 if let computedBinding = makeComputedBinding(from: variable) {
@@ -127,10 +153,104 @@ public struct SwiftIRParser {
         }
 
         let definition = DefinitionIR(
+            kind: .structure,
             name: node.name.text,
             inheritedTypes: makeInheritedTypes(node),
             bindings: instanceBindings,
-            staticBindings: staticBindings
+            staticBindings: staticBindings,
+            enumCases: []
+        )
+        return definition
+    }
+
+    private func makeGuardStatement(from node: GuardStmtSyntax) -> GuardStatementIR? {
+        var conditions: [IfConditionIR] = []
+        for element in node.conditions {
+            switch element.condition {
+            case .expression(let expr):
+                conditions.append(.expression(makeExpr(expr)))
+            case .optionalBinding(let binding):
+                guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self),
+                      let initializer = binding.initializer else {
+                    return nil
+                }
+                conditions.append(
+                    .optionalBinding(
+                        name: pattern.identifier.text,
+                        type: binding.typeAnnotation?.type.trimmedDescription,
+                        value: makeExpr(initializer.value)
+                    )
+                )
+            case .availability, .matchingPattern:
+                return nil
+            @unknown default:
+                return nil
+            }
+        }
+
+        let elseStatements = makeStatements(from: node.body.statements)
+        return GuardStatementIR(conditions: conditions, elseBody: elseStatements)
+    }
+
+    private func makeEnumDefinition(from node: EnumDeclSyntax) -> DefinitionIR? {
+        var staticBindings: [BindingIR] = []
+        var enumCases: [EnumCaseIR] = []
+
+        for member in node.memberBlock.members {
+            if let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) {
+                for element in caseDecl.elements {
+                    if element.parameterClause != nil {
+                        print("Unhandled enum case with associated values: \(element.trimmedDescription)")
+                        continue
+                    }
+                    if element.rawValue != nil {
+                        print("Unhandled enum case with raw value: \(element.trimmedDescription)")
+                        continue
+                    }
+                    enumCases.append(EnumCaseIR(name: element.name.text))
+                }
+                continue
+            }
+
+            if let structDecl = member.decl.as(StructDeclSyntax.self),
+               let definition = makeDefinition(from: structDecl) {
+                staticBindings.append(
+                    BindingIR(
+                        name: structDecl.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
+            if let nestedEnum = member.decl.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: nestedEnum) {
+                staticBindings.append(
+                    BindingIR(
+                        name: nestedEnum.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
+            if let functionDecl = member.decl.as(FunctionDeclSyntax.self) {
+                staticBindings.append(makeFunctionBinding(from: functionDecl))
+                continue
+            }
+
+            print("Unhandled member in enum definition: \(member.decl.trimmedDescription)")
+        }
+
+        let definition = DefinitionIR(
+            kind: .enumeration,
+            name: node.name.text,
+            inheritedTypes: makeInheritedTypes(node),
+            bindings: [],
+            staticBindings: staticBindings,
+            enumCases: enumCases
         )
         return definition
     }
@@ -155,9 +275,11 @@ public struct SwiftIRParser {
     }
 
     private func makeBindingList(from node: VariableDeclSyntax) -> [BindingIR] {
+        let wrapperNames = attributeNames(from: node)
+        let defaultInitializer = defaultInitializerExpression(for: wrapperNames)
         return node.bindings.compactMap { binding in
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else { return nil }
-            let initializerExpr = binding.initializer.map { makeExpr($0.value) }
+            let initializerExpr = binding.initializer.map { makeExpr($0.value) } ?? defaultInitializer
             let typeAnnotation = binding.typeAnnotation?.type.trimmedDescription
             return BindingIR(
                 name: identifierPattern.identifier.text,
@@ -165,6 +287,24 @@ public struct SwiftIRParser {
                 initializer: initializerExpr
             )
         }
+    }
+
+    private func attributeNames(from node: VariableDeclSyntax) -> [String] {
+        let attributes = node.attributes
+        guard !attributes.isEmpty else { return [] }
+        return attributes.compactMap { attribute in
+            if let attribute = attribute.as(AttributeSyntax.self) {
+                return attribute.attributeName.trimmedDescription
+            }
+            return nil
+        }
+    }
+
+    private func defaultInitializerExpression(for attributes: [String]) -> ExprIR? {
+        if attributes.contains("FocusState") {
+            return .nilLiteral
+        }
+        return nil
     }
 
     private func makeFunctionBinding(from node: FunctionDeclSyntax) -> BindingIR {
@@ -189,6 +329,11 @@ public struct SwiftIRParser {
             if let varDecl = statement.item.as(VariableDeclSyntax.self),
                let binding = makeBinding(from: varDecl) {
                 return .binding(binding)
+            }
+
+            if let guardStmt = statement.item.as(GuardStmtSyntax.self),
+               let guardIR = makeGuardStatement(from: guardStmt) {
+                return .guard(guardIR)
             }
 
             if let ifStmt = statement.item.as(IfExprSyntax.self),
@@ -337,6 +482,19 @@ public struct SwiftIRParser {
                 return .unknown(keyPathExpr.trimmedDescription)
             }
             return .keyPath(keyPath)
+        }
+
+        if let ternary = expr.as(TernaryExprSyntax.self) {
+            return .ternary(
+                condition: makeExpr(ternary.condition),
+                trueValue: makeExpr(ternary.thenExpression),
+                falseValue: makeExpr(ternary.elseExpression)
+            )
+        }
+
+        if let sequence = expr.as(SequenceExprSyntax.self),
+           let ternary = makeTernaryExpr(from: sequence) {
+            return ternary
         }
 
         if let prefix = expr.as(PrefixOperatorExprSyntax.self),
@@ -517,7 +675,8 @@ public struct SwiftIRParser {
         return BindingIR(
             name: pattern.identifier.text,
             type: binding.typeAnnotation?.type.trimmedDescription,
-            initializer: .function(functionIR)
+            initializer: .function(functionIR),
+            isComputed: true
         )
     }
 
@@ -608,6 +767,36 @@ public struct SwiftIRParser {
             return makeExpr(first)
         }
         return makeBinaryExpr(from: list) ?? .unknown(list.map { $0.trimmedDescription }.joined(separator: " "))
+    }
+
+    private func makeTernaryExpr(from sequence: SequenceExprSyntax) -> ExprIR? {
+        let elements = Array(sequence.elements)
+        guard elements.count >= 3 else {
+            return nil
+        }
+        for index in 0..<(elements.count - 2) {
+            if let ternaryNode = elements[index + 1].as(TernaryExprSyntax.self) {
+                let condition = makeExpr(elements[index])
+                let trueValue = makeExpr(ternaryNode.thenExpression)
+                let falseValue = makeExpr(elements[index + 2])
+                return .ternary(
+                    condition: condition,
+                    trueValue: trueValue,
+                    falseValue: falseValue
+                )
+            }
+            if let unresolved = elements[index + 1].as(UnresolvedTernaryExprSyntax.self) {
+                let condition = makeExpr(elements[index])
+                let trueValue = makeExpr(unresolved.thenExpression)
+                let falseValue = makeExpr(elements[index + 2])
+                return .ternary(
+                    condition: condition,
+                    trueValue: trueValue,
+                    falseValue: falseValue
+                )
+            }
+        }
+        return nil
     }
 
     private func makeBinaryExpr(from elements: [ExprSyntax]) -> ExprIR? {

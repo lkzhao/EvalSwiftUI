@@ -20,6 +20,138 @@ struct ExpressionEvaluatorTests {
 
         #expect(count == 1)
     }
+
+    @Test func supportsImplicitEnumMembers() throws {
+        let source = """
+        enum Field {
+            case email
+            case password
+        }
+
+        var focused: Field = .email
+        focused = .password
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .enumCase(let value) = try module.get("focused") else {
+            throw TestFailure.expected("Expected focused to be stored as an enum case")
+        }
+
+        #expect(value == RuntimeEnumCase(typeName: "Field", caseName: "password"))
+    }
+
+    @Test func supportsEnumDeclarations() throws {
+        let source = """
+        enum Field {
+            case email
+            case password
+        }
+
+        var selected = Field.email
+        selected = Field.password
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .enumCase(let value) = try module.get("selected") else {
+            throw TestFailure.expected("Expected selected to store an enum case")
+        }
+
+        #expect(value == RuntimeEnumCase(typeName: "Field", caseName: "password"))
+    }
+
+    @Test func supportsStringValidationHelpers() throws {
+        let source = """
+        func isValidEmail(_ value: String) -> Bool {
+            let components = value.split(separator: "@")
+            guard components.count == 2, !components[0].isEmpty else { return false }
+            let domain = components[1]
+            return domain.contains(".") && !domain.hasPrefix(".") && !domain.hasSuffix(".")
+        }
+
+        let success = isValidEmail("user@example.com")
+        let failure = isValidEmail("invalid@domain")
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .bool(let success) = try module.get("success"),
+              case .bool(let failure) = try module.get("failure") else {
+            throw TestFailure.expected("Expected boolean validation results")
+        }
+
+        #expect(success)
+        #expect(!failure)
+    }
+
+    @Test func supportsBoolToggleOperator() throws {
+        let source = """
+        var isEnabled = false
+        isEnabled.toggle()
+        let stillEnabled = !isEnabled
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .bool(let isEnabled) = try module.get("isEnabled"),
+              case .bool(let stillEnabled) = try module.get("stillEnabled") else {
+            throw TestFailure.expected("Expected Bool values for toggle test")
+        }
+
+        #expect(isEnabled)
+        #expect(!stillEnabled)
+    }
+
+    @Test func supportsTernaryExpressions() throws {
+        let source = """
+        var showPassword = false
+        let icon = showPassword ? "eye.slash" : "eye"
+        showPassword.toggle()
+        let toggledIcon = showPassword ? "eye.slash" : "eye"
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .string(let icon) = try module.get("icon"),
+              case .string(let toggledIcon) = try module.get("toggledIcon") else {
+            throw TestFailure.expected("Expected icon strings in ternary test")
+        }
+
+        #expect(icon == "eye")
+        #expect(toggledIcon == "eye.slash")
+    }
+
+    @Test func supportsInfinityConstant() throws {
+        let source = """
+        let width = .infinity
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .double(let width) = try module.get("width") else {
+            throw TestFailure.expected("Expected width to be stored as Double.infinity")
+        }
+
+        #expect(width.isInfinite)
+    }
+
+    @Test func supportsNestedEnumDeclarations() throws {
+        let source = """
+        struct Container {
+            enum Field {
+                case email
+                case password
+            }
+
+            var field = Field.email
+        }
+
+        let container = Container()
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .instance(let instance) = try module.get("container"),
+              case .enumCase(let field) = try instance.get("field") else {
+            throw TestFailure.expected("Expected container.field to be stored as an enum case")
+        }
+
+        #expect(field == RuntimeEnumCase(typeName: "Container.Field", caseName: "email"))
+    }
     @Test func nestedStructTest() throws {
         let source = """
         struct Counter {

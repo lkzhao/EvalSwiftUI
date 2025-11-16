@@ -65,6 +65,15 @@ final class StatementInterpreter {
                 }
             case .unhandled(let raw):
                 throw RuntimeError.unsupportedExpression(raw)
+            case .guard(let guardStmt):
+                let passed = try evaluateGuardConditions(guardStmt.conditions, scope: scope)
+                if !passed {
+                    let result = try executeBlock(guardStmt.elseBody, scope: scope)
+                    if case .return(let value) = result {
+                        return .return(value)
+                    }
+                    return .return(nil)
+                }
             }
         }
         return .continue
@@ -124,5 +133,24 @@ final class StatementInterpreter {
         default:
             throw RuntimeError.unsupportedAssignment("Unsupported assignment target")
         }
+    }
+
+    private func evaluateGuardConditions(_ conditions: [IfConditionIR], scope: RuntimeScope) throws -> Bool {
+        for condition in conditions {
+            switch condition {
+            case .expression(let expr):
+                let value = try ExpressionEvaluator.evaluate(expr, scope: scope)?.asBool ?? false
+                if !value {
+                    return false
+                }
+            case .optionalBinding(let name, _, let expr):
+                guard let evaluated = try ExpressionEvaluator.evaluate(expr, scope: scope),
+                      !evaluated.isNil else {
+                    return false
+                }
+                scope.define(name, value: evaluated)
+            }
+        }
+        return true
     }
 }

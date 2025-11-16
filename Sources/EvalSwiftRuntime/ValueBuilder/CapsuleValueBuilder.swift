@@ -16,7 +16,7 @@ public struct CapsuleValueBuilder: RuntimeValueBuilder {
                 ],
                 build: { arguments, _ in
                     let style = arguments.value(named: "style")?.asRoundedCornerStyle ?? .circular
-                    return .swiftUI(.shape(AnyShape(Capsule(style: style))))
+                    return .swiftUI(.insettableShape(RuntimeInsettableShape(Capsule(style: style))))
                 }
             )
         ]

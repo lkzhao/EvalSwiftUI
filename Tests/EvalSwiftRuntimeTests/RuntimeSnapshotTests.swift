@@ -1,3 +1,9 @@
+#if canImport(AppKit)
+import AppKit
+#endif
+#if canImport(UIKit)
+import UIKit
+#endif
 import SwiftUI
 import Testing
 @testable import EvalSwiftRuntime
@@ -78,6 +84,51 @@ struct RuntimeSnapshotTests {
                 }
             }
         )
+    }
+
+    @Test func rendersTextFieldsWithModifiers() throws {
+        let source = """
+        enum Field {
+            case email
+            case password
+        }
+
+        @State var email: String = "user@example.com"
+        @State var password: String = "secret"
+        @State var showPassword: Bool = false
+        @FocusState var focusedField: Field?
+
+        VStack(spacing: 8) {
+            TextField("Email", text: $email)
+                .keyboardType(.emailAddress)
+                .textContentType(.username)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.next)
+                .focused($focusedField, equals: .email)
+                .onSubmit { focusedField = .password }
+            Group {
+                if showPassword {
+                    TextField("Password", text: $password)
+                } else {
+                    SecureField("Password", text: $password)
+                }
+            }
+            SecureField("Confirm password", text: $password)
+                .textContentType(.password)
+                .focused($focusedField, equals: .password)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                TextField("Email", text: .constant("user@example.com"))
+                Group {
+                    SecureField("Password", text: .constant("secret"))
+                }
+                SecureField("Confirm password", text: .constant("secret"))
+            }
+        }
     }
 
     @Test func rendersVStackSpacingArgument() throws {
@@ -489,6 +540,323 @@ struct RuntimeSnapshotTests {
         )
     }
 
+    @Test func rendersLinearGradientWithColorArray() throws {
+        let source = """
+        RoundedRectangle(cornerRadius: 12)
+            .fill(
+                LinearGradient(
+                    colors: [.indigo, .purple],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: 80, height: 48)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [.indigo, .purple],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 80, height: 48)
+        }
+    }
+
+    @Test func rendersShapeFillAndStrokeModifiers() throws {
+        let source = """
+        VStack(spacing: 8) {
+            Circle()
+                .fill(.thinMaterial)
+                .frame(width: 40, height: 40)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(.secondary, lineWidth: 4)
+                .frame(width: 60, height: 30)
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(.quaternary, lineWidth: 2)
+                .frame(width: 60, height: 28)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                Circle()
+                    .fill(.thinMaterial)
+                    .frame(width: 40, height: 40)
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(.secondary, lineWidth: 4)
+                    .frame(width: 60, height: 30)
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(.quaternary, lineWidth: 2)
+                    .frame(width: 60, height: 28)
+            }
+        }
+    }
+
+    @Test func appliesButtonStyleTintAndDisabled() throws {
+        let source = """
+        VStack(spacing: 8) {
+            Button("Primary") {}
+                .buttonStyle(.borderedProminent)
+                .tint(.indigo)
+            Button("Secondary") {}
+                .buttonStyle(.bordered)
+                .disabled(true)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 8) {
+                Button("Primary") {}
+                    .buttonStyle(.borderedProminent)
+                    .tint(.indigo)
+                Button("Secondary") {}
+                    .buttonStyle(.bordered)
+                    .disabled(true)
+            }
+        }
+    }
+
+    @Test func rendersLoginPrototypeView() throws {
+        let source = """
+        import SwiftUI
+
+        struct LoginPrototypeView: View {
+            @State private var email = ""
+            @State private var password = ""
+            @State private var showPassword = false
+            @FocusState private var focusedField: Field?
+            enum Field { case email, password }
+
+            var body: some View {
+                VStack(spacing: 24) {
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(colors: [.indigo, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 64, height: 64)
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .accessibilityHidden(true)
+                        }
+                        Text("Sign in")
+                            .font(.title2).bold()
+                        Text("Access your AI assistant")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "envelope")
+                                .foregroundStyle(.secondary)
+                            TextField("Email address", text: $email)
+                                .keyboardType(.emailAddress)
+                                .textContentType(.username)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .email)
+                                .submitLabel(.next)
+                                .onSubmit { focusedField = .password }
+                        }
+                        .padding(12)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(.thinMaterial))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary))
+
+                        HStack {
+                            Image(systemName: "lock")
+                                .foregroundStyle(.secondary)
+                            Group {
+                                if showPassword {
+                                    TextField("Password", text: $password)
+                                } else {
+                                    SecureField("Password", text: $password)
+                                }
+                            }
+                            .textContentType(.password)
+                            .focused($focusedField, equals: .password)
+                            Button {
+                                showPassword.toggle()
+                            } label: {
+                                Image(systemName: showPassword ? "eye.slash" : "eye")
+                                    .foregroundStyle(.secondary)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(showPassword ? "Hide password" : "Show password")
+                        }
+                        .padding(12)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(.thinMaterial))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary))
+
+                        HStack {
+                            Button("Forgot password?") {}
+                                .font(.footnote)
+                            Spacer()
+                            Button("Create account") {}
+                                .font(.footnote).bold()
+                        }
+                        .tint(.indigo)
+                    }
+
+                    Button {
+                    } label: {
+                        Text("Continue")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!isValid)
+                    .animation(.default, value: isValid)
+
+                    HStack {
+                        Rectangle().frame(height: 1).foregroundStyle(.quaternary)
+                        Text("or")
+                            .foregroundStyle(.secondary)
+                            .font(.footnote)
+                        Rectangle().frame(height: 1).foregroundStyle(.quaternary)
+                    }
+
+                    VStack(spacing: 8) {
+                        Button {
+                        } label: {
+                            HStack {
+                                Image(systemName: "applelogo")
+                                Text("Sign in with Apple").fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                        } label: {
+                            HStack {
+                                Image(systemName: "globe")
+                                Text("Sign in with Google").fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Text("By continuing, you agree to the Terms and Privacy Policy.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(24)
+                .background(Color(.systemGroupedBackground))
+            }
+
+            private var isValid: Bool {
+                isValidEmail(email) && password.count >= 8
+            }
+
+            private func isValidEmail(_ s: String) -> Bool {
+                let comps = s.split(separator: "@")
+                guard comps.count == 2, !comps[0].isEmpty else { return false }
+                let domain = comps[1]
+                return domain.contains(".") && !domain.hasPrefix(".") && !domain.hasSuffix(".")
+            }
+        }
+
+        LoginPrototypeView()
+        """
+
+        let module = try RuntimeModule(source: source)
+        let renderedView = try module.makeTopLevelSwiftUIViews()
+        _ = try RuntimeViewSnapshotRenderer.snapshot(from: renderedView)
+    }
+
+    @Test func appliesFontSystemWeightAndMultiline() throws {
+        let source = """
+        VStack(spacing: 4) {
+            Text("System Weight")
+                .font(.system(size: 22, weight: .semibold))
+            Text("Bold Centered Text")
+                .bold()
+                .fontWeight(.medium)
+                .multilineTextAlignment(.center)
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 4) {
+                Text("System Weight")
+                    .font(.system(size: 22, weight: .semibold))
+                Text("Bold Centered Text")
+                    .bold()
+                    .fontWeight(.medium)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    @Test func appliesAccessibilityAndPaddingEdges() throws {
+        let source = """
+        Text("Context")
+            .padding(.top, 8)
+            .background(Color(.systemGroupedBackground))
+            .accessibilityLabel("Context Label")
+            .accessibilityHidden(false)
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            Text("Context")
+                .padding(.top, 8)
+#if canImport(UIKit)
+                .background(Color(UIColor.systemGroupedBackground))
+#elseif canImport(AppKit)
+                .background(Color(NSColor.windowBackgroundColor))
+#else
+                .background(Color(red: 0.95, green: 0.95, blue: 0.97))
+#endif
+                .accessibilityLabel(Text("Context Label"))
+                .accessibilityHidden(false)
+        }
+    }
+    @Test func rendersSpacerAndGroup() throws {
+        let source = """
+        VStack(spacing: 0) {
+            Text("Top")
+                .padding(4)
+                .background(Color.blue.opacity(0.2))
+            Spacer(minLength: 8)
+            Group {
+                Text("First")
+                Text("Second")
+            }
+            Text("Bottom")
+                .padding(4)
+                .background(Color.green.opacity(0.2))
+        }
+        """
+
+        try assertSnapshotsMatch(source: source) {
+            VStack(spacing: 0) {
+                Text("Top")
+                    .padding(4)
+                    .background(Color.blue.opacity(0.2))
+                Spacer(minLength: 8)
+                Group {
+                    Text("First")
+                    Text("Second")
+                }
+                Text("Bottom")
+                    .padding(4)
+                    .background(Color.green.opacity(0.2))
+            }
+        }
+    }
+
     @Test func appliesImageScaleModifier() throws {
         #expectSnapshot(
             Image(systemName: "globe")
@@ -815,12 +1183,12 @@ struct RuntimeSnapshotTests {
     }
 }
 
-private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
+private struct CapsuleBackgroundModifierBuilder: RuntimeMethodBuilder {
     let name = "capsuleBackground"
 
-    var definitions: [RuntimeModifierDefinition] {
+    var definitions: [RuntimeMethodDefinition] {
         [
-            RuntimeViewModifierDefinition(parameters: []) { view, _, _ in
+            RuntimeViewMethodDefinition(parameters: []) { view, _, _ in
                 AnyView(
                     view
                         .padding(8)

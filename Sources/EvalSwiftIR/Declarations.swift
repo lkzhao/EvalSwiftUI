@@ -3,17 +3,36 @@ public struct ModuleIR: Hashable {
     public let statements: [StatementIR]
 }
 
+public enum DefinitionKind: Hashable {
+    case structure
+    case enumeration
+}
+
 public struct DefinitionIR: Hashable {
+    public let kind: DefinitionKind
     public let name: String
     public let inheritedTypes: [String]
     public let bindings: [BindingIR]
     public let staticBindings: [BindingIR]
+    public let enumCases: [EnumCaseIR]
 }
 
 public struct BindingIR: Hashable {
     public let name: String
     public let type: String?
     public let initializer: ExprIR?
+    public let isComputed: Bool
+
+    public init(name: String, type: String?, initializer: ExprIR?, isComputed: Bool = false) {
+        self.name = name
+        self.type = type
+        self.initializer = initializer
+        self.isComputed = isComputed
+    }
+}
+
+public struct EnumCaseIR: Hashable {
+    public let name: String
 }
 
 public struct FunctionIR: Hashable {
@@ -44,6 +63,14 @@ public enum BinaryOperatorIR: String {
     case remainder = "%"
     case rangeExclusive = "..<"
     case rangeInclusive = "..."
+    case equal = "=="
+    case notEqual = "!="
+    case lessThan = "<"
+    case lessThanOrEqual = "<="
+    case greaterThan = ">"
+    case greaterThanOrEqual = ">="
+    case logicalAnd = "&&"
+    case logicalOr = "||"
 
     var precedence: Int {
         switch self {
@@ -53,6 +80,10 @@ public enum BinaryOperatorIR: String {
             return 2
         case .addition, .subtraction:
             return 1
+        case .equal, .notEqual, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual:
+            return 0
+        case .logicalAnd, .logicalOr:
+            return -1
         }
     }
 }
@@ -60,6 +91,7 @@ public enum BinaryOperatorIR: String {
 public enum UnaryOperatorIR: String {
     case plus = "+"
     case minus = "-"
+    case not = "!"
 }
 
 public enum KeyPathIR: Hashable {
@@ -93,6 +125,7 @@ public indirect enum ExprIR: Hashable {
     case definition(DefinitionIR)
     case binary(op: BinaryOperatorIR, lhs: ExprIR, rhs: ExprIR)
     case unary(op: UnaryOperatorIR, operand: ExprIR)
+    case ternary(condition: ExprIR, trueValue: ExprIR, falseValue: ExprIR)
     case unknown(String)
 }
 
@@ -112,6 +145,7 @@ public enum StatementIR: Hashable {
     case `return`(ReturnIR)
     case assignment(AssignmentIR)
     case `if`(IfStatementIR)
+    case `guard`(GuardStatementIR)
     case unhandled(String)
 }
 
@@ -128,6 +162,11 @@ public struct IfStatementIR: Hashable {
     public let condition: IfConditionIR
     public let body: [StatementIR]
     public let elseBody: [StatementIR]?
+}
+
+public struct GuardStatementIR: Hashable {
+    public let conditions: [IfConditionIR]
+    public let elseBody: [StatementIR]
 }
 
 public enum IfConditionIR: Hashable {

@@ -24,6 +24,13 @@ public final class RuntimeType: RuntimeScope {
         content.name
     }
 
+    var fullName: String {
+        if let parentType = parent as? RuntimeType {
+            return "\(parentType.fullName).\(name)"
+        }
+        return name
+    }
+
     var inheritedTypeNames: [String] {
         switch content {
         case .builder:
@@ -42,6 +49,13 @@ public final class RuntimeType: RuntimeScope {
         self.parent = parent
         for binding in ir.staticBindings {
             try define(binding: binding)
+        }
+        if ir.kind == .enumeration {
+            let enumTypeName = fullName
+            for enumCase in ir.enumCases {
+                let value = RuntimeValue.enumCase(RuntimeEnumCase(typeName: enumTypeName, caseName: enumCase.name))
+                define(enumCase.name, value: value)
+            }
         }
     }
 
@@ -63,7 +77,8 @@ public final class RuntimeType: RuntimeScope {
                     }
                     return RuntimeBuilderDefinition(parameters: parameters) { [weak self] arguments, scope in
                         guard let self else { return .void }
-                        let instance = RuntimeInstance(parent: self)
+                        let computedNames = Set(definitionIR.bindings.filter { $0.isComputed }.map { $0.name })
+                        let instance = RuntimeInstance(parent: self, computedBindings: computedNames)
                         for binding in definitionIR.bindings {
                             try instance.define(binding: binding)
                         }
@@ -74,5 +89,45 @@ public final class RuntimeType: RuntimeScope {
                 return nil
             }
         }
+    }
+}
+
+extension RuntimeType {
+    func lookupImplicitMember(
+        named name: String,
+        expectedType: String?,
+        visited: inout Set<ObjectIdentifier>
+    ) -> RuntimeValue? {
+        let identifier = ObjectIdentifier(self)
+        guard visited.insert(identifier).inserted else { return nil }
+        var bestValue: RuntimeValue?
+        var bestPriority = Int.min
+        if let holder = storage[name], holder.matches(expectedType: expectedType) {
+            bestValue = holder
+            bestPriority = holder.implicitPriority
+        }
+        for stored in storage.values {
+            if case .type(let nestedType) = stored,
+               let nestedValue = nestedType.lookupImplicitMember(
+                   named: name,
+                   expectedType: expectedType,
+                   visited: &visited
+               ),
+               nestedValue.implicitPriority > bestPriority {
+                bestValue = nestedValue
+                bestPriority = nestedValue.implicitPriority
+            }
+        }
+        if let parentType = parent as? RuntimeType,
+           let parentValue = parentType.lookupImplicitMember(
+               named: name,
+               expectedType: expectedType,
+               visited: &visited
+           ),
+           parentValue.implicitPriority > bestPriority {
+            bestValue = parentValue
+            bestPriority = parentValue.implicitPriority
+        }
+        return bestValue
     }
 }

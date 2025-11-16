@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct BlendModeModifierBuilder: RuntimeModifierBuilder {
+public struct BlendModeModifierBuilder: RuntimeMethodBuilder {
     public let name = "blendMode"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "mode", type: "BlendMode")
                 ],
