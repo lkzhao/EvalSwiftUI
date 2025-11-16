@@ -20,6 +20,48 @@ struct ExpressionEvaluatorTests {
 
         #expect(count == 1)
     }
+
+    @Test func supportsEnumDeclarations() throws {
+        let source = """
+        enum Field {
+            case email
+            case password
+        }
+
+        var selected = Field.email
+        selected = Field.password
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .enumCase(let value) = try module.get("selected") else {
+            throw TestFailure.expected("Expected selected to store an enum case")
+        }
+
+        #expect(value == RuntimeEnumCase(typeName: "Field", caseName: "password"))
+    }
+
+    @Test func supportsNestedEnumDeclarations() throws {
+        let source = """
+        struct Container {
+            enum Field {
+                case email
+                case password
+            }
+
+            var field = Field.email
+        }
+
+        let container = Container()
+        """
+
+        let module = try RuntimeModule(source: source)
+        guard case .instance(let instance) = try module.get("container"),
+              case .enumCase(let field) = try instance.get("field") else {
+            throw TestFailure.expected("Expected container.field to be stored as an enum case")
+        }
+
+        #expect(field == RuntimeEnumCase(typeName: "Container.Field", caseName: "email"))
+    }
     @Test func nestedStructTest() throws {
         let source = """
         struct Counter {

@@ -2,6 +2,15 @@ import Foundation
 import SwiftUI
 import EvalSwiftIR
 
+public struct RuntimeEnumCase: Hashable, CustomStringConvertible {
+    public let typeName: String
+    public let caseName: String
+
+    public var description: String {
+        "\(typeName).\(caseName)"
+    }
+}
+
 public enum RuntimeValue {
     case int(Int)
     case double(Double)
@@ -9,6 +18,7 @@ public enum RuntimeValue {
     case bool(Bool)
     case keyPath(RuntimeKeyPath)
     case type(RuntimeType)
+    case enumCase(RuntimeEnumCase)
     case function(RuntimeFunction)
     case instance(RuntimeInstance)
     case array([RuntimeValue])
@@ -35,6 +45,8 @@ extension RuntimeValue: CustomStringConvertible {
             return "<KeyPath>"
         case .type(let type):
             return "<Type \(type.name)>"
+        case .enumCase(let value):
+            return value.description
         case .instance(let instance):
             return String(describing: instance)
         case .array(let values):
@@ -78,6 +90,11 @@ extension RuntimeValue {
     var asKeyPath: RuntimeKeyPath? {
         guard case .keyPath(let keyPath) = self else { return nil }
         return keyPath
+    }
+
+    var asEnumCase: RuntimeEnumCase? {
+        guard case .enumCase(let value) = self else { return nil }
+        return value
     }
 
     var asDouble: Double? {
@@ -299,6 +316,7 @@ extension RuntimeValue {
         case bool
         case keyPath
         case type
+        case enumCase(String)
         case instance
         case array
         case dictionary
@@ -323,6 +341,8 @@ extension RuntimeValue {
                 "KeyPath"
             case .type:
                 "Type"
+            case .enumCase(let name):
+                "EnumCase<\(name)>"
             case .instance:
                 "Instance"
             case .array:
@@ -359,6 +379,8 @@ extension RuntimeValue {
             return .keyPath
         case .type:
             return .type
+        case .enumCase(let enumCase):
+            return .enumCase(enumCase.typeName)
         case .instance:
             return .instance
         case .array:
@@ -396,6 +418,8 @@ extension RuntimeValue {
             return AnyHashable(uuid)
         case .date(let date):
             return AnyHashable(date)
+        case .enumCase(let value):
+            return AnyHashable(value)
         default:
             return nil
         }

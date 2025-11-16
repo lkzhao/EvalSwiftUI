@@ -17,6 +17,20 @@ public struct SwiftIRParser {
                 continue
             }
 
+            if let enumDecl = node.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: enumDecl) {
+                statements.append(
+                    .binding(
+                        BindingIR(
+                            name: enumDecl.name.text,
+                            type: nil,
+                            initializer: .definition(definition)
+                        )
+                    )
+                )
+                continue
+            }
+
             if let functionDecl = node.as(FunctionDeclSyntax.self) {
                 let functionIR = makeFunctionIR(from: functionDecl)
                 let binding = BindingIR(
@@ -82,6 +96,18 @@ public struct SwiftIRParser {
                 continue
             }
 
+            if let enumDecl = member.decl.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: enumDecl) {
+                staticBindings.append(
+                    BindingIR(
+                        name: enumDecl.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
             if let variable = member.decl.as(VariableDeclSyntax.self) {
                 let isStatic = hasStaticModifier(variable.modifiers)
                 if let computedBinding = makeComputedBinding(from: variable) {
@@ -127,10 +153,75 @@ public struct SwiftIRParser {
         }
 
         let definition = DefinitionIR(
+            kind: .structure,
             name: node.name.text,
             inheritedTypes: makeInheritedTypes(node),
             bindings: instanceBindings,
-            staticBindings: staticBindings
+            staticBindings: staticBindings,
+            enumCases: []
+        )
+        return definition
+    }
+
+    private func makeEnumDefinition(from node: EnumDeclSyntax) -> DefinitionIR? {
+        var staticBindings: [BindingIR] = []
+        var enumCases: [EnumCaseIR] = []
+
+        for member in node.memberBlock.members {
+            if let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) {
+                for element in caseDecl.elements {
+                    if element.parameterClause != nil {
+                        print("Unhandled enum case with associated values: \(element.trimmedDescription)")
+                        continue
+                    }
+                    if element.rawValue != nil {
+                        print("Unhandled enum case with raw value: \(element.trimmedDescription)")
+                        continue
+                    }
+                    enumCases.append(EnumCaseIR(name: element.name.text))
+                }
+                continue
+            }
+
+            if let structDecl = member.decl.as(StructDeclSyntax.self),
+               let definition = makeDefinition(from: structDecl) {
+                staticBindings.append(
+                    BindingIR(
+                        name: structDecl.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
+            if let nestedEnum = member.decl.as(EnumDeclSyntax.self),
+               let definition = makeEnumDefinition(from: nestedEnum) {
+                staticBindings.append(
+                    BindingIR(
+                        name: nestedEnum.name.text,
+                        type: nil,
+                        initializer: .definition(definition)
+                    )
+                )
+                continue
+            }
+
+            if let functionDecl = member.decl.as(FunctionDeclSyntax.self) {
+                staticBindings.append(makeFunctionBinding(from: functionDecl))
+                continue
+            }
+
+            print("Unhandled member in enum definition: \(member.decl.trimmedDescription)")
+        }
+
+        let definition = DefinitionIR(
+            kind: .enumeration,
+            name: node.name.text,
+            inheritedTypes: makeInheritedTypes(node),
+            bindings: [],
+            staticBindings: staticBindings,
+            enumCases: enumCases
         )
         return definition
     }

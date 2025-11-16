@@ -3,17 +3,28 @@ public struct ModuleIR: Hashable {
     public let statements: [StatementIR]
 }
 
+public enum DefinitionKind: Hashable {
+    case structure
+    case enumeration
+}
+
 public struct DefinitionIR: Hashable {
+    public let kind: DefinitionKind
     public let name: String
     public let inheritedTypes: [String]
     public let bindings: [BindingIR]
     public let staticBindings: [BindingIR]
+    public let enumCases: [EnumCaseIR]
 }
 
 public struct BindingIR: Hashable {
     public let name: String
     public let type: String?
     public let initializer: ExprIR?
+}
+
+public struct EnumCaseIR: Hashable {
+    public let name: String
 }
 
 public struct FunctionIR: Hashable {

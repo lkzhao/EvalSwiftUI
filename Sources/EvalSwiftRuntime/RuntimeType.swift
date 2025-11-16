@@ -24,6 +24,13 @@ public final class RuntimeType: RuntimeScope {
         content.name
     }
 
+    var fullName: String {
+        if let parentType = parent as? RuntimeType {
+            return "\(parentType.fullName).\(name)"
+        }
+        return name
+    }
+
     var inheritedTypeNames: [String] {
         switch content {
         case .builder:
@@ -42,6 +49,13 @@ public final class RuntimeType: RuntimeScope {
         self.parent = parent
         for binding in ir.staticBindings {
             try define(binding: binding)
+        }
+        if ir.kind == .enumeration {
+            let enumTypeName = fullName
+            for enumCase in ir.enumCases {
+                let value = RuntimeValue.enumCase(RuntimeEnumCase(typeName: enumTypeName, caseName: enumCase.name))
+                define(enumCase.name, value: value)
+            }
         }
     }
 
