@@ -16,7 +16,7 @@
 - [ ] Introduce stateful modifiers like `animation`, `transition`, and `onTapGesture`
 - [x] Parse and evaluate simple `enum` declarations so `Field`-style focus enums compile inside evaluated views.
 - [x] Add builders for `Spacer`, `Group`, `TextField`, and `SecureField`, including `Spacer(minLength:)` and binding-backed text inputs.
-- [ ] Implement text-input modifiers (`keyboardType`, `textContentType`, `textInputAutocapitalization`, `autocorrectionDisabled`, `submitLabel`, `.focused(_:equals:)`, `.onSubmit`) with a `FocusState`-aware runtime binding.
+- [x] Implement text-input modifiers (`keyboardType`, `textContentType`, `textInputAutocapitalization`, `autocorrectionDisabled`, `submitLabel`, `.focused(_:equals:)`, `.onSubmit`) with a `FocusState`-aware runtime binding.
 - [x] Allow `Circle`, `RoundedRectangle`, etc. to respond to `.fill`, `.stroke`, `.strokeBorder`, and `.contentShape`, plus support the `LinearGradient(colors:startPoint:endPoint:)` initializer.
 - [x] Provide view modifiers for `.buttonStyle`, `.tint`, `.disabled`, `.animation(_:value:)`, `.accessibilityLabel`, `.accessibilityHidden`, and propagate `contentShape` to hit-testing.
 - [x] Expand Font/Color helpers with `Font.system(size:weight:)`, `Font.Weight` cases, `.bold()`, `Color(.systemGroupedBackground)`, semantic colors (`.secondary`, `.quaternary`, etc.), and honor `.frame(maxWidth: .infinity)`.

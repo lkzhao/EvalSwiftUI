@@ -597,6 +597,31 @@ extension RuntimeValue {
             return nil
         }
     }
+
+    static func from(anyHashable: AnyHashable?) -> RuntimeValue {
+        guard let anyHashable else {
+            return .void
+        }
+
+        switch anyHashable.base {
+        case let enumCase as RuntimeEnumCase:
+            return .enumCase(enumCase)
+        case let intValue as Int:
+            return .int(intValue)
+        case let doubleValue as Double:
+            return .double(doubleValue)
+        case let stringValue as String:
+            return .string(stringValue)
+        case let boolValue as Bool:
+            return .bool(boolValue)
+        case let uuidValue as UUID:
+            return .uuid(uuidValue)
+        case let dateValue as Date:
+            return .date(dateValue)
+        default:
+            return .void
+        }
+    }
 }
 
 extension RuntimeValue.RuntimeValueType {
