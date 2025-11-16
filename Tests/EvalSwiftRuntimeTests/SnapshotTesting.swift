@@ -93,7 +93,7 @@ enum RuntimeViewSnapshotRenderer {
 func assertSnapshotsMatch<V: View>(
     source: String,
     valueBuilders: [any RuntimeValueBuilder] = [],
-    modifierBuilders: [any RuntimeModifierBuilder] = [],
+    methodBuilders: [any RuntimeMethodBuilder] = [],
     @ViewBuilder expected expectedView: () -> V
 ) throws {
     let parser = SwiftIRParser()
@@ -101,7 +101,7 @@ func assertSnapshotsMatch<V: View>(
     let module = try RuntimeModule(
         ir: moduleIR,
         valueBuilders: valueBuilders,
-        modifierBuilders: modifierBuilders
+        methodBuilders: methodBuilders
     )
     let evaluatedView = try module.makeTopLevelSwiftUIViews()
     try assertViewMatch(evaluatedView, expectedView())

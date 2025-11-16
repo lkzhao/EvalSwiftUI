@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct BackgroundModifierBuilder: RuntimeModifierBuilder {
+public struct BackgroundModifierBuilder: RuntimeMethodBuilder {
     public let name = "background"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "content", type: "Any")
                 ],

@@ -605,6 +605,40 @@ extension RuntimeValue {
         }
     }
 
+    var countValue: Int? {
+        switch self {
+        case .array(let values):
+            return values.count
+        case .dictionary(let dictionary):
+            return dictionary.count
+        case .string(let string):
+            return string.count
+        default:
+            return nil
+        }
+    }
+
+    var isEmptyValue: Bool? {
+        switch self {
+        case .array(let values):
+            return values.isEmpty
+        case .dictionary(let dictionary):
+            return dictionary.isEmpty
+        case .string(let string):
+            return string.isEmpty
+        default:
+            return nil
+        }
+    }
+
+    var toggledValue: RuntimeValue? {
+        switch self {
+        case .bool(let bool):
+            return .bool(!bool)
+        default:
+            return nil
+        }
+    }
     static func from(anyHashable: AnyHashable?) -> RuntimeValue {
         guard let anyHashable else {
             return .void

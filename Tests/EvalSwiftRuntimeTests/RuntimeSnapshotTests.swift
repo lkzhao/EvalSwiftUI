@@ -1183,12 +1183,12 @@ struct RuntimeSnapshotTests {
     }
 }
 
-private struct CapsuleBackgroundModifierBuilder: RuntimeModifierBuilder {
+private struct CapsuleBackgroundModifierBuilder: RuntimeMethodBuilder {
     let name = "capsuleBackground"
 
-    var definitions: [RuntimeModifierDefinition] {
+    var definitions: [RuntimeMethodDefinition] {
         [
-            RuntimeViewModifierDefinition(parameters: []) { view, _, _ in
+            RuntimeViewMethodDefinition(parameters: []) { view, _, _ in
                 AnyView(
                     view
                         .padding(8)

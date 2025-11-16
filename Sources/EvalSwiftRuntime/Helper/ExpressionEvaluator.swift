@@ -90,38 +90,38 @@ struct ExpressionEvaluator {
                     throw RuntimeError.unsupportedExpression("Member access for '\(name)' requires a value")
                 }
 
-                switch baseValue {
-                case .instance(let instance):
-                    return try instance.get(name)
-                case .type(let type):
-                    return try type.get(name)
-                case .array(let values):
-                    switch name {
-                    case "count":
-                        return .int(values.count)
-                    case "isEmpty":
-                        return .bool(values.isEmpty)
-                    default:
-                        throw RuntimeError.unsupportedExpression(
-                            "Cannot access member '\(name)' on \(baseValue.valueType)"
-                        )
+                if let instance = baseValue.asInstance {
+                    do {
+                        return try instance.get(name)
+                    } catch RuntimeError.unknownIdentifier {
+                        // fall through to method lookup
+                    } catch {
+                        throw error
                     }
-                case .string(let string):
-                    switch name {
-                    case "count":
-                        return .int(string.count)
-                    case "isEmpty":
-                        return .bool(string.isEmpty)
-                    default:
-                        throw RuntimeError.unsupportedExpression(
-                            "Cannot access member '\(name)' on \(baseValue.valueType)"
-                        )
+                }
+                if case .type(let type) = baseValue {
+                    do {
+                        return try type.get(name)
+                    } catch RuntimeError.unknownIdentifier {
+                        // fall through
+                    } catch {
+                        throw error
                     }
-                default:
-                    throw RuntimeError.unsupportedExpression(
-                        "Cannot access member '\(name)' on \(baseValue.valueType)"
+                }
+
+                if let builder = scope.module?.methodBuilder(named: name), builder.supportsMemberAccess {
+                    return try applyMethodBuilder(
+                        builder: builder,
+                        baseValue: baseValue,
+                        setter: nil,
+                        arguments: [],
+                        scope: scope
                     )
                 }
+
+                throw RuntimeError.unsupportedExpression(
+                    "Cannot access member '\(name)' on \(baseValue.valueType)"
+                )
             } else {
                 if let implicit = try? scope.getImplicitMember(name, expectedType: expectedType) {
                     return implicit
@@ -137,77 +137,31 @@ struct ExpressionEvaluator {
             ) {
                 return staticResult
             }
-            // TODO: Make this part integrated with the next `if let calleeValue = try evaluate(callee, scope: scope) {` part
             if case .member(let baseExpr, let name) = callee {
-                if name == "toggle",
-                   arguments.isEmpty,
-                   let identifier = identifierName(from: baseExpr) {
-                    let currentValue = try scope.get(identifier)
-                    guard let boolValue = currentValue.asBool else {
-                        throw RuntimeError.invalidArgument("toggle() is only supported on Bool values.")
-                    }
-                    try scope.set(identifier, value: .bool(!boolValue))
-                    return .void
+                guard let baseExpr,
+                      let baseValue = try evaluate(baseExpr, scope: scope) else {
+                    throw RuntimeError.invalidArgument("Method '\(name)' requires a receiver.")
                 }
+                let setter = makeSetter(from: baseExpr, scope: scope)
 
-                var evaluatedBase: RuntimeValue? = nil
-                if let modifierBuilder = scope.module?.modifierBuilder(named: name) {
-                    guard let baseExpr,
-                          let baseValue = try evaluate(baseExpr, scope: scope) else {
-                        throw RuntimeError.invalidArgument("\(name) modifier requires a receiver.")
-                    }
-                    evaluatedBase = baseValue
-
-                    var lastError: Error?
-                    var resolvedDefinition: (RuntimeModifierDefinition, [RuntimeArgument])?
-                    for definition in modifierBuilder.definitions {
-                        do {
-                            let evaluatedArguments = try ArgumentEvaluator.evaluate(
-                                parameters: definition.parameters,
-                                arguments: arguments,
-                                scope: scope
-                            )
-                            resolvedDefinition = (definition, evaluatedArguments)
-                            break
-                        } catch {
-                            lastError = error
-                        }
-                    }
-
-                    guard let (definition, evaluatedArguments) = resolvedDefinition else {
-                        throw lastError ?? RuntimeError.invalidArgument("No matching signature for modifier '\(name)'.")
-                    }
-
-                    if case .instance(let instance) = baseValue {
-                        let modifiedInstance = RuntimeInstance(
-                            modifierDefinition: definition,
-                            arguments: evaluatedArguments,
-                            parent: instance
-                        )
-                        return .instance(modifiedInstance)
-                    }
-
-                    return try definition.apply(
-                        to: baseValue,
-                        arguments: evaluatedArguments,
+                if let builder = scope.module?.methodBuilder(named: name) {
+                    return try applyMethodBuilder(
+                        builder: builder,
+                        baseValue: baseValue,
+                        setter: setter,
+                        arguments: arguments,
                         scope: scope
                     )
                 }
 
-                if evaluatedBase == nil, let baseExpr {
-                    evaluatedBase = try evaluate(baseExpr, scope: scope)
-                }
-
-                if let baseValue = evaluatedBase,
-                   let shapeResult = try evaluateShapeFunction(
-                       name: name,
-                       baseValue: baseValue,
-                       arguments: arguments,
-                       scope: scope
-                   ) {
+                if let shapeResult = try evaluateShapeFunction(
+                    name: name,
+                    baseValue: baseValue,
+                    arguments: arguments,
+                    scope: scope
+                ) {
                     return shapeResult
                 }
-
             }
 
             if let calleeValue = try evaluate(callee, scope: scope) {
@@ -620,6 +574,52 @@ struct ExpressionEvaluator {
             return nil
         }
         return try evaluate(argument.value, scope: scope)
+    }
+
+    private static func applyMethodBuilder(
+        builder: RuntimeMethodBuilder,
+        baseValue: RuntimeValue,
+        setter: ((RuntimeValue) throws -> Void)? = nil,
+        arguments: [FunctionCallArgumentIR],
+        scope: RuntimeScope
+    ) throws -> RuntimeValue {
+        var lastError: Error?
+        for definition in builder.definitions {
+            do {
+                let evaluatedArguments = try ArgumentEvaluator.evaluate(
+                    parameters: definition.parameters,
+                    arguments: arguments,
+                    scope: scope
+                )
+                if case .instance(let instance) = baseValue,
+                   let viewDefinition = definition as? RuntimeViewMethodDefinition {
+                    let modifiedInstance = RuntimeInstance(
+                        methodDefinition: viewDefinition,
+                        arguments: evaluatedArguments,
+                        parent: instance
+                    )
+                    return .instance(modifiedInstance)
+                }
+                return try definition.apply(
+                    to: baseValue,
+                    setter: setter,
+                    arguments: evaluatedArguments,
+                    scope: scope
+                )
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError ?? RuntimeError.invalidArgument("No matching method '\(builder.name)'.")
+    }
+
+    private static func makeSetter(from baseExpr: ExprIR?, scope: RuntimeScope) -> ((RuntimeValue) throws -> Void)? {
+        guard let identifier = identifierName(from: baseExpr) else {
+            return nil
+        }
+        return { newValue in
+            try scope.set(identifier, value: newValue)
+        }
     }
 }
 

@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct FontModifierBuilder: RuntimeModifierBuilder {
+public struct FontModifierBuilder: RuntimeMethodBuilder {
     public let name = "font"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "font", type: "Font")
                 ],

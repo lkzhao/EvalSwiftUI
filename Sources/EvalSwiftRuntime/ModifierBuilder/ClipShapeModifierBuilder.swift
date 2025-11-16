@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct ClipShapeModifierBuilder: RuntimeModifierBuilder {
+public struct ClipShapeModifierBuilder: RuntimeMethodBuilder {
     public let name = "clipShape"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "shape", type: "Shape"),
                     RuntimeParameter(

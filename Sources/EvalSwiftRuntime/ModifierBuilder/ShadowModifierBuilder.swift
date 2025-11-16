@@ -1,13 +1,13 @@
 import SwiftUI
 
-public struct ShadowModifierBuilder: RuntimeModifierBuilder {
+public struct ShadowModifierBuilder: RuntimeMethodBuilder {
     public let name = "shadow"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
     private static let defaultShadowColor = Color(.sRGBLinear, white: 0, opacity: 0.33)
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(
                         name: "color",
@@ -30,7 +30,7 @@ public struct ShadowModifierBuilder: RuntimeModifierBuilder {
                     )
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(name: "radius", type: "Double"),
                     RuntimeParameter(name: "x", type: "Double", defaultValue: .double(0)),

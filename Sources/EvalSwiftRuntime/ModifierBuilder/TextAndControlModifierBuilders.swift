@@ -1,9 +1,9 @@
 import SwiftUI
 
-struct TintModifierBuilder: RuntimeModifierBuilder {
+struct TintModifierBuilder: RuntimeMethodBuilder {
     let name = "tint"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "style", type: "ShapeStyle")]
         ) { view, arguments, _ in
             guard let styleValue = arguments.value(named: "style") else {
@@ -20,10 +20,10 @@ struct TintModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct DisabledModifierBuilder: RuntimeModifierBuilder {
+struct DisabledModifierBuilder: RuntimeMethodBuilder {
     let name = "disabled"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "isDisabled", type: "Bool")]
         ) { view, arguments, _ in
             let disabled = arguments.value(named: "isDisabled")?.asBool ?? false
@@ -32,19 +32,19 @@ struct DisabledModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct BoldModifierBuilder: RuntimeModifierBuilder {
+struct BoldModifierBuilder: RuntimeMethodBuilder {
     let name = "bold"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(parameters: []) { view, _, _ in
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(parameters: []) { view, _, _ in
             AnyView(view.bold())
         }
     ]
 }
 
-struct FontWeightModifierBuilder: RuntimeModifierBuilder {
+struct FontWeightModifierBuilder: RuntimeMethodBuilder {
     let name = "fontWeight"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "weight", type: "Font.Weight")]
         ) { view, arguments, _ in
             guard let weight = arguments.value(named: "weight")?.asFontWeight else {
@@ -55,10 +55,10 @@ struct FontWeightModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct MultilineTextAlignmentModifierBuilder: RuntimeModifierBuilder {
+struct MultilineTextAlignmentModifierBuilder: RuntimeMethodBuilder {
     let name = "multilineTextAlignment"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "alignment", type: "TextAlignment")]
         ) { view, arguments, _ in
             guard let alignment = arguments.value(named: "alignment")?.asTextAlignment else {
@@ -69,10 +69,10 @@ struct MultilineTextAlignmentModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct ButtonStyleModifierBuilder: RuntimeModifierBuilder {
+struct ButtonStyleModifierBuilder: RuntimeMethodBuilder {
     let name = "buttonStyle"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "style", type: "ButtonStyleConfiguration")]
         ) { view, arguments, _ in
             guard let identifier = arguments.value(named: "style")?.asString else {
@@ -96,10 +96,10 @@ struct ButtonStyleModifierBuilder: RuntimeModifierBuilder {
     }
 }
 
-struct ContentShapeModifierBuilder: RuntimeModifierBuilder {
+struct ContentShapeModifierBuilder: RuntimeMethodBuilder {
     let name = "contentShape"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "shape", type: "Shape")]
         ) { view, arguments, _ in
             guard let shape = arguments.value(named: "shape")?.asShape else {
@@ -110,10 +110,10 @@ struct ContentShapeModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct AccessibilityLabelModifierBuilder: RuntimeModifierBuilder {
+struct AccessibilityLabelModifierBuilder: RuntimeMethodBuilder {
     let name = "accessibilityLabel"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "label", type: "String")]
         ) { view, arguments, _ in
             guard let label = arguments.value(named: "label")?.asString else {
@@ -124,10 +124,10 @@ struct AccessibilityLabelModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct AccessibilityHiddenModifierBuilder: RuntimeModifierBuilder {
+struct AccessibilityHiddenModifierBuilder: RuntimeMethodBuilder {
     let name = "accessibilityHidden"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "hidden", type: "Bool")]
         ) { view, arguments, _ in
             let hidden = arguments.value(named: "hidden")?.asBool ?? false
@@ -136,10 +136,10 @@ struct AccessibilityHiddenModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct AnimationModifierBuilder: RuntimeModifierBuilder {
+struct AnimationModifierBuilder: RuntimeMethodBuilder {
     let name = "animation"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "animation", type: "Animation"),
                 RuntimeParameter(label: "value", name: "value", type: nil, defaultValue: .void)
@@ -153,10 +153,10 @@ struct AnimationModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct TransitionModifierBuilder: RuntimeModifierBuilder {
+struct TransitionModifierBuilder: RuntimeMethodBuilder {
     let name = "transition"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "transition", type: "AnyTransition")
             ]
@@ -167,10 +167,10 @@ struct TransitionModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct OnTapGestureModifierBuilder: RuntimeModifierBuilder {
+struct OnTapGestureModifierBuilder: RuntimeMethodBuilder {
     let name = "onTapGesture"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "count", name: "count", type: "Int", defaultValue: .int(1)),
                 RuntimeParameter(label: "_", name: "perform", type: "() -> Void")

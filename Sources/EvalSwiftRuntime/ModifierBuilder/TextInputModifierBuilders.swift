@@ -1,9 +1,9 @@
 import SwiftUI
 
-struct KeyboardTypeModifierBuilder: RuntimeModifierBuilder {
+struct KeyboardTypeModifierBuilder: RuntimeMethodBuilder {
     let name = "keyboardType"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "type", type: "UIKeyboardType")
             ],
@@ -12,10 +12,10 @@ struct KeyboardTypeModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct TextContentTypeModifierBuilder: RuntimeModifierBuilder {
+struct TextContentTypeModifierBuilder: RuntimeMethodBuilder {
     let name = "textContentType"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "type", type: "UITextContentType", defaultValue: .void)
             ],
@@ -24,10 +24,10 @@ struct TextContentTypeModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct TextInputAutocapitalizationModifierBuilder: RuntimeModifierBuilder {
+struct TextInputAutocapitalizationModifierBuilder: RuntimeMethodBuilder {
     let name = "textInputAutocapitalization"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "style", type: "TextInputAutocapitalization", defaultValue: .void)
             ],
@@ -36,13 +36,13 @@ struct TextInputAutocapitalizationModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct AutocorrectionDisabledModifierBuilder: RuntimeModifierBuilder {
+struct AutocorrectionDisabledModifierBuilder: RuntimeMethodBuilder {
     let name = "autocorrectionDisabled"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(parameters: []) { view, _, _ in
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(parameters: []) { view, _, _ in
             AnyView(view)
         },
-        RuntimeViewModifierDefinition(
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "value", type: "Bool")]
         ) { view, _, _ in
             AnyView(view)
@@ -50,10 +50,10 @@ struct AutocorrectionDisabledModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct SubmitLabelModifierBuilder: RuntimeModifierBuilder {
+struct SubmitLabelModifierBuilder: RuntimeMethodBuilder {
     let name = "submitLabel"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "label", type: "SubmitLabel")
             ],
@@ -62,10 +62,10 @@ struct SubmitLabelModifierBuilder: RuntimeModifierBuilder {
     ]
 }
 
-struct FocusedModifierBuilder: RuntimeModifierBuilder {
+struct FocusedModifierBuilder: RuntimeMethodBuilder {
     let name = "focused"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [
                 RuntimeParameter(label: "_", name: "binding", type: nil),
                 RuntimeParameter(label: "equals", name: "equals", type: nil, defaultValue: .void)
@@ -95,10 +95,10 @@ struct FocusedModifierBuilder: RuntimeModifierBuilder {
     }
 }
 
-struct OnSubmitModifierBuilder: RuntimeModifierBuilder {
+struct OnSubmitModifierBuilder: RuntimeMethodBuilder {
     let name = "onSubmit"
-    let definitions: [RuntimeModifierDefinition] = [
-        RuntimeViewModifierDefinition(
+    let definitions: [RuntimeMethodDefinition] = [
+        RuntimeViewMethodDefinition(
             parameters: [RuntimeParameter(label: "_", name: "action", type: "() -> Void")]
         ) { view, arguments, _ in
             guard let function = arguments.value(named: "action")?.asFunction else {

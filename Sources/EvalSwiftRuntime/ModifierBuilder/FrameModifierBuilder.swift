@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct FrameModifierBuilder: RuntimeModifierBuilder {
+public struct FrameModifierBuilder: RuntimeMethodBuilder {
     public let name = "frame"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(name: "width", type: "Double", defaultValue: .void),
                     RuntimeParameter(name: "height", type: "Double", defaultValue: .void),
@@ -27,7 +27,7 @@ public struct FrameModifierBuilder: RuntimeModifierBuilder {
                     )
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(name: "minWidth", type: "Double", defaultValue: .void),
                     RuntimeParameter(name: "idealWidth", type: "Double", defaultValue: .void),

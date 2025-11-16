@@ -5,24 +5,24 @@ import EvalSwiftIR
 public final class RuntimeModule: RuntimeScope {
     public var storage: RuntimeScopeStorage = [:]
     public var topLevelValues: [RuntimeValue] = []
-    private var modifierBuilders: [String: RuntimeModifierBuilder] = [:]
+    private var methodBuilders: [String: RuntimeMethodBuilder] = [:]
 
     public convenience init(
         source: String,
         valueBuilders: [RuntimeValueBuilder] = [],
-        modifierBuilders: [RuntimeModifierBuilder] = []
+        methodBuilders: [RuntimeMethodBuilder] = []
     ) throws {
         try self.init(
             ir: SwiftIRParser().parseModule(source: source),
             valueBuilders: valueBuilders,
-            modifierBuilders: modifierBuilders
+            methodBuilders: methodBuilders
         )
     }
 
     public init(
         ir: ModuleIR,
         valueBuilders: [RuntimeValueBuilder] = [],
-        modifierBuilders: [RuntimeModifierBuilder] = []
+        methodBuilders: [RuntimeMethodBuilder] = []
     ) throws {
         var builders: [RuntimeValueBuilder] = [
             IntValueBuilder(),
@@ -87,7 +87,7 @@ public final class RuntimeModule: RuntimeScope {
         }
         define("infinity", value: .double(Double.infinity))
 
-        let modifierBuilderList: [RuntimeModifierBuilder] = [
+        let methodBuilderList: [RuntimeMethodBuilder] = [
             PaddingModifierBuilder(),
             BackgroundModifierBuilder(),
             BorderModifierBuilder(),
@@ -105,6 +105,9 @@ public final class RuntimeModule: RuntimeScope {
             StringFunctionModifierBuilder.hasPrefix(),
             StringFunctionModifierBuilder.hasSuffix(),
             StringFunctionModifierBuilder.split(),
+            CountMethodBuilder(),
+            IsEmptyMethodBuilder(),
+            ToggleMethodBuilder(),
             KeyboardTypeModifierBuilder(),
             TextContentTypeModifierBuilder(),
             TextInputAutocapitalizationModifierBuilder(),
@@ -124,9 +127,9 @@ public final class RuntimeModule: RuntimeScope {
             AnimationModifierBuilder(),
             TransitionModifierBuilder(),
             OnTapGestureModifierBuilder(),
-        ] + modifierBuilders
-        for modifier in modifierBuilderList {
-            self.modifierBuilders[modifier.name] = modifier
+        ] + methodBuilders
+        for method in methodBuilderList {
+            self.methodBuilders[method.name] = method
         }
 
         let statementInterpreter = StatementInterpreter(scope: self)
@@ -134,8 +137,8 @@ public final class RuntimeModule: RuntimeScope {
         self.topLevelValues = values
     }
 
-    func modifierBuilder(named name: String) -> RuntimeModifierBuilder? {
-        modifierBuilders[name]
+    func methodBuilder(named name: String) -> RuntimeMethodBuilder? {
+        methodBuilders[name]
     }
 
     func lookupImplicitMember(

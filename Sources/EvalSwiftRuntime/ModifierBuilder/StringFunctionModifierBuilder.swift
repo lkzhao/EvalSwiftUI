@@ -1,8 +1,8 @@
 import Foundation
 
-struct StringFunctionModifierBuilder: RuntimeModifierBuilder {
+struct StringFunctionModifierBuilder: RuntimeMethodBuilder {
     let name: String
-    let definitions: [RuntimeModifierDefinition]
+    let definitions: [RuntimeMethodDefinition]
 
     init(
         name: String,
@@ -11,7 +11,7 @@ struct StringFunctionModifierBuilder: RuntimeModifierBuilder {
     ) {
         self.name = name
         self.definitions = [
-            RuntimeValueModifierDefinition(parameters: parameters) { base, arguments, scope in
+            RuntimeValueMethodDefinition(parameters: parameters) { base, arguments, scope in
                 guard case .string(let value) = base else {
                     throw RuntimeError.invalidArgument("\(name) requires a String receiver.")
                 }

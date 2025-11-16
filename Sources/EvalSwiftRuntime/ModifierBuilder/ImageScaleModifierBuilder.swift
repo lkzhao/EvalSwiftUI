@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct ImageScaleModifierBuilder: RuntimeModifierBuilder {
+public struct ImageScaleModifierBuilder: RuntimeMethodBuilder {
     public let name = "imageScale"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "scale", type: "Image.Scale")
                 ],

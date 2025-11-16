@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct BorderModifierBuilder: RuntimeModifierBuilder {
+public struct BorderModifierBuilder: RuntimeMethodBuilder {
     public let name = "border"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "style", type: "ShapeStyle"),
                     RuntimeParameter(name: "width", type: "Double", defaultValue: .double(1))

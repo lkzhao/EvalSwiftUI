@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct OpacityModifierBuilder: RuntimeModifierBuilder {
+public struct OpacityModifierBuilder: RuntimeMethodBuilder {
     public let name = "opacity"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeValueModifierDefinition(
+            RuntimeValueMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "value", type: "Double")
                 ],

@@ -3,7 +3,7 @@ import SwiftUI
 public final class RuntimeInstance: RuntimeScope {
     enum Content {
         case view
-        case modifier(RuntimeModifierDefinition, [RuntimeArgument])
+        case method(RuntimeViewMethodDefinition, [RuntimeArgument])
     }
     private var content: Content
     private let computedBindingNames: Set<String>
@@ -23,12 +23,12 @@ public final class RuntimeInstance: RuntimeScope {
     }
 
     public init(
-        modifierDefinition: RuntimeModifierDefinition,
+        methodDefinition: RuntimeViewMethodDefinition,
         arguments: [RuntimeArgument],
         parent: RuntimeInstance
     ) {
         self.parent = parent
-        self.content = .modifier(modifierDefinition, arguments)
+        self.content = .method(methodDefinition, arguments)
         self.computedBindingNames = parent.computedBindingNames
     }
 }
@@ -68,7 +68,7 @@ extension RuntimeInstance {
         case .view:
             let renderer = try RuntimeViewRenderer(instance: self)
             return AnyView(RuntimeViewHost(renderer: renderer))
-        case .modifier(let definition, let arguments):
+        case .method(let definition, let arguments):
             guard let wrapped = parent as? RuntimeInstance else {
                 throw RuntimeError.invalidArgument("Modifier can only apply to View instance")
             }
@@ -76,6 +76,7 @@ extension RuntimeInstance {
             let baseValue = RuntimeValue.swiftUI(.view(view))
             let modifiedValue = try definition.apply(
                 to: baseValue,
+                setter: nil,
                 arguments: arguments,
                 scope: self
             )

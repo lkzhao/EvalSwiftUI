@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct OverlayModifierBuilder: RuntimeModifierBuilder {
+public struct OverlayModifierBuilder: RuntimeMethodBuilder {
     public let name = "overlay"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "content", type: "Any"),
                     RuntimeParameter(
@@ -29,7 +29,7 @@ public struct OverlayModifierBuilder: RuntimeModifierBuilder {
                     return AnyView(view.overlay(overlayView, alignment: alignment))
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(
                         name: "alignment",
@@ -49,7 +49,7 @@ public struct OverlayModifierBuilder: RuntimeModifierBuilder {
                     })
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "content", type: "Color"),
                     RuntimeParameter(
@@ -66,7 +66,7 @@ public struct OverlayModifierBuilder: RuntimeModifierBuilder {
                     return AnyView(view.overlay(color, alignment: alignment))
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "style", type: "ShapeStyle"),
                     RuntimeParameter(label: "in", name: "shape", type: "Shape")

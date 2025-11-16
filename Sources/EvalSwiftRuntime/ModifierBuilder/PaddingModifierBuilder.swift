@@ -1,18 +1,18 @@
 import SwiftUI
 
-public struct PaddingModifierBuilder: RuntimeModifierBuilder {
+public struct PaddingModifierBuilder: RuntimeMethodBuilder {
     public let name = "padding"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [],
                 apply: { view, _, _ in
                     AnyView(view.padding())
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "value", type: "Double")
                 ],
@@ -23,7 +23,7 @@ public struct PaddingModifierBuilder: RuntimeModifierBuilder {
                     return AnyView(view.padding(CGFloat(amount)))
                 }
             ),
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "edges", type: "Edge.Set"),
                     RuntimeParameter(label: "_", name: "length", type: "Double", defaultValue: .void)

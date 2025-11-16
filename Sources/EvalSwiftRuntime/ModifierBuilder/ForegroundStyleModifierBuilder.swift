@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct ForegroundStyleModifierBuilder: RuntimeModifierBuilder {
+public struct ForegroundStyleModifierBuilder: RuntimeMethodBuilder {
     public let name = "foregroundStyle"
-    public let definitions: [RuntimeModifierDefinition]
+    public let definitions: [RuntimeMethodDefinition]
 
     public init() {
         definitions = [
-            RuntimeViewModifierDefinition(
+            RuntimeViewMethodDefinition(
                 parameters: [
                     RuntimeParameter(label: "_", name: "style", type: "ShapeStyle")
                 ],
